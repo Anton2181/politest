@@ -489,12 +489,12 @@ face the full regional majority and vanish unrealistically fast.
 
 | Anchor | Evidence | Model (baseline) |
 |---|---|---|
-| Yiddish among acculturating Jews | Soviet Jews 70.4 % Yiddish (1926) -> ~41 % (1939) under coercion; interwar Polish-Jewish youth rapidly Polonising in state schools; Hungarian and Czech Jewry shifted in ~2 generations | 81 % (1932) -> 61 % (1950) -> 36 % (1980) -> 14 % (2032) |
-| Wymysorys | 92 % of Wilamowice (1,525/1,662) spoke it in 1880, 72 % in 1890 | ~1,500 -> ~260 (2000) -> <100 (2032): moribund without any ban |
-| Catholic Belarusian vernacular | rapid Polonisation of Catholic Belarusian-speakers; the 1897 -> 1931 recording gap | half-life ~45 years |
-| Greek Catholic Ukrainian | strong institutions (church, Prosvita, cooperatives) | ~85 % retained through 2000 in baseline |
+| Yiddish among acculturating Jews | Soviet Jews 70.4 % Yiddish (1926) -> ~41 % (1939) under coercion; interwar Polish-Jewish youth rapidly Polonising in state schools; Hungarian and Czech Jewry shifted in ~2 generations | 78 % (1935) -> 51 % (1960) -> 28 % (1990) -> 12 % (2030) |
+| Wymysorys | 92 % of Wilamowice (1,525/1,662) spoke it in 1880, 72 % in 1890 | ~1,500 -> ~250 (2000) -> ~60 (2032): moribund even without the post-war ban |
+| Catholic Belarusian vernacular | rapid Polonisation of Catholic Belarusian-speakers; the 1897 -> 1931 recording gap | 85 k (1935) -> 75 k (1960) -> 48 k (1990) -> 18 k (2030) in Wilno/Nowogródek/Białystok |
+| Greek Catholic Ukrainian | strong institutions (church, Prosvita, cooperatives) | 85 % of Greek Catholics Ukrainian-speaking (1935) -> 82 % (1990) -> 79 % (2030) |
 | Scottish Gaelic (Kandler et al.) | shift ~0.035/yr in an Anglophone state | Polesian and Kashubian rates of the same order once bilingual |
-| Karaim | community 800-900; language maintained in Trakai in the 1930s | slow decline to a few hundred speakers |
+| Karaim | community 800-900; language maintained in Trakai in the 1930s | ~680 -> ~230 speakers (2032) |
 
 ### 6.5 Extinction diagnostics
 
@@ -655,13 +655,13 @@ savings and market access follows Fogel (1964) and Donaldson & Hornbeck
 
 | check | target (registered) | model |
 |---|---|---|
-| Poland population 1 Jan 1939 | 34.8-35.1 M (GUS: 35.1 M) | 34.6-34.7 M |
-| CBR 1932 / 1938 | 28.8 / 24.3 | ~29.2 / ~25.2 |
-| CDR 1932 / 1938 | 15.0 / 13.8 | ~16.0 / ~14.1 |
-| e0 1931-32 m / f | 48.2 / 51.4 | ~49.3 / ~52.5 |
-| motor vehicles per 1000, 1938 | 1.27 | ~1.2 |
+| Poland population 1 Jan 1939 | 34.8-35.1 M (GUS: 35.1 M) | 34.6 M |
+| CBR 1932 / 1938 | 28.8 / 24.3 | 29.7 / 25.3 |
+| CDR 1932 / 1938 | 15.0 / 13.8 | 15.8 / 14.7 |
+| e0 1931-32 m / f | 48.2 / 51.4 | 49.4 / 52.6 |
+| motor vehicles per 1000, 1938 | 1.27 | 1.18 |
 | urban share 1939 | ~30 % | ~29 % |
-| Lithuania 1938: pop / CBR / CDR | 2.56 M / 22.6 / 12.6 | 2.56 M / ~22.3 / ~11.9 |
+| Lithuania 1938: pop / CBR / CDR | 2.56 M / 22.6 / 12.6 | 2.58 M / 22.7 / 12.5 |
 
 The modelled CDR sits ~1 point above the registered rate. Death (especially
 infant death) registration in the eastern voivodeships was incomplete, so
