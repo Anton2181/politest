@@ -1,0 +1,16 @@
+# The Lithuanian unit keeps the interwar Kaunas government's language policy:
+# Polish schools and parishes in Lauda/Kaunas closed, land reform aimed at
+# Polish-speaking gentry, strong pressure to register as Lithuanian.
+extends: baseline
+meta:
+  name: forced_lithuanization
+  description: "Federation, but the Lithuanian unit pursues forced Lithuanisation (as in the real interwar)"
+language:
+  status_regions:
+    "LT_*": {lt: 1.0, pl: 0.20, de: 0.30}
+  own_schooling_regions:
+    "LT_*": {pl: 0.03, RC:pl: 0.03, de: 0.3, ru: 0.1}
+  pressure:
+    "LT_*": [[1931, 1.5], [1970, 1.2]]
+  sigma0:
+    RC:pl: 0.35

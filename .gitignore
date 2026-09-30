@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+# regenerable outputs: keep the report, figures, summaries and the baseline run
+outputs/*.npz
+outputs/runs/*
+!outputs/runs/baseline/

@@ -1,0 +1,16 @@
+# Low-convergence path (interwar Argentina / Latin-American trap): agrarian
+# overpopulation persists, higher emigration, smaller infrastructure budgets,
+# the 1939 plans largely unexecuted.
+extends: baseline
+meta:
+  name: stagnation
+  description: "Low convergence; plans unexecuted; heavy emigration"
+economy:
+  kappa: [[1931, 0.50], [1960, 0.48], [2032, 0.45]]
+  infra_share_gdp: [[1931, 0.0035], [1960, 0.0070], [2032, 0.0070]]
+  equalisation: [[1931, 0.0], [2032, 0.0]]
+infrastructure:
+  enable_planned: false
+migration:
+  emigration_base: {RC:pl: 0.0045, GC: 0.0040, OR: 0.0025}
+  openness: [[1931, 0.12], [1939, 0.2], [1946, 1.0], [2032, 1.0]]

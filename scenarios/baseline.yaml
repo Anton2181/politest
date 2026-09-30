@@ -1,0 +1,8 @@
+# Baseline counterfactual: no Second World War. A Polish-Lithuanian federal
+# union (Lithuania + Klaipeda as a federal unit with Lithuanian as its
+# dominant language), Sanacja-style assimilationist pressure easing after
+# 1950, partial execution of the 1939-54 Fifteen-Year Plan, southern-European
+# style convergence. All parameters are the defaults in plsim/params.py.
+meta:
+  name: baseline
+  description: "No WW2; Polish-Lithuanian federation; moderate (southern-European) convergence"

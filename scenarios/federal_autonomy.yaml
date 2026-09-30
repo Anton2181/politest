@@ -1,0 +1,41 @@
+# Federalist turn (Piłsudskiite federalism realised in the late 1930s):
+# territorial autonomy for the Ukrainian-majority voivodeships (Stanisławów,
+# Tarnopol, Volhynia) with Ukrainian as the regional state/school language
+# and Polish as the federal language; Belarusian schooling in the north-east;
+# equal status for Lithuanian; lighter assimilation pressure elsewhere. The
+# 1938 dissolution of Ukrainian cooperatives and the Orthodox church
+# demolitions in the Chełm region never happen.
+extends: baseline
+meta:
+  name: federal_autonomy
+  description: "Ukrainian territorial autonomy (Stanisławów, Tarnopol, Volhynia), Belarusian schooling, equal Lithuanian"
+dominant_language: {default: pl, "LT_*": lt, STA: uk, TAR: uk, WOL: uk}
+language:
+  status:
+    uk: [[1931, 0.35], [1938, 0.60], [1960, 0.75]]
+    be: [[1931, 0.15], [1938, 0.30], [1960, 0.40]]
+    rue: 0.20
+    yi: [[1931, 0.30], [1970, 0.25]]
+  status_regions:
+    STA: {pl: 0.80}
+    TAR: {pl: 0.85}
+    WOL: {pl: 0.80, cs: 0.3}
+    LWO: {uk: [[1931, 0.40], [1938, 0.70], [1960, 0.80]]}
+    POL: {uk: [[1931, 0.30], [1938, 0.55]], be: [[1931, 0.2], [1938, 0.45]]}
+    NOW: {be: [[1931, 0.2], [1938, 0.5], [1960, 0.6]]}
+    WIL: {be: [[1931, 0.2], [1938, 0.45]], lt: 0.6}
+  own_schooling:
+    uk: [[1931, 0.15], [1938, 0.50], [1950, 0.70]]
+    GC:uk: [[1931, 0.20], [1938, 0.60], [1950, 0.80]]
+    be: [[1931, 0.03], [1938, 0.30], [1950, 0.45]]
+    rue: 0.3
+    JW:yi: 0.30
+  own_schooling_regions:
+    STA: {pl: 0.7, RC:pl: 0.7}
+    TAR: {pl: 0.7, RC:pl: 0.7}
+    WOL: {pl: 0.6, RC:pl: 0.6}
+  pressure:
+    default: [[1931, 1.0], [1938, 0.6], [1990, 0.5]]
+    STA: [[1931, 0.5], [1990, 0.5]]
+    TAR: [[1931, 0.5], [1990, 0.5]]
+    WOL: [[1931, 0.5], [1990, 0.5]]

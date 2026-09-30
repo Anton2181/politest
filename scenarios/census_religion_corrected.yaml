@@ -1,0 +1,8 @@
+# Same baseline, but the 1931 starting point uses a Tomaszewski-style,
+# religion-corrected reading of the census (Polish-declared Greek Catholics and
+# Orthodox reassigned to Ukrainian / Belarusian).
+extends: baseline
+meta:
+  name: census_religion_corrected
+  description: "Baseline with a religion-corrected (Tomaszewski-style) 1931 starting point"
+census_variant: religion_corrected

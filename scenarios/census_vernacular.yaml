@@ -1,0 +1,10 @@
+# Upper bound for minority vernaculars: religion-corrected census plus
+# Catholic Belarusian and Lithuanian vernaculars in the north-east and
+# Latin-rite Ukrainian speakers in Galicia/Lublin, anchored on 1897 imperial
+# census language proportions; Lithuania uses the 1897-based Polish share.
+extends: baseline
+meta:
+  name: census_vernacular
+  description: "Baseline with a vernacular (1897-anchored) 1931 starting point"
+census_variant: vernacular
+lt_variant: imperial_1897

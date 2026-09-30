@@ -1,0 +1,29 @@
+# National-Democratic (Endecja) / OZON line hardens after 1937: coercive
+# Polonisation, closure of minority schools, "numerus clausus" and state
+# promotion of Jewish emigration (the 1937-38 emigrationist policy), stepped-
+# up military/civil settlement in the Kresy, pressure on the German minority.
+extends: baseline
+meta:
+  name: integral_nationalism
+  description: "Coercive Polonisation, emigrationist policy towards Jews, intensified eastern settlement"
+language:
+  status:
+    uk: [[1931, 0.35], [1940, 0.20], [1970, 0.20]]
+    be: [[1931, 0.15], [1940, 0.07]]
+    yi: [[1931, 0.25], [1940, 0.12], [1970, 0.10]]
+    de: [[1931, 0.55], [1940, 0.30]]
+    lt: 0.25
+  own_schooling:
+    uk: [[1931, 0.15], [1940, 0.03]]
+    GC:uk: [[1931, 0.20], [1940, 0.05]]
+    be: 0.0
+    lt: [[1931, 0.5], [1940, 0.15]]
+    de: [[1931, 0.5], [1940, 0.2]]
+    JW:yi: [[1931, 0.20], [1940, 0.08]]
+  pressure:
+    default: [[1931, 1.0], [1938, 1.6], [1970, 1.3], [1990, 1.0]]
+migration:
+  jewish_channel: [[1931, 0.0035], [1937, 0.008], [1940, 0.012], [1960, 0.006], [1980, 0.002], [2032, 0.0005]]
+  german_channel: [[1931, 0.008], [1939, 0.012], [1950, 0.004], [1970, 0.001]]
+  settlement:
+    per_year: [[1931, 8000], [1938, 25000], [1960, 25000], [1970, 0]]

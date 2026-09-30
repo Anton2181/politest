@@ -1,0 +1,12 @@
+# Federation variant in which Wilno (Vilnius) becomes the Lithuanian federal
+# capital: Lithuanian is the dominant language of the Wilno voivodeship.
+extends: baseline
+meta:
+  name: wilno_lithuanian
+  description: "Federation with Vilnius as the Lithuanian capital (Lithuanian dominant in Wilno region)"
+dominant_language: {default: pl, "LT_*": lt, WIL: lt}
+language:
+  status_regions:
+    WIL: {lt: 1.0, pl: 0.8, be: 0.2}
+  own_schooling_regions:
+    WIL: {pl: 0.6, RC:pl: 0.6}

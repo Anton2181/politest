@@ -1,0 +1,8 @@
+# The Second Republic in its 1938 borders only (Lithuania remains a separate
+# state and is not simulated; Lithuanian towns become foreign gateways and the
+# Vilnius-Kaunas links stay cut).
+meta:
+  name: ii_rp_only
+  description: "Second Polish Republic alone; no union with Lithuania"
+include_lithuania: false
+federation: false
