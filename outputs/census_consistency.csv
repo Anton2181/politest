@@ -1,0 +1,8 @@
+Reconstruction,Read as,pl,uk+ruth,yi+he,be,de,tut,ru,lt,Total abs. error
+printed 1931 census,-,68.9,13.9,8.6,3.1,2.3,2.2,0.4,0.3,0.0
+official,latent,68.7,14.0,8.5,3.1,2.3,2.2,0.5,0.3,0.5
+official,polish_1931,70.7,13.2,8.5,2.5,2.1,1.9,0.5,0.2,3.9
+religion_corrected,latent,66.4,15.4,8.5,4.1,2.3,2.2,0.5,0.3,5.2
+religion_corrected,polish_1931,68.6,14.5,8.5,3.3,2.1,1.9,0.5,0.2,2.0
+vernacular,latent,64.0,16.2,8.5,5.6,2.3,2.2,0.5,0.3,10.0
+vernacular,polish_1931,68.1,14.6,8.5,3.6,2.1,1.9,0.5,0.3,2.8

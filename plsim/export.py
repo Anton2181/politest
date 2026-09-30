@@ -6,10 +6,10 @@ import os
 import numpy as np
 import pandas as pd
 
-from .data.languages import COMMUNITIES, GROUPS, LANG_INDEX, LANGUAGES, NC
+from .data.languages import GROUPS, LANG_INDEX, LANGUAGES
 from .data.network import NODES
 from .ensemble import KM_KEYS, QUANTILES
-from .language import CENSUS_CATEGORIES, REGIMES
+from .language import CENSUS_CATEGORIES
 from .model import Results
 from .report import lang_totals
 

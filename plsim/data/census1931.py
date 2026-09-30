@@ -377,7 +377,6 @@ def build_initial_composition(regions: list[Region], variant: str = "official",
     # Rescale regional urban shares so the Polish total matches the census 27.4 %.
     pl = [r for r in regions if r.country == "PL"]
     tot_pl = sum(r.pop_1931 for r in pl)
-    raw_urban = sum(r.pop_1931 * r.urban_1931 for r in pl)
     non_waw = sum(r.pop_1931 * r.urban_1931 for r in pl if r.code != "WAW")
     waw = sum(r.pop_1931 for r in pl if r.code == "WAW")
     k = (NATIONAL_URBAN_PL_1931 * tot_pl - waw) / non_waw if non_waw > 0 else 1.0

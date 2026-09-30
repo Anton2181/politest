@@ -1,6 +1,6 @@
 import numpy as np
 
-from plsim.data.languages import GROUPS, LANG_INDEX
+from plsim.data.languages import GROUPS
 from plsim.validate import historical_checks
 
 

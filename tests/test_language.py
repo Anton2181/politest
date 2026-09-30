@@ -1,6 +1,6 @@
 import numpy as np
 
-from plsim.data.languages import GROUP_INDEX, GROUPS, NG
+from plsim.data.languages import GROUP_INDEX, GROUPS
 from plsim.language import REGIMES, census_mapping
 from plsim.model import Simulation
 from plsim.params import load_scenario

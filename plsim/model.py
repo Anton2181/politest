@@ -24,13 +24,13 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from .data.census1931 import bilingual_share, build_initial_composition
-from .data.languages import COMM_INDEX, COMMUNITIES, GROUP_INDEX, GROUPS, LANG_INDEX, LANGUAGES, NC, NG, NL
+from .data.languages import COMM_INDEX, COMMUNITIES, GROUP_INDEX, GROUPS, LANG_INDEX, NC, NG, NL
 from .data.regions import select_regions
-from .demography import (FERT_AGES, FertilitySchedule, MortalityModel, alkema_decrement, catchup_rate,
+from .demography import (FertilitySchedule, MortalityModel, alkema_decrement, catchup_rate,
                          frontier_e0_female, mean_age_childbearing, sex_gap, stable_age_distribution, target_gap)
 from .economy import Economy, piecewise
 from .infrastructure import Network
-from .language import CENSUS_CATEGORIES, LanguageModel, census_view
+from .language import LanguageModel, census_view
 from .migration import MigrationModel
 
 _MORT_CACHE: dict = {}

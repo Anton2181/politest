@@ -114,7 +114,6 @@ class MigrationModel:
         """y_reg: regional mean income (origin push); y_dest: urban income at the
         destination (most movers go to towns), defaults to y_reg."""
         p = self.p
-        R = self.R
         ybar = (y_reg * P.sum(axis=(1, 2, 3, 4, 5))).sum() / P.sum()
         push = 1 + p["push_income"] * np.clip(np.log(ybar / y_reg), 0, None)
         base = np.array([p["out_rate_rural"], p["out_rate_urban"]])

@@ -9,20 +9,17 @@ from __future__ import annotations
 
 import base64
 import html
-import io
-import os
-
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-from .data.languages import COMMUNITIES, GROUPS, LANG_INDEX, LANGUAGES, NL  # noqa: E402
+from .data.languages import GROUPS, LANG_INDEX, LANGUAGES, NL  # noqa: E402
 from .data.network import NODES  # noqa: E402
 from .data.regions import REGIONS  # noqa: E402
-from .ensemble import KM_KEYS, QUANTILES  # noqa: E402
-from .language import CENSUS_CATEGORIES, REGIMES  # noqa: E402
+from .ensemble import QUANTILES  # noqa: E402
+from .language import CENSUS_CATEGORIES  # noqa: E402
 
 # ---------------------------------------------------------------------------------
 # Palette (validated reference instance; light surface)
@@ -295,7 +292,7 @@ def fig_census_regimes(res, path: str, year: int):
     hi = max(vals[rg]["pl"] for rg in regs)
     ax0.set_xlim(lo - 3, hi + 3)
     ax0.set_title("Polish")
-    ax1.set_title(f"Other categories")
+    ax1.set_title("Other categories")
     ax1.set_xlim(0, None)
     ax1.legend(loc="lower right")
     fig.suptitle(f"The same {year} population as four different censuses would record it", x=0.01, ha="left",
@@ -469,7 +466,6 @@ def fig_scenario_population(results: dict, path: str):
     for k, n in enumerate(names):
         res = results[n]
         A = res.arrays()
-        tot = A["pop"].sum(axis=(1, 2, 3)) / 1e6
         pl = np.array([not c.startswith("LT") for c in res.region_codes])
         plp = A["pop"][:, pl].sum(axis=(1, 2, 3)) / 1e6
         color = SLOTS[0] if n == "baseline" else OTHER

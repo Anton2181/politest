@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.sparse.csgraph import shortest_path
 
-from plsim.data.network import NODES
 from plsim.infrastructure import Network
 from plsim.params import load_scenario
 

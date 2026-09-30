@@ -244,7 +244,6 @@ class LanguageModel:
         """Apply annual acquisition of the dominant language and adult
         re-identification in place.  Returns flow diagnostics."""
         p = self.p
-        R = self.R
         _sL, xK = self.local_environment(P)
         own = self.own_schooling(year)
         not_dom = (self.group_lang[None, :] != self.dom[:, None])      # (R,G)
