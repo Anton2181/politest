@@ -109,6 +109,45 @@ observation regime.
 | Coastline, lakes, rivers | GSHHS / World Data Bank II, intermediate resolution, clipped to 13.5-30.5 E, 47.3-57.2 N | A | basemap-data 2.0; `plsim/data/geo_base.json` |
 | State territory (1938) | land cells nearest to a domestic town; about 110 foreign "mask" towns trace the borders with Germany, Danzig, East Prussia, Latvia, the USSR, Romania and Czechoslovakia | C | no digital interwar boundary layer was reachable; total cell area about 5 % below the official area |
 | Voivodeship borders | weighted Voronoi of county towns, with weights calibrated to the official areas | C | approximate shapes, exact areas (±5 %) |
-| County language anchors, 1931 (26) | e.g. Sokal 55.0 % Ukrainian, Turka 70.3 %, Lesko 63.0 %, Lubaczów 43.8 %, Przemyśl 36.9 %, Jarosław 14.2 %, Łuck 59.2 %, Kostopol 64.3 %, Krzemieniec 80.7 %, Kamień Koszyrski 8.7 % Ukrainian, Nieśwież 67.4 % Belarusian, Baranowicze 43.9 %, Mołodeczno 53.7 %, Wilejka 49.8 %, Bielsk 34.8 %, Grodno 32.8 %, Lida 11.2 %, Oszmiana 9.7 % | A | 1931 county tables as quoted in secondary sources |
-| Other county anchors (189) | Kashubian counties (not enumerated in 1931), German colonies in Poznań, Pomorze, Łódź and Volhynia, Lemko districts, Old Believers, Latvians, Lauda; zero anchors for counties without a minority | C | shape the pattern inside a voivodeship only; regional totals come from the census reconstruction |
+| County language anchors, 1931 (25) | e.g. Sokal 55.0 % Ukrainian, Turka 70.3 %, Lesko 63.0 %, Lubaczów 43.8 %, Przemyśl 36.9 %, Jarosław 14.2 %, Łuck 59.2 %, Kostopol 64.3 %, Krzemieniec 80.7 %, Kamień Koszyrski 8.7 % Ukrainian, Nieśwież 67.4 % Belarusian, Baranowicze 43.9 %, Mołodeczno 53.7 %, Wilejka 49.8 %, Bielsk 34.8 %, Grodno 32.8 %, Lida 11.2 %, Oszmiana 9.7 % | A | 1931 county tables as quoted in secondary sources |
+| Other county anchors (190, incl. Szczuczyn at grade B) | Kashubian counties (not enumerated in 1931), German colonies in Poznań, Pomorze, Łódź and Volhynia, Lemko districts, Old Believers, Latvians, Lauda; zero anchors for counties without a minority | C | shape the pattern inside a voivodeship only; regional totals come from the census reconstruction |
 | Terrain thinning | Polesie marshes -40 %, Carpathians -35 %, Hutsul highlands -30 % rural density | C | |
+
+## Counties, 1931 (county-level runs)
+
+`plsim/data/counties.py` holds the 269 county seats used by
+`partition: counties`. That is every 1931 powiat outside Warsaw city, plus
+the Lithuanian apskritys outside Kaunas city. The grade says what is known
+about each county besides its seat.
+
+| Voivodeship | Counties | Grade | What is known | Source / check |
+|---|---|---|---|---|
+| Tarnopol | 17 | A | population, mother tongue | Polish Wikipedia voivodeship article, from the 1931 census (Statystyka Polski, seria C); reproduces the voivodeship totals exactly |
+| Stanisławów | 12 | A | population, mother tongue | ditto (1932 county division); exact |
+| Lwów | 25 A + 1 B | A | population, mother tongue | ditto; Lwów city merged into powiat lwowski (455,031: Polish 278,924, Ukrainian 93,532, Yiddish 76,885); population within 0.3 %, but Polish and Ukrainian are about 35 k and 27 k off the voivodeship totals (rounding in the source tables) |
+| Volhynia | 11 | A | population, mother tongue | ditto |
+| Wilno | 7 A + 1 B | A | population, mother tongue | ditto; Wilno city merged into wileńsko-trocki (409,543, grade B) |
+| Białystok | 12 | A | population, mother tongue | ditto; Białystok city merged into białostocki (231,179). The Augustów Yiddish figure is derived from the voivodeship residual |
+| Nowogródek | 8 | A | population, mother tongue; Orthodox and Roman Catholic for 5 | English Wikipedia, "Belarusians in Poland" (county table). Belarusian, tutejszy and Russian are given as one category, which the model splits by the downscaled pattern |
+| Polesie | 5 A + 4 B | A/B | as Nowogródek where found (Kamień Koszyrski, Kosów, Pińsk, Prużana, Stolin); population only for the rest | ditto |
+| Lublin | 13 B + 5 C | B | population (Biała includes Konstantynów, 174,460) | 1931 administrative tables, rounded |
+| Kraków, Kielce, Łódź, Warsaw, Poznań, Pomorze, Silesia | 136 | C | seat only | the county language tables were not reachable from this environment |
+| Lithuania (apskritys, 1923) | 22 | C | seat only | ditto; the 1923 census apskritis tables |
+
+How the table enters the model is described in `docs/METHODOLOGY.md` §12.6.
+In short:
+
+* **Fitting.** County figures are fitted to the voivodeship totals of the
+  selected census variant by iterative proportional fitting. A county table
+  therefore decides *where* speakers live, not how many there are.
+* **Data repairs.** A few published rows do not add up. Rohatyń's
+  languages exceed its population by 0.7 %. Przeworsk's Polish count was
+  recomputed from its percentage (58,632). Rawa Ruska's total was estimated
+  (121,800). The "other" languages of Dolina (4,013) and Horodenka (16) are
+  German.
+
+The county table also corrected one of the older anchors in
+`data.geography`. The "Szczuczyn" anchor had Belarusian at 0.2 %, which
+is the figure for Szczuczyn near Grajewo (Białystok voivodeship). The
+Nowogródek county of that name had 9.9 % Belarusian + tutejszy + Russian
+and 83.5 % Polish, and the anchor now uses that.

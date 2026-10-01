@@ -18,6 +18,14 @@ Internal
   mass x relative income, t_rj comes from the *current* transport network
   (so new railways and roads re-route migration), and Aff is an ethnic-
   network / language-barrier affinity term.
+* **Nesting.**  Rates are calibrated on voivodeships.  When a voivodeship
+  is split into counties, the flows above are computed per *unit*: the part
+  of a 1931 voivodeship inside one federal member.  The unit's rural-urban
+  flow is routed to the towns of all its counties (urban mass x distance
+  decay), and its destination mass is the voivodeship's, shared among its
+  counties by their own attractiveness.  Splitting a voivodeship therefore
+  moves migrants between its counties without changing how many people it
+  sends or draws.
 * **Age.**  All flows use Rogers & Castro (1981) model migration schedules.
 * **Planned settlement.**  Optional flows of Polish Catholic smallholders to
   the eastern voivodeships (military and civilian "osadnictwo", Polesie
@@ -64,6 +72,18 @@ def hump(z: float, z_star: float, shape: float) -> float:
     return (z / z_star) ** shape * np.exp(shape * (1 - z / z_star))
 
 
+def _route(out_fg: np.ndarray, prob: np.ndarray) -> np.ndarray:
+    """Send movers (from, group, ...) to destinations with probabilities
+    (from, to, group): returns (to, group, ...).  Batched matrix product per
+    group, so it scales to hundreds of regions."""
+    F, G = out_fg.shape[:2]
+    rest = out_fg.shape[2:]
+    X = out_fg.reshape(F, G, -1).transpose(1, 0, 2)          # (G, F, k)
+    Pm = prob.transpose(2, 1, 0)                              # (G, T, F)
+    Y = np.matmul(Pm, X)                                      # (G, T, k)
+    return Y.transpose(1, 0, 2).reshape((prob.shape[1], G) + rest)
+
+
 class MigrationModel:
     def __init__(self, params: dict, regions, dominant: list[str]):
         self.p = params
@@ -85,7 +105,28 @@ class MigrationModel:
         self.is_german = self.group_lang == LANG_INDEX["de"]
         self.country = np.array([r.country for r in regions])          # 1931 state (origin)
         self.member = self.country.copy()                                # federal member (set by the model)
+        self.parent = np.array([c.split(".")[0] for c in self.codes])    # 1931 voivodeship
         self.logit_fe = None
+        self._unit = None
+
+    def units(self) -> np.ndarray:
+        """Unit of each region: its 1931 voivodeship within one federal member.
+        Without a county split every region is its own unit."""
+        if self._unit is None:
+            keys = list(zip(self.parent, self.member))
+            order = list(dict.fromkeys(keys))
+            self._unit = np.array([order.index(k) for k in keys])
+        return self._unit
+
+    def _route_dom(self, out_fg: np.ndarray, prob: np.ndarray) -> np.ndarray:
+        """Route movers; competence refers to the destination's dominant
+        language, so movers crossing a language border arrive monolingual
+        (unless native in it)."""
+        same_dom = (self.dom[:, None] == self.dom[None, :])[:, :, None]
+        inflow = _route(out_fg, prob * same_dom)
+        cross_in = _route(out_fg, prob * ~same_dom)
+        inflow[:, :, 0] += cross_in.sum(axis=2)
+        return inflow
 
     def _member_friction(self) -> np.ndarray:
         p = self.p
@@ -98,10 +139,19 @@ class MigrationModel:
         return f
 
     # ---------------------------------------------------------------- rural-urban
-    def urbanisation(self, P: np.ndarray, u_target: np.ndarray, year: int) -> dict:
+    def urbanisation(self, P: np.ndarray, u_target: np.ndarray, year: int, t_reg: np.ndarray | None = None) -> dict:
         p = self.p
+        unit = self.units()
+        K = unit.max() + 1
         tot = P.sum(axis=(2, 3, 4, 5))            # (R,2)
-        U = tot[:, 1] / tot.sum(axis=1)
+        if K < self.R:                            # county split: urban share and target of the unit
+            n = tot.sum(axis=1)
+            tot_k = np.zeros((K, 2))
+            np.add.at(tot_k, unit, tot)
+            u_target = np.bincount(unit, u_target * n, K) / np.bincount(unit, n, K)
+        else:
+            tot_k = tot
+        U = tot_k[:, 1] / tot_k.sum(axis=1)
         # regional fixed effects (industrial Silesia, agrarian Polesie) decay slowly
         if self.logit_fe is None:
             lu = np.log(np.clip(U, 1e-3, 0.999) / (1 - np.clip(U, 1e-3, 0.999)))
@@ -113,11 +163,20 @@ class MigrationModel:
         target = 1 / (1 + np.exp(-lt))
         gap = np.clip(target - U, 0, None) / np.clip(1 - U, 1e-6, None)
         rate = p["urban_kappa"] * gap + p["urban_min"]
-        rate = np.where(U > 0.995, 0.0, rate)
+        rate = np.where(U > 0.995, 0.0, rate)[unit]
         flow = P[:, 0] * (rate[:, None, None, None, None] * self.sched_internal[None, None, None, None, :])
         flow = np.minimum(flow, P[:, 0] * 0.5)
         P[:, 0] -= flow
-        P[:, 1] += flow
+        if K == self.R:
+            P[:, 1] += flow
+        else:
+            # rural migrants go to the towns of their unit, by urban mass and travel time
+            w = (unit[:, None] == unit[None, :]) * tot[None, :, 1]
+            if t_reg is not None:
+                w = w * np.exp(-p["beta_time"] * t_reg)
+            w = np.where(w.sum(axis=1, keepdims=True) > 0, w, np.eye(self.R))    # a unit without towns
+            prob = w / w.sum(axis=1, keepdims=True)
+            P[:, 1] += self._route_dom(flow, prob[:, :, None])
         return {"rural_urban": flow.sum(axis=(1, 2, 3, 4))}
 
     # ---------------------------------------------------------------- inter-regional
@@ -136,10 +195,18 @@ class MigrationModel:
         # destination attractiveness
         pop_r = P.sum(axis=(2, 3, 4, 5))            # (R,2)
         yd = y_reg if y_dest is None else y_dest
-        W = (pop_r[:, 1] + p["rural_weight"] * pop_r[:, 0]) ** p["mass_exponent"] * \
-            (yd / yd.mean()) ** p["income_elasticity"]
+        mass = pop_r[:, 1] + p["rural_weight"] * pop_r[:, 0]
+        W = mass ** p["mass_exponent"] * (yd / yd.mean()) ** p["income_elasticity"]
+        unit = self.units()
+        K = unit.max() + 1
+        if K < self.R:
+            # the unit draws as one voivodeship; its counties share that pull
+            mass_k = np.bincount(unit, mass, K)
+            y_k = np.bincount(unit, mass * yd, K) / mass_k
+            W_k = mass_k ** p["mass_exponent"] * (y_k / yd.mean()) ** p["income_elasticity"]
+            W = W_k[unit] * W / np.bincount(unit, W, K)[unit]
         det = np.exp(-p["beta_time"] * t_reg)       # (R,R)
-        np.fill_diagonal(det, 0.0)
+        det[unit[:, None] == unit[None, :]] = 0.0   # moves within a unit are rural-urban flows
         # friction between federal members (PL <-> LT by default); a pair can
         # have its own factor, e.g. {"PL|UA": 0.5} for an autonomy inside Poland
         det = det * self._member_friction()
@@ -149,12 +216,7 @@ class MigrationModel:
         prob = det[:, :, None] * W[None, :, None] * aff[None, :, :]    # (R_from, R_to, G)
         prob /= np.clip(prob.sum(axis=1, keepdims=True), 1e-300, None)
         out_fg = out.sum(axis=1)                     # (R,G,B,S,A)
-        same_dom = (self.dom[:, None] == self.dom[None, :])[:, :, None]
-        inflow = np.einsum("fgbsa,ftg->tgbsa", out_fg, prob * same_dom)
-        cross_in = np.einsum("fgbsa,ftg->tgbsa", out_fg, prob * ~same_dom)
-        # Competence refers to the destination's dominant language: migrants
-        # crossing a language border arrive monolingual (unless native in it).
-        inflow[:, :, 0] += cross_in.sum(axis=2)
+        inflow = self._route_dom(out_fg, prob)
         P -= out
         us = p["dest_urban_share"]
         P[:, 1] += inflow * us
@@ -162,7 +224,7 @@ class MigrationModel:
         # settlement programme (rural RC:pl families east)
         if settlement:
             self._settle(P, settlement, year)
-        flows = np.einsum("fgbsa,ftg->ft", out_fg, prob)
+        flows = np.einsum("fg,ftg->ft", out_fg.sum(axis=(2, 3, 4)), prob)
         return flows
 
     def _settle(self, P, s: dict, year: int):
@@ -175,6 +237,14 @@ class MigrationModel:
         dest = np.array([region_lookup(s["destinations"], c, 0.0) for c in self.codes], dtype=float)
         if orig.sum() <= 0 or dest.sum() <= 0:
             return
+        # a voivodeship's weight is shared among its sub-regions by rural population
+        rural = P[:, 0].sum(axis=(1, 2, 3, 4))
+        for par in set(self.parent):
+            m = self.parent == par
+            if m.sum() > 1:
+                share = rural[m] / max(rural[m].sum(), 1e-9)
+                orig[m] *= share
+                dest[m] *= share
         orig /= orig.sum()
         dest /= dest.sum()
         fam = np.zeros(101)

@@ -220,6 +220,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
         <li><strong>Each year.</strong> The region's net language shift is placed where speakers of the gaining language live nearby. Following Prochazka &amp; Vogl, the chance to shift grows with the gaining language's share in a Gaussian neighbourhood (10 km), plus a constant part for school, church and state. Towns reach further into their hinterland as they grow.</li>
         <li><strong>Population.</strong> Towns follow the transport-network model. Rural cells near growing towns gain a little each year; remote ones lose, which produces suburban rings and rural exodus.</li>
         <li><strong>Transport.</strong> The network grows by cost–benefit appraisal under rail and road budgets, plus the dated 1930s projects and the 1939 plans. Lines are drawn straight between the 230 modelled towns, so they show connections, not alignments. The map shows the network as of the latest 5-year frame.</li>
+        <li><strong>County level.</strong> The two "county level" scenarios run the projection for about 270 counties (powiaty and Lithuanian apskritys) instead of 23 regions. The eight eastern voivodeships start from the 1931 county tables of mother tongue; the others are downscaled estimates. Faint lines mark county borders.</li>
         <li><strong>Federal members.</strong> Dashed lines mark the borders between federal members, such as Poland and Lithuania, or the autonomy and the cantons in the cantonal scenario. Within a member, each sub-region has its own official language.</li>
       </ul>
     </div>
@@ -356,7 +357,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     const sc = scen(), k = sc._cellreg[i];
     if (k === 255) return null;
     const code = sc.geo.codes[k], name = sc.geo.names[k];
-    const label = code.startsWith("LT_") || code === "WAW" || code.includes(".") ? name : "woj. " + name;
+    const label = sc.geo.labels ? sc.geo.labels[k] : (code.startsWith("LT_") || code === "WAW" || code.includes(".") ? name : "woj. " + name);
     return { label, member: sc.geo.members[k], official: LANG_NAME[sc.geo.dominant[k]] || sc.geo.dominant[k] };
   }
   const frameFloor = (y) => { let f = 0; while (f < NF - 1 && FR[f + 1] <= y) f++; return f; };
@@ -432,7 +433,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   }
 
   // ---------------------------------------------------------------- vector layers
-  let baseLayer = null, topLayer = null, segInner = [], segOuter = [], segMember = [];
+  let baseLayer = null, topLayer = null, segInner = [], segOuter = [], segMember = [], segCounty = [];
   function computeBorders() {
     // region, member and state borders from the raster, for this scenario's coverage
     const sc = scen(), codes = sc.geo.codes;
@@ -444,11 +445,13 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
       reg[ROW[i] * W + COL[i]] = k === waw && war >= 0 ? war : k;
     }
     const mem = (k) => sc._member[k];
-    segInner = []; segOuter = []; segMember = [];
+    const par = codes.map((c) => c.split(".")[0]);
+    segInner = []; segOuter = []; segMember = []; segCounty = [];
     const push = (a, b, seg) => {
       if (a === b || Math.max(a, b) < 0) return;
       if (Math.min(a, b) < 0) segOuter.push(seg);
       else if (mem(a) !== mem(b)) segMember.push(seg);
+      else if (par[a] === par[b] && codes[a].includes(".")) segCounty.push(seg);
       else segInner.push(seg);
     };
     for (let r = 0; r < H; r++) {
@@ -492,6 +495,9 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     META.geo.rivers.forEach((p) => { polyPath(x, p, false); x.stroke(); });
     x.globalAlpha = 1; x.fillStyle = T.water;
     META.geo.lakes.forEach((p) => { polyPath(x, p, true); x.fill(); });
+    x.strokeStyle = T.rline; x.globalAlpha = 0.45; x.lineWidth = 0.4; x.beginPath();
+    segCounty.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
+    x.stroke(); x.globalAlpha = 1;
     x.strokeStyle = T.rline; x.lineWidth = 0.6; x.beginPath();
     segInner.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
     x.stroke();

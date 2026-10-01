@@ -55,24 +55,97 @@ migration:
 
 | Member | 1933 | 2032 | Home languages 1933 → 2032 |
 |---|---|---|---|
-| Poland (crown lands) | 20.0 M | 26.6 M | Polish 85 → 84 %, Yiddish 9 → 5 % |
-| Ukrainian autonomy | 8.4 M | 11.2 M | Ukrainian 51 → 65 %, Polish 39 → 28 % |
-| Lithuanian canton | 2.42 M | 2.16 M | Lithuanian 82 → 83 %, Polish 3.2 → 5.8 % |
-| Polish canton (Wilno–Lida–Grodno) | 1.46 M | 1.97 M | Polish 69 → 64 %, Belarusian 15 → 21 % |
-| Belarusian canton | 2.47 M | 5.66 M | Belarusian 28 → 51 %, West Polesian 29 → 20 %, Polish 30 → 22 % |
+| Poland (crown lands) | 20.0 M | 27.2 M | Polish 85 → 84 %, Yiddish 9 → 5 % |
+| Ukrainian autonomy | 8.4 M | 10.9 M | Ukrainian 51 → 65 %, Polish 39 → 28 % |
+| Lithuanian canton | 2.42 M | 2.18 M | Lithuanian 82 → 83 %, Polish 3.2 → 5.9 % |
+| Polish canton (Wilno–Lida–Grodno) | 1.47 M | 2.04 M | Polish 68 → 64 %, Belarusian 16 → 22 % |
+| Belarusian canton | 2.47 M | 5.53 M | Belarusian 27 → 49 %, West Polesian 29 → 20 %, Polish 31 → 24 % |
 
-* **Belarusian** speakers number 3.9 M in 2032, against 1.4 M in the
+* **Belarusian** speakers number 3.8 M in 2032, against 1.4 M in the
   baseline. They come from Belarusian schooling, from West Polesian
   speakers shifting to Belarusian instead of Polish, and from high Polesian
   fertility.
-* **Ukrainian** speakers number 8.8 M, against 8.2 M in the baseline.
-  Tarnopol turns from a Polish to a Ukrainian plurality (49/46 → 38/56).
-  Eastern lwowskie, with Lwów, reaches 56 % Ukrainian. West of the San,
-  Polish holds (64 %), with a growing Ukrainian minority (12 → 25 %).
-* **Lauda Poles** stay at about 6 % of the Lauda unit. In the baseline they
-  end at 4 %. Under `forced_lithuanization` they fall to 1.5 %, from 23 k to
-  6 k speakers.
+* **Ukrainian** speakers number 8.7 M, against 8.2 M in the baseline.
+  * Tarnopol turns from a Polish to a Ukrainian plurality (49/46 → 38/56).
+  * Eastern lwowskie, with Lwów, goes from 45 to 51 % Ukrainian.
+  * West of the San, Polish holds (78 → 60 %), and the Ukrainian minority
+    grows from 12 to 30 %. Both halves of lwowskie lie in the autonomy and
+    form one migration unit, so rural migrants from either half settle in
+    the towns of both, Lwów included.
+* **Lauda Poles** rise from 5 to 6 % of the Lauda unit (23 k → 28 k). In
+  the baseline they end at 4 %. Under `forced_lithuanization` they fall to
+  1.5 %, from 23 k to 6 k speakers.
 * **Polish** falls to 59 % of the whole union, from 68 % in the baseline.
+
+## County level
+
+Two scenarios run on the 269 counties (powiaty, apskritys) instead of the
+23 voivodeships (`plsim/data/counties.py`; method in METHODOLOGY §12.6):
+
+```yaml
+extends: ukraine_autonomy_tricantonal
+partition: counties
+region_groups:                       # a canton or district made of counties
+  WIL.W: [WIL.wilno, WIL.oszmiana, WIL.swieciany]
+  WIL.E: [WIL.braslaw, WIL.glebokie, WIL.molodeczno, WIL.postawy, WIL.wilejka]
+  ...
+```
+
+`region_groups` lets settings written for the named sub-regions (`WIL.E`,
+`LWO.W`, ...) apply to a list of counties. A county code is
+`PARENT.seat` (e.g. `LWO.przemysl`). A setting for the voivodeship
+(`LWO`) applies to all its counties unless a group or a county overrides it.
+
+### `baseline_counties`
+
+The baseline at county level. It reproduces the voivodeship run (48.15 M
+against 48.25 M in 2032; every voivodeship's language shares within about
+a point) and adds where things happen. 34 counties change their plurality
+language:
+
+* Belarusian → Polish in Głębokie, Mołodeczno, Wilejka, Nieśwież,
+  Nowogródek and Słonim.
+* West Polesian → Polish in all nine Polesie counties.
+* Kashubian → Polish in Kartuzy, Kościerzyna and Wejherowo.
+* Ukrainian → Polish in nine Lwów counties (Bóbrka, Dobromil, Gródek,
+  Jaworów, Lesko, Rawa Ruska, Sambor, Sokal, Żółkiew) and six Tarnopol
+  counties (Borszczów, Brody, Brzeżany, Buczacz, Czortków, Kopyczyńce).
+* German → Lithuanian in Klaipėda.
+
+### `ukraine_autonomy_tricantonal_counties`
+
+The cantons and the autonomy are the same counties as in the
+voivodeship-level scenario. Each county now starts from its own 1931
+make-up, and the canton populations come from the county census rather
+than the grid. The Polish canton had 1.35 M people in 1933, against 1.47 M
+from the grid approximation.
+
+| Member | 1933 | 2032 | Home languages 1933 → 2032 |
+|---|---|---|---|
+| Poland (crown lands) | 20.1 M | 27.3 M | Polish 85 → 83 %, Yiddish 9 → 5 % |
+| Ukrainian autonomy | 8.4 M | 10.8 M | Ukrainian 51 → 65 %, Polish 39 → 28 % |
+| Lithuanian canton | 2.42 M | 2.17 M | Lithuanian 82 → 82 %, Polish 3.2 → 5.9 % |
+| Polish canton | 1.35 M | 1.89 M | Polish 67 → 64 %, Belarusian 15 → 20 % |
+| Belarusian canton | 2.56 M | 5.70 M | Belarusian 29 → 48 %, West Polesian 28 → 19 %, Polish 31 → 25 % |
+
+The member totals agree with the voivodeship-level scenario. The county
+level shows where the shift happens:
+
+* **Ukrainian autonomy.** Polish leads 25 of its 66 counties in 1933 and
+  12 in 2032. Thirteen turn Ukrainian:
+  * Tarnopol, Trembowla, Zbaraż, Zborów, Złoczów, Skałat, Podhajce,
+    Przemyślany and Kamionka Strumiłowa;
+  * Drohobycz, Lubaczów, Mościska and Rudki.
+
+  The Polish-plurality counties left are those west of the San
+  (Jarosław, Przemyśl, Sanok, Rzeszów ...) and Lwów itself. In the
+  baseline, six Tarnopol counties go the other way, from Ukrainian to
+  Polish.
+* **Belarusian canton.** Belarusian leads 6 of its 20 counties in 1933 and
+  18 in 2032. All nine Polesie counties pass from West Polesian to
+  Belarusian, and Postawy, Baranowicze and Stołpce from Polish. Brasław
+  and Wołożyn stay Polish-plurality.
+* **Polish canton.** All seven counties stay Polish-plurality.
 
 ## What scenarios do *not* vary
 

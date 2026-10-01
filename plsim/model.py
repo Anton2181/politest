@@ -119,6 +119,12 @@ class Simulation:
             self.regions, self._comp, node_region = apply_partition(self.regions, p)
         self.codes = [r.code for r in self.regions]
         self.R = len(self.regions)
+        # Regional noise is drawn per 1931 voivodeship and shared by its
+        # sub-regions, so a county run uses the same random numbers as the
+        # voivodeship run (and the national shocks stay in step).
+        parents = list(dict.fromkeys(c.split(".")[0] for c in self.codes))
+        self.parent_idx = np.array([parents.index(c.split(".")[0]) for c in self.codes])
+        self.n_parent = len(parents)
         self.dominant = _dominant(p, self.regions)
         self.dom_idx = np.array([LANG_INDEX[d] for d in self.dominant])
         self.mort = _mortality()
@@ -132,8 +138,11 @@ class Simulation:
         self.mig.member = np.array(self.member)
         infra_p = copy.deepcopy(p["infrastructure"])
         infra_p["node_region"] = node_region
+        infra_p["region_seats"] = [(r.lat, r.lon) for r in self.regions]
         self.net = Network(infra_p, self.codes, federation=p["federation"] and p["include_lithuania"], rng=self.net_rng)
         self._init_population()
+        if len({c.split(".")[0] for c in self.codes}) < self.R:
+            self.lang.nest_concentration(self.P, self.codes)
         self._init_vital_rates()
         # town share of urban population (towns in the node list vs all urban places)
         urb_k = self.P[:, 1].sum(axis=(1, 2, 3, 4)) / 1000.0
@@ -252,9 +261,14 @@ class Simulation:
         ma = net.market_access(masses)
         # regional market access (population weighted over towns)
         reg_ma = np.zeros(self.R)
+        caps = net.region_capital_nodes()
+        acc = net.region_access_hours(year)
         for r in range(self.R):
             idx = net.region == r
-            reg_ma[r] = (ma[idx] * net.pop[idx]).sum() / max(net.pop[idx].sum(), 1e-9)
+            if idx.any():
+                reg_ma[r] = (ma[idx] * net.pop[idx]).sum() / max(net.pop[idx].sum(), 1e-9)
+            else:       # a county without a modelled town: access through the nearest one
+                reg_ma[r] = ma[caps[r]] * np.exp(-ip["ma_theta"] * acc[r])
         log_ma = np.log(reg_ma)
         if self._last_log_ma is not None:
             self._d_log_ma = log_ma - self._last_log_ma
@@ -275,15 +289,16 @@ class Simulation:
             for r in range(self.R):
                 idx = np.where(net.region == r)[0]
                 if len(idx):
-                    hinter[idx] = rural[r] / len(idx) + net.pop[idx] * 1000.0 * 0.3
+                    hinter[idx] += rural[r] / len(idx) + net.pop[idx] * 1000.0 * 0.3
+                else:
+                    hinter[caps[r]] += rural[r]
             net.invest(year, budget, veh, vot, equity, ip["bcr_threshold"], hinter)
         net.rationalise(year, veh)
         # towns
         urb_k = self.P[:, 1].sum(axis=(1, 2, 3, 4)) / 1000.0
         net.update_towns(urb_k, year)
         # region-to-region travel times through capitals
-        caps = net.region_capital_nodes()
-        self.t_reg = net.D[np.ix_(caps, caps)]
+        self.t_reg = net.D[np.ix_(caps, caps)] + acc[:, None] + acc[None, :]
 
     # ------------------------------------------------------------------ vital rates
     def _update_mortality(self, year: int, M: np.ndarray):
@@ -296,7 +311,8 @@ class Simulation:
         target = front - gap[:, :, None] + self.e0_adj0 * decay
         lam = catchup_rate(year, mp["catchup_pre"], mp["catchup_post"])
         shock = self.rng.normal(0, mp["shock_sd"])
-        self.e0f += lam * (target - self.e0f) + shock + self.rng.normal(0, 0.1, self.e0f.shape)
+        noise = self.rng.normal(0, 0.1, (self.n_parent,) + self.e0f.shape[1:])[self.parent_idx]
+        self.e0f += lam * (target - self.e0f) + shock + noise
         self.e0f = np.minimum(self.e0f, front + 1.0)
 
     def _update_fertility(self, year: int, M: np.ndarray):
@@ -310,7 +326,8 @@ class Simulation:
         self.phase3 |= enter
         mu = np.broadcast_to(self.mu3[None, None, :], self.tfr.shape)
         rho = fp["phase3_rho"]
-        ph3 = mu + rho * (self.tfr - mu) + self.rng.normal(0, fp["phase3_sd"], self.tfr.shape)
+        noise = self.rng.normal(0, fp["phase3_sd"], (self.n_parent,) + self.tfr.shape[1:])[self.parent_idx]
+        ph3 = mu + rho * (self.tfr - mu) + noise
         self.tfr = np.where(self.phase3 & ~enter, ph3, f2)
         # Haredi: slow drift towards their own long-run mean instead of the Alkema curve
         jh = COMM_INDEX["JH"]
@@ -405,7 +422,7 @@ class Simulation:
         self.lang.horizontal(year, P, self.econ.enrollment, M, ma_norm)
         shift_net += self._lang_ru(P.sum(axis=(3, 4, 5))) - before_l
         # ---- migration
-        ur = self.mig.urbanisation(P, self.econ.urban_target(), year)
+        ur = self.mig.urbanisation(P, self.econ.urban_target(), year, self.t_reg)
         x_lang = self.lang.competence_shares(P)
         settle = p["migration"].get("settlement")
         flows_int = self.mig.interregional(P, self.t_reg, self.econ.region_income(), x_lang, year, settle,

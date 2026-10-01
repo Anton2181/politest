@@ -205,7 +205,20 @@ def geometry_payload(res, sr, full) -> dict:
     ok = idx >= 0
     cellreg[idx[ok]] = sr.grid.region[ok].astype(np.uint8)
     members = list(getattr(res, "members", []) or ["LT" if c.startswith("LT") else "PL" for c in res.region_codes])
-    return {"codes": list(res.region_codes), "names": list(res.region_names),
+    from .data.counties import BY_CODE
+    parent_name = {r.code: r.name for r in REGIONS}
+    labels = []
+    for code, name in zip(res.region_codes, res.region_names):
+        par = code.split(".")[0]
+        if code in BY_CODE and not par.startswith("LT"):
+            labels.append(f"pow. {name} · woj. {parent_name.get(par, par)}")
+        elif code in BY_CODE:
+            labels.append(f"{name} · {parent_name.get(par, par)}")
+        elif "." in code or par.startswith("LT") or code == "WAW":
+            labels.append(name)
+        else:
+            labels.append(f"woj. {name}")
+    return {"codes": list(res.region_codes), "names": list(res.region_names), "labels": labels,
             "members": [MEMBER_LABELS.get(m, m) for m in members],
             "dominant": list(getattr(res, "dominant", []) or []),
             "cellreg": base64.b64encode(cellreg.tobytes()).decode()}

@@ -33,7 +33,8 @@ python -m plsim census                  # 1931 census-reconstruction consistency
 python -m plsim ensemble baseline -n 32 # Monte-Carlo ensemble -> outputs/ensemble_baseline/*.csv
 python -m plsim report -n 32            # all scenarios + ensembles + figures + outputs/report.html
 python -m plsim maps                    # 7 km maps, GIF animations and the interactive atlas (outputs/atlas/)
-pytest -q                               # 53 tests
+python -m plsim run baseline_counties   # the baseline on 269 counties (about 4 minutes)
+pytest -q                               # 67 tests
 ```
 
 A 100-year run takes about 20 s. The full report takes about 7 minutes on 4
@@ -134,7 +135,7 @@ plus 6 Lithuanian units.
 7 x 7 km and draws the result:
 
 * **Interactive atlas**: `outputs/atlas/index.html`. It has a time slider,
-  13 scenarios, and four layers: plurality language, one language
+  15 scenarios (two of them at county level), and four layers: plurality language, one language
   (optionally as change since 1932), density and growth. It overlays the
   railway and road network as it grows, with km by class and the latest
   openings, and dashes the borders between federal members (cantons,
@@ -144,7 +145,7 @@ plus 6 Lithuanian units.
 
 How it works (details in `docs/METHODOLOGY.md` §12):
 
-* **1932.** County anchors from the 1931 census, 26 of them county figures,
+* **1932.** County anchors from the 1931 census, 25 of them county figures,
   the rest graded estimates, shape each voivodeship's languages inside its
   borders. Iterative proportional fitting keeps the regional totals exact.
 * **Each year.** The region's net shift from the main model is placed with
@@ -162,8 +163,10 @@ Baseline, area where each language leads (thousand km²):
 
 | | Polish | Ukrainian | Lithuanian | Belarusian | West Polesian | Kashubian/Lemko |
 |---|---|---|---|---|---|---|
-| 1932 | 246 | 71 | 55 | 18 | 34 | 3 |
-| 2032 | 309 | 64 | 55 | 1 | 0 | 0 |
+| 1932 | 248 | 72 | 55 | 17 | 34 | 3 |
+| 2032 | 310 | 65 | 56 | 1 | 0 | 0 |
+| 1932, county run | 243 | 71 | 55 | 22 | 34 | 3 |
+| 2032, county run | 311 | 62 | 56 | 2 | 0 | 0 |
 
 * **Ukrainian** holds its Volhynian and Pokuttya core. It retreats from the
   San and the Lwów hinterland.
@@ -176,6 +179,47 @@ Baseline, area where each language leads (thousand km²):
   cities, their suburban rings, and high-fertility Polesie and Volhynia.
 
 ![Population change](outputs/maps/map_population_change.png)
+
+## County level (powiaty)
+
+`partition: counties` runs the model on 269 counties instead of 23
+voivodeships. These are the 1931 powiaty and the Lithuanian apskritys,
+with Warsaw and Kaunas cities whole. Two scenarios use it:
+`baseline_counties` and `ukraine_autonomy_tricantonal_counties`. Details
+are in `docs/METHODOLOGY.md` §12.6.
+
+* **Data.** The 1931 county census by mother tongue covers the eight
+  eastern voivodeships (97 counties, grade A). Lublin has county
+  populations (grade B). The other counties have seats only and are
+  downscaled from their voivodeship (grade C). County figures are fitted
+  to the voivodeship totals of the chosen census variant.
+* **Consistency.** Migration, income, enclave concentration and random
+  numbers are nested in the voivodeships, so the county run reproduces
+  the voivodeship model:
+
+  | 2032 | Voivodeship run | County run |
+  |---|---|---|
+  | Population | 48.25 M | 48.15 M |
+  | Ukrainian speakers | 8.17 M | 8.20 M |
+  | Belarusian speakers | 1.39 M | 1.40 M |
+
+  Every voivodeship's 2032 language shares are within about a point.
+  Without the nesting, the cities stopped growing (Warsaw 1.06× instead of
+  2.4×).
+* **What it adds is where.**
+  * **Baseline.** 34 counties change plurality language by 2032: the
+    Belarusian blocks of Głębokie–Wilejka and Nieśwież–Słonim, all nine
+    Polesie counties, three Kashubian counties, and fifteen Ukrainian
+    counties of Lwów and Tarnopol turn Polish. Lwów county grows from
+    460 k to 829 k, Wilno from 415 k to 782 k.
+  * **Ukrainian autonomy + cantons.** It runs the other way. Ukrainian
+    gains 13 counties, including Tarnopol and Złoczów. Belarusian goes
+    from 6 to 18 of the Belarusian canton's 20 counties. Polish keeps the
+    counties west of the San and Lwów itself.
+* **Cost.** A run takes about 4 minutes, against 25 s for the voivodeship
+  model.
+
+![County-level plurality, 2032](outputs/maps/baseline_counties_map_plurality.png)
 
 ## Scenarios (single seeded run each, 2032)
 
@@ -202,7 +246,7 @@ Polish-speakers in the Lithuanian units in 2032:
 | forced_lithuanization | ~28 k |
 | polonizing_union | ~310 k |
 | starting from the 1923 Polish claim | 181 k -> ~140 k |
-| Ukrainian autonomy + tri-cantonal Grand Duchy (Polish schools in the Lithuanian canton) | ~125 k |
+| Ukrainian autonomy + tri-cantonal Grand Duchy (Polish schools in the Lithuanian canton) | ~130 k |
 
 **Ukrainian autonomy + tri-cantonal Lithuania.** Lwów, Tarnopol and
 Stanisławów voivodeships plus Volhynia form a Ukrainian autonomy, on the
@@ -212,10 +256,10 @@ north of Volhynia joins Lithuania as a Grand Duchy of Lithuanian, Polish
 Polesie) cantons. Voivodeships are split along county lines for this, via
 the 7 km grid. By 2032:
 
-* Belarusian speakers number 3.9 M (1.4 M in the baseline). Belarusian
-  becomes the majority language of its canton (28 → 51 %).
+* Belarusian speakers number 3.8 M (1.4 M in the baseline). Belarusian
+  becomes the plurality language of its canton (27 → 49 %).
 * Ukrainian rises from 51 to 65 % of the autonomy. Tarnopol turns
-  Ukrainian-plurality; west of the San stays Polish.
+  Ukrainian-plurality; west of the San stays Polish (60 %).
 * Polish falls to 59 % of the union.
 
 The full table is in `outputs/scenario_summary.csv`; the assumptions are in
@@ -240,13 +284,14 @@ plsim/
   report.py, export.py   figures, CSVs, HTML report
   data/geography.py      7 km grid, territory mask, county language anchors (1931)
   data/subregions.py     county-line splits of voivodeships (Curzon line, cantons, the San)
-  partition.py           1931 population of sub-regions, via the grid
+  data/counties.py       269 counties (1931 powiaty, 1923 apskritys) with graded census rows
+  partition.py           1931 population of sub-regions and counties, via the grid
   data/geo_base.json     coastline, lakes and rivers (GSHHS via basemap-data)
   spatial.py             downscaling + neighbourhood (Prochazka-Vogl) language-shift allocation
   maps.py, webmap.py     static maps, GIF animations, interactive atlas data
   atlas_template.html    the interactive atlas page
   cli.py                 command-line interface
-scenarios/*.yaml         14 scenarios (extends/override)
+scenarios/*.yaml         16 scenarios (extends/override)
 docs/                    METHODOLOGY, DATA_SOURCES (with reliability grades), SCENARIOS, ROADMAP
 outputs/                 report.html, figures/, maps/, atlas/, scenario_summary.csv, ensemble CSVs, baseline run CSVs
 tests/                   census reconstruction, demography, language, network, model accounting

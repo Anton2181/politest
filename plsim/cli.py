@@ -68,6 +68,8 @@ SCENARIO_TITLES = {
     "stagnation": "Stagnation",
     "ii_rp_only": "Poland alone, no union",
     "ukraine_autonomy_tricantonal": "Ukrainian autonomy + tri-cantonal Lithuania",
+    "baseline_counties": "Baseline, county level",
+    "ukraine_autonomy_tricantonal_counties": "Ukrainian autonomy + cantons, county level",
 }
 
 

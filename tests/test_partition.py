@@ -81,3 +81,95 @@ def test_cantonal_scenario_short_run():
     assert (sim.net.region >= 0).sum() == (base.net.region >= 0).sum()
     res = sim.run()
     assert np.isfinite(np.array(res.pop)).all() and np.array(res.pop).min() >= 0
+
+
+
+def test_units_nest_counties_within_members(split):
+    _, (new, _, _), _ = split
+    codes = [r.code for r in new]
+    m = MigrationModel(load_scenario("baseline")["migration"], new, ["pl"] * len(new))
+    m.member = np.array(["GD-B" if c == "WIL.E" else ("LT" if c.startswith("LT") else "PL") for c in codes])
+    unit = m.units()
+    assert unit[codes.index("BIA.W")] == unit[codes.index("BIA.E")] != unit[codes.index("WAR")]
+    assert unit[codes.index("WIL.W")] != unit[codes.index("WIL.E")]         # different members
+    assert unit.max() + 1 == len(new) - 3
+
+
+def test_split_voivodeships_migrate_like_the_whole():
+    """Split into sub-regions of one member, a voivodeship sends and draws
+    migrants as one unit: its total stays close to the unsplit run."""
+    p = load_scenario("baseline")
+    p["end_year"] = 1945
+    q = load_scenario("baseline")
+    q["end_year"] = 1945
+    q["partition"] = ["BIA", "WIL", "NOW", "LWO"]
+    a, b = Simulation(p).run(), Simulation(q).run()
+
+    def totals(res):
+        x = np.asarray(res.pop[-1], float).reshape(len(res.region_codes), -1).sum(axis=1)
+        out = {}
+        for c, v in zip(res.region_codes, x):
+            out[c.split(".")[0]] = out.get(c.split(".")[0], 0.0) + v
+        return out
+    ta, tb = totals(a), totals(b)
+    for c in ["BIA", "WIL", "NOW", "LWO", "WAW", "WAR"]:
+        assert tb[c] == pytest.approx(ta[c], rel=0.006), c      # unnested: up to 1.5 % off by 1945
+
+
+# ---------------------------------------------------------------- county level
+from plsim.data.counties import BY_PARENT, COUNTIES  # noqa: E402
+from plsim.data.regions import REGIONS  # noqa: E402
+
+REGION_POP = {r.code: r.pop_1931 for r in REGIONS}
+
+
+def test_county_table_integrity():
+    codes = [c.code for c in COUNTIES]
+    assert len(codes) == len(set(codes))
+    for c in COUNTIES:
+        if c.lang:
+            assert sum(c.lang.values()) <= c.pop * 1.01, c.code      # summaries carry small slips
+        assert 47.5 < c.lat < 56.6 and 15.5 < c.lon < 28.5, c.code
+
+
+@pytest.mark.parametrize("parent", ["TAR", "STA", "LWO", "WIL", "NOW", "BIA", "WOL"])
+def test_grade_a_counties_add_up_to_the_voivodeship(parent):
+    """The county tables reproduce the 1931 voivodeship populations."""
+    tot = sum(c.pop for c in BY_PARENT[parent])
+    assert tot == pytest.approx(REGION_POP[parent], rel=0.004)
+
+
+def test_tarnopol_counties_reproduce_declared_languages():
+    rows = BY_PARENT["TAR"]
+    tot = sum(c.pop for c in rows)
+    pl = sum(c.lang.get("pl", 0) for c in rows) / tot
+    uk = sum(c.lang.get("uk", 0) for c in rows) / tot
+    assert pl == pytest.approx(0.493, abs=0.002) and uk == pytest.approx(0.455, abs=0.002)
+
+
+@pytest.fixture(scope="module")
+def county_split():
+    p = load_scenario("baseline")
+    p["partition"] = "counties"
+    regions = select_regions(True)
+    return regions, apply_partition(regions, p), p
+
+
+def test_counties_add_up_and_follow_the_census(county_split):
+    regions, (new, comp, nodes), p = county_split
+    from plsim.data.census1931 import build_initial_composition
+    from plsim.data.languages import LANG_INDEX
+    from plsim.spatial import lang_totals
+    old = build_initial_composition(regions, p["census_variant"], p["lt_variant"]).pop
+    codes = [r.code for r in new]
+    assert len(new) > 250
+    for i, r in enumerate(regions):
+        kids = [j for j, c in enumerate(codes) if c.split(".")[0] == r.code]
+        assert np.allclose(comp[kids].sum(axis=0), old[i], rtol=1e-5, atol=1.0), r.code
+    j = codes.index("LWO.turka")
+    L = lang_totals(comp[j]).sum(axis=0)
+    assert L[LANG_INDEX["uk"]] / L.sum() == pytest.approx(0.844, abs=0.02)        # census 84.4 %
+    j = codes.index("WIL.swieciany")
+    L = lang_totals(comp[j]).sum(axis=0)
+    assert L[LANG_INDEX["lt"]] / L.sum() == pytest.approx(0.315, abs=0.03)         # census 31.5 %
+    assert nodes["Lwów"] == "LWO.lwow" and nodes["Pińsk"] == "POL.pinsk"

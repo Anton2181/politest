@@ -101,7 +101,32 @@ class LanguageModel:
         self.inst = np.array([inst.get(f"{c}:{l}", inst.get(l, 0.0)) for c, l in GROUPS])
         self.a = params["a"]
         conc = params.get("concentration", {})
-        self.conc = np.array([conc.get(f"{c}:{l}", conc.get(l, 1.0)) for c, l in GROUPS], dtype=float)
+        k = np.array([conc.get(f"{c}:{l}", conc.get(l, 1.0)) for c, l in GROUPS], dtype=float)
+        self.conc = np.tile(k, (self.R, 1))                                  # (R, G)
+
+    def nest_concentration(self, P: np.ndarray, codes: list[str]) -> None:
+        """County runs.  The concentration factors are set for voivodeships;
+        part of that concentration is already resolved by the counties.  For
+        each voivodeship split into several regions, divide k_L by the
+        speakers' clustering across its counties at the start: the mean
+        county share of L experienced by L speakers over the voivodeship
+        share of L (an isolation index ratio, >= 1).  k never falls below 1."""
+        parent = np.array([c.split(".")[0] for c in codes])
+        home = np.zeros((self.R, NL))
+        np.add.at(home, (slice(None), self.group_lang), P.sum(axis=(1, 3, 4, 5)))
+        ratio = np.ones((self.R, NL))
+        for q in dict.fromkeys(parent):
+            m = parent == q
+            if m.sum() < 2:
+                continue
+            H = home[m]
+            n_l = H.sum(axis=0)
+            x = n_l / H.sum()
+            e = (H * H / np.clip(H.sum(axis=1, keepdims=True), 1e-9, None)).sum(axis=0) / np.clip(n_l, 1e-9, None)
+            ratio[m] = np.where(n_l > 0, np.clip(e / np.clip(x, 1e-12, None), 1.0, None), 1.0)
+        k = self.conc
+        self.conc = np.maximum(k / ratio[:, self.group_lang], np.minimum(k, 1.0))
+        self.clustering = ratio
 
     # ---------------------------------------------------------------- policy
     def status(self, year: float) -> np.ndarray:
@@ -188,7 +213,7 @@ class LanguageModel:
         homeL = home[:, :, self.group_lang]                # (R,2,G)
         bilL = bil_l[:, :, self.group_lang]
         xL = homeL / safe[..., None]
-        sL = np.clip(self.conc[None, None, :] * xL, 0, 0.95)
+        sL = np.clip(self.conc[:, None, :] * xL, 0, 0.95)
         sL = np.maximum(sL, xL)
         is_dom_k = (np.arange(NL)[None, :] == self.dom[:, None])            # (R,NL)
         # competence in K among the non-L neighbours

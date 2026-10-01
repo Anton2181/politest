@@ -1,0 +1,20 @@
+# The Ukrainian autonomy and the tri-cantonal Grand Duchy at county
+# resolution. The cantons and the language-of-administration districts
+# are the same counties as in the voivodeship-level scenario, now with
+# each county's own 1931 make-up.
+extends: ukraine_autonomy_tricantonal
+meta:
+  name: ukraine_autonomy_tricantonal_counties
+  description: "Ukrainian autonomy + tri-cantonal Grand Duchy at county resolution"
+partition: counties
+region_groups:
+  WIL.W: [WIL.wilno, WIL.oszmiana, WIL.swieciany]
+  WIL.E: [WIL.braslaw, WIL.glebokie, WIL.molodeczno, WIL.postawy, WIL.wilejka]
+  NOW.W: [NOW.lida, NOW.szczuczyn]
+  NOW.E: [NOW.baranowicze, NOW.nieswiez, NOW.nowogrodek, NOW.slonim, NOW.stolpce, NOW.wolozyn]
+  BIA.E: [BIA.grodno, BIA.wolkowysk]
+  LWO.W: [LWO.jaroslaw, LWO.przemysl, LWO.brzozow, LWO.sanok, LWO.krosno, LWO.rzeszow, LWO.lancut,
+          LWO.przeworsk, LWO.tarnobrzeg, LWO.nisko, LWO.kolbuszowa]
+  LWO.E: [LWO.bobrka, LWO.dobromil, LWO.drohobycz, LWO.grodekjagiello, LWO.jaworow, LWO.lesko,
+          LWO.lubaczow, LWO.lwow, LWO.mosciska, LWO.rawaruska, LWO.rudki, LWO.sambor, LWO.sokal,
+          LWO.turka, LWO.zolkiew]

@@ -830,9 +830,10 @@ canton or an autonomy (`plsim/partition.py`, `plsim/data/subregions.py`).
    county seat (a Voronoi approximation of the county borders).
 3. **Sum.** Each sub-region takes the rural and urban speakers of every
    language on its cells and in its towns. Within a language, the split by
-   community is the parent's. Fertility, mortality, income and literacy are
-   inherited. Area is the parent's official area times the sub-region's
-   share of the parent's cells.
+   community is the parent's. Fertility, mortality and literacy are
+   inherited. Income is the parent's urban and rural income weighted by
+   the sub-region's urban share (§12.6). Area is the parent's official area
+   times the sub-region's share of the parent's cells.
 
 The children add up exactly to the parent (tested).
 
@@ -857,7 +858,142 @@ Close vernaculars (West Polesian, Rusyn) start mostly competent, and so do
 rural Poles of the Kresy, who usually spoke the local East Slavic speech.
 Townspeople start less competent.
 
-### 12.6 What the maps cannot show
+### 12.6 County-level projection
+
+`partition: counties` runs every voivodeship as its 1931 powiaty, and the
+Lithuanian units as their apskritys. Warsaw city and Kaunas city stay whole,
+which gives 269 regions in place of 23. The county table is
+`plsim/data/counties.py` (sources and grades in `docs/DATA_SOURCES.md`).
+
+**Initial state.** Cells and towns are assigned to the nearest county seat,
+as for the named splits. The county's population and languages are then
+set by its grade:
+
+* **Grade A** (97 counties: the eight eastern voivodeships). The seed is
+  the 1931 county count by mother tongue. Merged categories are split by the
+  downscaled pattern: Belarusian + tutejszy + Russian in Nowogródek and
+  Polesie, "other", and the unenumerated Kashubian, Lemko and Wymysorys
+  speakers inside "Polish" and "Ukrainian". Two IPFs follow:
+  1. Over (county × language), fitting the county populations and the
+     voivodeship's latent language totals for the chosen census variant.
+  2. Over (county × stratum × language), splitting rural and urban by the
+     downscaled split of each language in each county, and matching the
+     voivodeship by stratum.
+
+  The census variant therefore keeps its voivodeship totals, and the county
+  table decides where the speakers live. Under the religion-corrected
+  variant, a county with many Greek Catholics declaring Polish keeps more
+  Ukrainian speakers than its printed figure.
+* **Grade B** (19: Lublin, part of Polesie). The county population is
+  known. Its languages come from the downscaled pattern.
+* **Grade C** (153: centre, west, Lithuania). Fully downscaled from the
+  voivodeship.
+
+Seats come from the table (`lat`/`lon`). Fertility, mortality and literacy
+parameters are inherited from the voivodeship.
+
+**Income.** A county's income index uses the voivodeship's urban and rural
+incomes per head, weighted by the county's own urban share:
+`y_c = y_v (U_c r + 1 - U_c) / (U_v r + 1 - U_v)`, with r the urban/rural
+income ratio of 1931 (2.2). A city county is therefore richer than the
+rural counties around it, and the counties average to the voivodeship.
+Without this, a city county would get the voivodeship's mean income. Its
+urban incomes would then be too low and its rural neighbours' too high,
+and mortality, fertility and migration push would all be wrong.
+
+**What changes in the yearly loop.**
+
+* **Language.** Shift runs on each county's own mix. A Ukrainian minority
+  concentrated in a few counties is a local majority there.
+* **Concentration.** The voivodeship model already allows for clustering.
+  A minority's speakers experience a local share of their own language
+  k_L times the regional share (§6.2, *Enclaves*: Lithuanian 4,
+  Kashubian 2.5, Lemko 20, Ukrainian 1.25 ...). Counties resolve part of
+  that clustering, so applying the full k_L again would count it twice.
+  * **Rescaling.** For each split voivodeship, k_L is divided by the
+    speakers' clustering across its counties in 1931: the mean county share
+    of L that L speakers live in, over the voivodeship share (an isolation
+    index ratio).
+  * **Examples.** Lithuanians in wileńskie cluster 4.0× (k falls from 4 to
+    1), Lemkos in lwowskie 5.9× (20 → 3.4), Kashubians in Pomorze 2.5×
+    (2.5 → 1), Belarusians in wileńskie 1.9× (1.4 → 1), Ukrainians in
+    lwowskie 1.6× (1.25 → 1).
+  * **Floor.** k never falls below 1.
+* **Travel times.** Regions without a modelled town reach the network
+  through the nearest town, at a speed that rises from 22 km/h (1931) to
+  70 km/h (2030), with a detour factor of 1.3
+  (`Network.region_access_hours`).
+* **Market access.** A county without a town gets the access of its nearest
+  town, discounted by that travel time.
+* **Migration** is nested (see `plsim/migration.py`), because its
+  parameters were calibrated on voivodeships. A *unit* is the part of a
+  1931 voivodeship that lies inside one federal member.
+  * Urbanisation runs per unit. The unit's rural migrants are routed to the
+    towns of all its counties, by urban mass and travel time. Without this,
+    every rural county would grow its own small towns, and the large cities
+    would stop growing.
+  * In inter-regional migration, a unit draws migrants with the
+    voivodeship's mass. Its counties share that pull by their own
+    attractiveness, and moves inside a unit are not counted as
+    inter-regional.
+  * Settlement weights given for a voivodeship are shared among its
+    counties by rural population.
+
+  Splitting a voivodeship therefore moves migrants between its counties
+  without changing how many it sends or draws (tested: a split run stays
+  within 0.4 % of the unsplit one by 1945; without nesting it is up to
+  1.5 % off). The nesting also applies to named splits that stay inside one
+  member, e.g. both halves of lwowskie in the Ukrainian autonomy.
+
+* **Random numbers.** Regional noise (life expectancy, phase-III
+  fertility) is drawn per 1931 voivodeship and shared by its counties. A
+  county run therefore sees the same shocks as the voivodeship run with the
+  same seed.
+
+**Results (baseline, seeded run, 2032).**
+
+* **Consistency.** The county run is a consistent breakdown of the
+  voivodeship model:
+
+  | | Voivodeship run | County run |
+  |---|---|---|
+  | Population | 48.25 M | 48.15 M |
+  | Urban share | 66.1 % | 66.2 % |
+  | Ukrainian speakers | 8.17 M | 8.20 M |
+  | Belarusian speakers | 1.39 M | 1.40 M |
+  | Lithuanian speakers | 2.10 M | 2.09 M |
+  | West Polesian speakers | 0.95 M | 0.92 M |
+
+  Every voivodeship's 2032 language shares are within about a point of the
+  voivodeship run.
+* **Populations.** Most voivodeship totals are within ±5 %. Two differ
+  more. Pomorze is 10 % smaller, because migrants' travel times are now
+  measured to each county (Gdynia included) rather than to Toruń, and the
+  Kashubian counties draw fewer Polish speakers. Klaipėda is 13 % larger.
+* **What the county level adds is *where*.** The plurality language
+  changes in 34 of 269 counties:
+  * the Belarusian blocks of eastern wileńskie (Głębokie, Mołodeczno,
+    Wilejka) and of Nowogródek (Nieśwież, Nowogródek, Słonim) turn
+    Polish-plurality;
+  * all nine Polesie counties move from West Polesian to Polish;
+  * Kartuzy, Kościerzyna and Wejherowo lose their Kashubian plurality;
+  * nine Lwów counties and six Tarnopol counties turn from Ukrainian to
+    Polish plurality.
+
+  Volhynia and the core of Stanisławów stay Ukrainian (Łuck 60 → 65 %).
+  The cities draw the rural surplus of their voivodeship: Lwów county
+  grows from 460 k to 829 k, Wilno from 415 k to 782 k, and Brześć from
+  227 k to 1.03 M.
+* **Cost.** A run takes about 4 minutes, against 25 s for the voivodeship
+  model.
+
+A first county run, before any of this nesting, gave 48.6 M people. In
+it, Warsaw grew only 1.06× instead of 2.4×, because every rural county
+grew its own towns. Ukrainian came out 200 k higher. Different random
+numbers and double-counted clustering both contributed: the concentration
+rescaling alone removes about 30 k Belarusian speakers.
+
+### 12.7 What the maps cannot show
 
 * Towns use their region's urban mix, tilted by the hinterland. Strongly
   Jewish shtetls (Pińsk, Brody) therefore appear more mixed than they were.

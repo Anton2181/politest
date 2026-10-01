@@ -285,6 +285,35 @@ def deep_merge(base: dict, over: dict) -> dict:
     return out
 
 
+REGION_KEYED = [("dominant_language",), ("members",), ("language", "status_regions"),
+                ("language", "own_schooling_regions"), ("language", "pressure"),
+                ("economy", "regional_programmes"), ("migration", "settlement", "origins"),
+                ("migration", "settlement", "destinations")]
+
+
+def expand_region_groups(params: dict) -> dict:
+    """``region_groups`` names sets of regions (e.g. a canton made of counties);
+    a setting keyed by a group name applies to each member as if keyed by
+    its own code."""
+    groups = params.get("region_groups") or {}
+    if not groups:
+        return params
+    for path in REGION_KEYED:
+        d = params
+        for k in path:
+            d = d.get(k) if isinstance(d, dict) else None
+            if d is None:
+                break
+        if not isinstance(d, dict):
+            continue
+        for g, members in groups.items():
+            if g in d:
+                val = d.pop(g)
+                for m in members:
+                    d.setdefault(m, copy.deepcopy(val))
+    return params
+
+
 def load_scenario(path_or_name: str | None) -> dict:
     """Load a scenario YAML (path, or a name in scenarios/) merged over DEFAULTS.
     A scenario may name a parent via ``extends:``."""
@@ -299,7 +328,7 @@ def load_scenario(path_or_name: str | None) -> dict:
         over = yaml.safe_load(fh) or {}
     parent = over.pop("extends", None)
     base = load_scenario(parent) if parent else copy.deepcopy(DEFAULTS)
-    return deep_merge(base, over)
+    return expand_region_groups(deep_merge(base, over))
 
 
 def set_path(d: dict, path: str, value) -> None:

@@ -76,10 +76,12 @@ class Canvas:
         return img
 
     def _borders(self):
-        region = self.g.region.copy()
         codes = list(self.g.region_codes)
-        if "WAW" in codes and "WAR" in codes:          # the city region is drawn as part of its voivodeship
-            region[region == codes.index("WAW")] = codes.index("WAR")
+        parents = list(dict.fromkeys(c.split(".")[0] for c in codes))     # counties draw as their voivodeship
+        pidx = np.array([parents.index(c.split(".")[0]) for c in codes])
+        region = pidx[self.g.region]
+        if "WAW" in parents and "WAR" in parents:      # the city region is drawn as part of its voivodeship
+            region[region == parents.index("WAW")] = parents.index("WAR")
         reg = self.raster(region.astype(float), fill=-1)
         dl, dt = self.g.dlon, self.g.dlat
         x0, y0 = BBOX[0], BBOX[1]

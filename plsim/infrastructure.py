@@ -518,9 +518,33 @@ class Network:
         return [(self.eu[e], self.ev[e], self.emode[e], self.ecls[e]) for e in range(len(self.eu)) if self.eactive[e]]
 
     def region_capital_nodes(self) -> np.ndarray:
+        """Largest town of each region; a region without a modelled town
+        (a small county) uses the nearest domestic town."""
         R = len(self.region_codes)
         caps = np.zeros(R, dtype=int)
+        seats = self.p.get("region_seats")
+        dom = np.where(~self.foreign)[0]
         for r in range(R):
             idx = np.where(self.region == r)[0]
-            caps[r] = idx[np.argmax(self.base_pop[idx])]
+            if len(idx):
+                caps[r] = idx[np.argmax(self.base_pop[idx])]
+            else:
+                la, lo = seats[r]
+                caps[r] = dom[np.argmin(haversine(self.lat[dom], self.lon[dom], la, lo))]
         return caps
+
+    def region_access_hours(self, year: int) -> np.ndarray:
+        """Road time from the seat of a region without its own town to the
+        town it uses (zero for regions with towns)."""
+        R = len(self.region_codes)
+        seats = self.p.get("region_seats")
+        out = np.zeros(R)
+        if seats is None:
+            return out
+        caps = self.region_capital_nodes()
+        speed = piecewise(year, [[1931, 22.0], [1960, 40.0], [1990, 60.0], [2030, 70.0]])
+        for r in range(R):
+            if not (self.region == r).any():
+                la, lo = seats[r]
+                out[r] = haversine(self.lat[caps[r]], self.lon[caps[r]], la, lo) * 1.3 / speed
+        return out

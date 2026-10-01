@@ -26,6 +26,11 @@ SCENARIO_NOTES = {
     "lt_polish_claim": "Baseline with the 1923 Polish estimate of Poles in Lithuania",
     "finnish_path": "Fast convergence, bigger infrastructure budgets",
     "stagnation": "Low convergence, 1939 plans shelved, heavy emigration",
+    "ukraine_autonomy_tricantonal": "Ukrainian autonomy (Lwów, Tarnopol, Stanisławów, Volhynia) and a Grand Duchy of "
+                                    "Lithuanian, Polish and Belarusian cantons east of the Curzon line",
+    "ukraine_autonomy_tricantonal_rc": "The same, from the religion-corrected 1931 start",
+    "baseline_counties": "The baseline on 269 counties, started from the 1931 county tables in the east",
+    "ukraine_autonomy_tricantonal_counties": "The autonomy and cantons on 269 counties",
 }
 
 CSS = """

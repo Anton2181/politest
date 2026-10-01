@@ -148,7 +148,7 @@ ANCHORS: list[Anchor] = [
     Anchor("POL", "Kamień Koszyrski", 51.62, 24.96, {"pls": .78, "uk": .087}, "A"),
     # Nowogródek
     Anchor("NOW", "Nowogródek", 53.60, 25.82, {"be": .37}), Anchor("NOW", "Lida", 53.89, 25.30, {"be": .112}, "A"),
-    Anchor("NOW", "Szczuczyn", 53.60, 24.75, {"be": .002}, "A"), Anchor("NOW", "Wołożyn", 54.09, 26.53, {"be": .45}),
+    Anchor("NOW", "Szczuczyn", 53.60, 24.75, {"be": .099}, "B"), Anchor("NOW", "Wołożyn", 54.09, 26.53, {"be": .45}),
     Anchor("NOW", "Stołpce", 53.48, 26.73, {"be": .55}), Anchor("NOW", "Nieśwież", 53.22, 26.67, {"be": .674}, "A"),
     Anchor("NOW", "Baranowicze", 53.13, 26.01, {"be": .439}, "A"), Anchor("NOW", "Słonim", 53.09, 25.32, {"be": .35}),
     # Wilno
@@ -292,7 +292,8 @@ def build_grid(region_codes: list[str], dlat: float = CELL_DLAT, dlon: float = C
             if pc in idx:
                 region[m] = idx[pc]
             else:
-                region[m] = [idx[k] for k in assign(pc, base.lat[m], base.lon[m])]
+                kids = [c for c in region_codes if c.split(".")[0] == pc]
+                region[m] = [idx[k] for k in assign(pc, base.lat[m], base.lon[m], kids)]
         return replace(base, region=region, region_codes=list(region_codes))
     lats = np.arange(BBOX[1] + dlat / 2, BBOX[3], dlat)
     lons = np.arange(BBOX[0] + dlon / 2, BBOX[2], dlon)
