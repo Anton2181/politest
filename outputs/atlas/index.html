@@ -671,9 +671,9 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
         let bytes;
         if (name === META.scenarios[0].name) bytes = b64bytes(BASELINE);
         else {
-          const r = await fetch(`data/${name}.bin`);
-          if (!r.ok) throw new Error(`data/${name}.bin answered ${r.status}`);
-          bytes = new Uint8Array(await r.arrayBuffer());
+          const r = await fetch(`data/${name}.txt`);
+          if (!r.ok) throw new Error(`data/${name}.txt answered ${r.status}`);
+          bytes = b64bytes((await r.text()).trim());
         }
         store[name] = unpack(await gunzip(bytes));
       } catch (e) {

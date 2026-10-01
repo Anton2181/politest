@@ -1,6 +1,8 @@
 """Data export for the interactive atlas (``outputs/atlas``).
 
-Each scenario becomes one gzip-compressed binary file of quantised frames:
+Each scenario becomes one file, ``data/<scenario>.txt``, holding the base64
+text of gzip-compressed quantised frames (base64 because artifact hosting
+serves text but not arbitrary binary):
 
 * ``shares``: (F, N, 8) uint8, the share x 255 of the first eight map
   categories (``maps.CATS``); "other" is the remainder;
@@ -113,9 +115,9 @@ def legend_payload() -> list:
 
 def write_data(outdir: str, name: str, blob: bytes) -> str:
     os.makedirs(os.path.join(outdir, "data"), exist_ok=True)
-    path = os.path.join(outdir, "data", f"{name}.bin")
-    with open(path, "wb") as fh:
-        fh.write(blob)
+    path = os.path.join(outdir, "data", f"{name}.txt")
+    with open(path, "w", encoding="ascii") as fh:
+        fh.write(base64.b64encode(blob).decode())
     return path
 
 
@@ -128,8 +130,8 @@ def build_atlas(atlasdir: str) -> list[str]:
     baseline frames (embedded so the first view needs no fetch)."""
     with open(os.path.join(atlasdir, "scenarios.json"), encoding="utf-8") as fh:
         entries = json.load(fh)
-    with open(os.path.join(atlasdir, "data", "baseline.bin"), "rb") as fh:
-        base_b64 = base64.b64encode(fh.read()).decode()
+    with open(os.path.join(atlasdir, "data", "baseline.txt"), encoding="ascii") as fh:
+        base_b64 = fh.read().strip()
     full = full_grid()
     meta = {"frames": FRAMES, "densScale": DENS_SCALE, "cats": legend_payload(), "grid": grid_payload(full),
             "geo": geo_payload(), "scenarios": entries}
