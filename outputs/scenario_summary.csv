@@ -1,6 +1,6 @@
 scenario,pop_pl_units_M,pop_lt_units_M,polish_pct,ukrainian_pct,yiddish_pct,belarusian_pct,lithuanian_pct,west_polesian_k,kashubian_k,gdp_per_head_1990gk,electrified_plus_hsr_km,expressway_plus_motorway_km
 baseline,46.2,2.07,67.5,16.9,3.9,2.9,4.4,950,116,17161,12039,14241
-baseline_counties,46.1,2.06,67.4,17.0,3.9,2.9,4.3,923,116,17161,11257,22335
+baseline_counties,46.1,2.06,67.4,17.0,3.9,2.9,4.3,923,116,17161,11202,22420
 census_religion_corrected,46.2,2.08,64.9,18.5,3.9,3.9,4.3,951,116,17161,12206,14322
 census_vernacular,46.3,2.06,64.2,19.0,3.9,4.2,4.2,951,116,17161,12111,14314
 federal_autonomy,46.2,2.08,62.6,18.2,4.6,4.2,4.4,1570,152,17161,12076,14365
@@ -11,7 +11,7 @@ integral_nationalism,45.7,2.05,71.5,15.7,3.2,2.1,4.3,547,82,17161,11838,13888
 lt_polish_claim,46.2,2.06,67.7,16.9,3.9,2.9,4.2,950,116,17161,11944,14150
 polonizing_union,46.1,2.12,67.9,16.9,3.9,2.9,3.9,949,116,17161,12039,14225
 stagnation,39.0,1.85,65.7,17.2,4.4,3.1,4.6,1006,109,12578,10868,8222
-ukraine_autonomy_tricantonal,45.7,2.18,59.4,18.2,4.5,7.9,4.4,1339,134,17161,11740,15099
-ukraine_autonomy_tricantonal_counties,45.6,2.17,59.5,18.3,4.5,7.8,4.4,1328,134,17161,11478,22675
-ukraine_autonomy_tricantonal_rc,45.7,2.18,56.0,19.9,4.5,9.6,4.4,1341,134,17161,11740,15011
+ukraine_autonomy_tricantonal,45.7,2.18,59.5,18.2,4.5,7.9,4.4,1339,134,17161,12193,14992
+ukraine_autonomy_tricantonal_counties,45.6,2.17,59.5,18.3,4.5,7.8,4.4,1329,134,17161,11453,22666
+ukraine_autonomy_tricantonal_rc,45.7,2.18,56.0,19.9,4.5,9.6,4.4,1341,134,17161,12270,15113
 wilno_lithuanian,46.2,2.06,67.0,16.9,3.9,2.9,4.7,952,116,17161,12039,14316

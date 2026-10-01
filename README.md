@@ -244,9 +244,9 @@ are in `docs/METHODOLOGY.md` §12.6.
 | census_vernacular | 46.3 | 64.2 | 19.0 | 3.9 | 4.2 | 4.2 | 951 |
 | finnish_path | 49.1 | 67.8 | 16.4 | 3.8 | 2.7 | 4.3 | 915 |
 | stagnation | 39.0 | 65.7 | 17.2 | 4.4 | 3.1 | 4.6 | 1,006 |
-| ukraine_autonomy_tricantonal | 45.7 | 59.4 | 18.2 | 4.5 | 7.9 | 4.4 | 1,339 |
+| ukraine_autonomy_tricantonal | 45.7 | 59.5 | 18.2 | 4.5 | 7.9 | 4.4 | 1,339 |
 | ukraine_autonomy_tricantonal_rc | 45.7 | 56.0 | 19.9 | 4.5 | 9.6 | 4.4 | 1,341 |
-| ukraine_autonomy_tricantonal_counties | 45.6 | 59.5 | 18.3 | 4.5 | 7.8 | 4.4 | 1,328 |
+| ukraine_autonomy_tricantonal_counties | 45.6 | 59.5 | 18.3 | 4.5 | 7.8 | 4.4 | 1,329 |
 
 Polish-speakers in the Lithuanian units in 2032:
 
