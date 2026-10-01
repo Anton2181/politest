@@ -33,7 +33,7 @@ python -m plsim census                  # 1931 census-reconstruction consistency
 python -m plsim ensemble baseline -n 32 # Monte-Carlo ensemble -> outputs/ensemble_baseline/*.csv
 python -m plsim report -n 32            # all scenarios + ensembles + figures + outputs/report.html
 python -m plsim maps                    # 7 km maps, GIF animations and the interactive atlas (outputs/atlas/)
-python -m plsim run baseline_counties   # the baseline on 269 counties (about 4 minutes)
+python -m plsim run baseline_counties   # the baseline on the 1931 counties (about 4 minutes)
 pytest -q                               # 67 tests
 ```
 
@@ -132,12 +132,13 @@ plus 6 Lithuanian units.
 
 ## Maps: language shift and population on a 7 km grid
 
-`python -m plsim maps` downscales every scenario to 9,148 cells of about
+`python -m plsim maps` downscales every scenario to 9,383 cells of about
 7 x 7 km and draws the result:
 
 * **Interactive atlas**: `outputs/atlas/index.html`. It has a time slider,
-  15 scenarios (two of them at county level), and four layers: plurality language, one language
-  (optionally as change since 1932), density and growth. It overlays the
+  15 scenarios (two of them at county level), and four layers: plurality
+  language, one language (optionally as change since 1932), density and
+  growth. It overlays the
   railway and road network as it grows, with km by class and the latest
   openings, and dashes the borders between federal members (cantons,
   autonomies). It also reads out any cell.
@@ -146,6 +147,11 @@ plus 6 Lithuanian units.
 
 How it works (details in `docs/METHODOLOGY.md` §12):
 
+* **Territory.** The state borders are those of 1 January 1932, from
+  CShapes 2.0 (Schvitz et al. 2022). Maps clip the cells to them, so the
+  border is drawn as a line rather than in 7 km steps. Voivodeship borders
+  inside are approximations (weighted Voronoi of the towns, calibrated to
+  the official areas).
 * **1932.** County anchors from the 1931 census, 25 of them county figures,
   the rest graded estimates, shape each voivodeship's languages inside its
   borders. Iterative proportional fitting keeps the regional totals exact.
@@ -164,10 +170,10 @@ Baseline, area where each language leads (thousand km²):
 
 | | Polish | Ukrainian | Lithuanian | Belarusian | West Polesian | Kashubian/Lemko |
 |---|---|---|---|---|---|---|
-| 1932 | 248 | 72 | 55 | 17 | 34 | 3 |
-| 2032 | 310 | 65 | 56 | 1 | 0 | 0 |
-| 1932, county run | 243 | 71 | 55 | 22 | 34 | 3 |
-| 2032, county run | 311 | 62 | 56 | 2 | 0 | 0 |
+| 1932 | 255 | 75 | 55 | 17 | 35 | 4 |
+| 2032 | 319 | 67 | 56 | 1 | 0 | 0 |
+| 1932, county run | 251 | 74 | 55 | 21 | 35 | 4 |
+| 2032, county run | 320 | 65 | 56 | 2 | 0 | 0 |
 
 * **Ukrainian** holds its Volhynian and Pokuttya core. It retreats from the
   San and the Lwów hinterland.
@@ -183,9 +189,10 @@ Baseline, area where each language leads (thousand km²):
 
 ## County level (powiaty)
 
-`partition: counties` runs the model on 269 counties instead of 23
+`partition: counties` runs the model on 270 regions instead of 23
 voivodeships. These are the 1931 powiaty and the Lithuanian apskritys,
-with Warsaw and Kaunas cities whole. Two scenarios use it:
+with Warsaw and Kaunas cities whole. One county, Węgrów, wins no cell on
+the approximate voivodeship map and is merged into its neighbours. Two scenarios use it:
 `baseline_counties` and `ukraine_autonomy_tricantonal_counties`. Details
 are in `docs/METHODOLOGY.md` §12.6.
 
@@ -285,7 +292,8 @@ plsim/
   ensemble.py            Monte-Carlo parameter sampling and summaries
   validate.py            1932-39 back-validation and plausibility checks
   report.py, export.py   figures, CSVs, HTML report
-  data/geography.py      7 km grid, territory mask, county language anchors (1931)
+  data/geography.py      7 km grid, 1932 state borders, county language anchors (1931)
+  data/borders_1932.json Poland and Lithuania on 1 Jan 1932 (CShapes 2.0)
   data/subregions.py     county-line splits of voivodeships (Curzon line, cantons, the San)
   data/counties.py       269 counties (1931 powiaty, 1923 apskritys) with graded census rows
   partition.py           1931 population of sub-regions and counties, via the grid

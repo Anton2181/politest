@@ -17,9 +17,10 @@ import numpy as np  # noqa: E402
 from matplotlib import animation  # noqa: E402
 from matplotlib.collections import LineCollection  # noqa: E402
 from matplotlib.colors import LinearSegmentedColormap, LogNorm, TwoSlopeNorm  # noqa: E402
-from matplotlib.patches import Patch, Polygon  # noqa: E402
+from matplotlib.patches import Patch, PathPatch, Polygon  # noqa: E402
+from matplotlib.path import Path  # noqa: E402
 
-from .data.geography import BBOX, load_base_geography  # noqa: E402
+from .data.geography import BBOX, load_base_geography, load_borders  # noqa: E402
 from .data.languages import LANG_INDEX  # noqa: E402
 from .report import INK, INK2, MUTED, OTHER, SLOTS, SURFACE, _save  # noqa: E402
 
@@ -67,12 +68,31 @@ class Canvas:
         self.geo = load_base_geography()
         self.xlim = XLIM
         self.ylim = YLIM
-        self.borders, self.outline = self._borders()
+        # state borders (CShapes, 1932): Poland, plus Lithuania when the grid has it
+        b = load_borders()
+        self.with_lt = any(c.startswith("LT") for c in grid.region_codes)
+        rings = [r[0] for st in (["PL", "LT"] if self.with_lt else ["PL"]) for r in b[st]]
+        self.clip = Path.make_compound_path(*[Path(np.array(r), closed=True) for r in rings])
+        self.outline = b["outline"] if self.with_lt else rings
+        self.borders = self._borders() + (b["PL_LT"] if self.with_lt else [])
 
-    def raster(self, values: np.ndarray, fill=np.nan) -> np.ndarray:
+    def raster(self, values: np.ndarray, fill=np.nan, dilate: bool = True) -> np.ndarray:
+        """Grid values as an image.  With ``dilate``, empty pixels next to the
+        territory take a neighbour's value, so that the image clipped to the
+        state border (``show``) has no gaps where a cell's centre lies just
+        outside it."""
         values = np.asarray(values)
         img = np.full((self.H, self.W) + values.shape[1:], fill, dtype=float)
         img[self.row, self.col] = values
+        if dilate:
+            done = np.zeros((self.H, self.W), dtype=bool)
+            done[self.row, self.col] = True
+            filled = done.copy()
+            src = img.copy()
+            for dr, dc in ((0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)):
+                take = np.roll(filled, (dr, dc), axis=(0, 1)) & ~done
+                img[take] = np.roll(src, (dr, dc), axis=(0, 1))[take]
+                done |= take
         return img
 
     def _borders(self):
@@ -82,20 +102,22 @@ class Canvas:
         region = pidx[self.g.region]
         if "WAW" in parents and "WAR" in parents:      # the city region is drawn as part of its voivodeship
             region[region == parents.index("WAW")] = parents.index("WAR")
-        reg = self.raster(region.astype(float), fill=-1)
+        reg = self.raster(region.astype(float), fill=-1, dilate=False)
+        lt = np.array([p.startswith("LT") for p in parents])
         dl, dt = self.g.dlon, self.g.dlat
         x0, y0 = BBOX[0], BBOX[1]
-        inner, outer = [], []
+        inner = []
+
+        def internal(a, b):     # a border between two regions of the same state
+            return min(a, b) >= 0 and a != b and lt[int(a)] == lt[int(b)]
         for r in range(self.H):
             for c in range(self.W):
                 a = reg[r, c]
-                if c + 1 < self.W and a != reg[r, c + 1] and max(a, reg[r, c + 1]) >= 0:
-                    seg = [(x0 + (c + 1) * dl, y0 + r * dt), (x0 + (c + 1) * dl, y0 + (r + 1) * dt)]
-                    (inner if min(a, reg[r, c + 1]) >= 0 else outer).append(seg)
-                if r + 1 < self.H and a != reg[r + 1, c] and max(a, reg[r + 1, c]) >= 0:
-                    seg = [(x0 + c * dl, y0 + (r + 1) * dt), (x0 + (c + 1) * dl, y0 + (r + 1) * dt)]
-                    (inner if min(a, reg[r + 1, c]) >= 0 else outer).append(seg)
-        return inner, outer
+                if c + 1 < self.W and internal(a, reg[r, c + 1]):
+                    inner.append([(x0 + (c + 1) * dl, y0 + r * dt), (x0 + (c + 1) * dl, y0 + (r + 1) * dt)])
+                if r + 1 < self.H and internal(a, reg[r + 1, c]):
+                    inner.append([(x0 + c * dl, y0 + (r + 1) * dt), (x0 + (c + 1) * dl, y0 + (r + 1) * dt)])
+        return inner
 
     def base(self, ax, title: str = ""):
         ax.set_facecolor(SEA)
@@ -132,6 +154,7 @@ class Canvas:
     def show(self, ax, rgba: np.ndarray, **kw):
         im = ax.imshow(rgba, origin="lower", extent=self.extent, interpolation="nearest", zorder=2,
                        aspect=1 / np.cos(np.radians(LAT0)), **kw)
+        im.set_clip_path(PathPatch(self.clip, transform=ax.transData))
         ax.set_xlim(*self.xlim)
         ax.set_ylim(*self.ylim)
         return im

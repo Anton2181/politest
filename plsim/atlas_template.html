@@ -215,7 +215,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     <div>
       <h2>How the maps are made</h2>
       <ul>
-        <li>Each scenario is a cohort-component projection for 23 regions: the 17 Polish voivodeships of 1931 and 6 Lithuanian units, split rural/urban, with 43 community–language groups. The maps place those regional numbers on 9,148 cells of about 7 × 7 km, so every region always adds up to the model.</li>
+        <li>Each scenario is a cohort-component projection for 23 regions: the 17 Polish voivodeships of 1931 and 6 Lithuanian units, split rural/urban, with 43 community–language groups. The maps place those regional numbers on 9,383 cells of about 7 × 7 km, so every region always adds up to the model.</li>
         <li><strong>1932.</strong> County language shares from the 1931 Polish census (and estimates where the census was silent, such as Kashubian, Lemko and the Lauda gentry) are interpolated inside each voivodeship and fitted to its totals by iterative proportional fitting.</li>
         <li><strong>Each year.</strong> The region's net language shift is placed where speakers of the gaining language live nearby. Following Prochazka &amp; Vogl, the chance to shift grows with the gaining language's share in a Gaussian neighbourhood (10 km), plus a constant part for school, church and state. Towns reach further into their hinterland as they grow.</li>
         <li><strong>Population.</strong> Towns follow the transport-network model. Rural cells near growing towns gain a little each year; remote ones lose, which produces suburban rings and rural exodus.</li>
@@ -228,7 +228,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
       <h2>Reading with care</h2>
       <ul>
         <li>The maps show the modelled home language, not what a census would print. The 1931 census counted many Belarusian, Ukrainian and Polesian speakers as Polish or "local". The two "1931 start" scenarios begin from alternative reconstructions.</li>
-        <li>Internal borders are approximations (a weighted Voronoi of county towns). A 7 km cell averages over several villages, so a single Lauda manor or the Karaim quarter of Troki is below the grid's resolution.</li>
+        <li>The state borders are those of 1 January 1932 (CShapes 2.0). Internal borders are approximations (a weighted Voronoi of county towns). A 7 km cell averages over several villages, so a single Lauda manor or the Karaim quarter of Troki is below the grid's resolution.</li>
         <li>Towns take their region's urban language mix, tilted toward their hinterland. Shtetls with Jewish majorities, such as Pińsk or Brody, therefore look more mixed than they were.</li>
         <li>Paler colours in the language layer mean the leading language has a thin plurality, below about half of residents.</li>
       </ul>
@@ -244,6 +244,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
         <li>Burridge J. (2017). Spatial evolution of human dialects. Phys. Rev. X 7: 031008.</li>
         <li>Trudgill P. (1974). Linguistic change and diffusion. Language in Society 3: 215–246.</li>
         <li>Lovelace R., Dumont M. (2016). Spatial Microsimulation with R. CRC Press.</li>
+        <li>Schvitz G., Girardin L., Rüegger S., Weidmann N. B., Cederman L.-E., Gleditsch K. S. (2022). Mapping the international system, 1886–2019: the CShapes 2.0 dataset. J. Conflict Resolution 66: 144–161.</li>
       </ol>
     </div>
   </section>
@@ -392,6 +393,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   rcan.width = W; rcan.height = H;
   const rctx = rcan.getContext("2d");
   const img = rctx.createImageData(W, H);
+  const src = new Uint8ClampedArray(W * H * 4), NB = [0, 1, 0, -1, 1, 0, -1, 0, 1, 1, 1, -1, -1, 1, -1, -1];
   function paintRaster() {
     const d = img.data;
     d.fill(0);
@@ -431,11 +433,26 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
       const p = ((H - 1 - ROW[i]) * W + COL[i]) * 4;
       d[p] = c[0]; d[p + 1] = c[1]; d[p + 2] = c[2]; d[p + 3] = 255;
     }
+    // spread one pixel into empty neighbours; the image is clipped to the 1932 border,
+    // so cells whose centre lies just outside it leave no gaps
+    src.set(d);
+    for (let r = 0; r < H; r++) {
+      for (let c = 0; c < W; c++) {
+        const p = (r * W + c) * 4;
+        if (src[p + 3]) continue;
+        for (let k = 0; k < 16; k += 2) {
+          const rr = r + NB[k], cc = c + NB[k + 1];
+          if (rr < 0 || cc < 0 || rr >= H || cc >= W) continue;
+          const q = (rr * W + cc) * 4;
+          if (src[q + 3]) { d[p] = src[q]; d[p + 1] = src[q + 1]; d[p + 2] = src[q + 2]; d[p + 3] = 255; break; }
+        }
+      }
+    }
     rctx.putImageData(img, 0, 0);
   }
 
   // ---------------------------------------------------------------- vector layers
-  let baseLayer = null, topLayer = null, segInner = [], segOuter = [], segMember = [], segCounty = [];
+  let baseLayer = null, topLayer = null, clipPath = null, segInner = [], segMember = [], segCounty = [];
   function computeBorders() {
     // region, member and state borders from the raster, for this scenario's coverage
     const sc = scen(), codes = sc.geo.codes;
@@ -449,11 +466,13 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     const mem = (k) => sc._member[k];
     // Warsaw city belongs with its voivodeship (its counties at county level)
     const par = codes.map((c) => (c === "WAW" ? "WAR" : c.split(".")[0]));
-    segInner = []; segOuter = []; segMember = []; segCounty = [];
+    const isLT = codes.map((c) => c.startsWith("LT"));
+    sc._hasLT = isLT.some(Boolean);
+    segInner = []; segMember = []; segCounty = [];
+    // the outer border and the Polish-Lithuanian border are drawn from the 1932 polylines
     const push = (a, b, seg) => {
-      if (a === b || Math.max(a, b) < 0) return;
-      if (Math.min(a, b) < 0) segOuter.push(seg);
-      else if (mem(a) !== mem(b)) segMember.push(seg);
+      if (a === b || Math.min(a, b) < 0 || isLT[a] !== isLT[b]) return;
+      if (mem(a) !== mem(b)) segMember.push(seg);
       else if (par[a] === par[b] && (codes[a].includes(".") || codes[b].includes("."))) segCounty.push(seg);
       else segInner.push(seg);
     };
@@ -470,6 +489,29 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
         }
       }
     }
+    if (!sc._hasLT) return;
+    // Polish-Lithuanian border: dashed where the regions on either side are in different members
+    const at = (lat, lon) => {
+      const r = Math.floor((lat - BB[1]) / G.dlat), c = Math.floor((lon - BB[0]) / G.dlon);
+      return r < 0 || c < 0 || r >= H || c >= W ? -1 : reg[r * W + c];
+    };
+    const side = (lat, lon, nx, ny, sgn) => {
+      for (const d of [0.04, 0.08, 0.12, 0.18]) {
+        const k = at(lat + sgn * ny * d, lon + sgn * nx * d);
+        if (k >= 0) return k;
+      }
+      return -1;
+    };
+    META.geo.states.plLt.forEach((ln) => {
+      for (let j = 0; j + 1 < ln.length; j++) {
+        const [x0, y0] = ln[j], [x1, y1] = ln[j + 1];
+        const kx = Math.cos(((y0 + y1) / 2) * Math.PI / 180), dx = (x1 - x0) * kx, dy = y1 - y0, L = Math.hypot(dx, dy);
+        if (!L) continue;
+        const nx = -dy / L / kx, ny = dx / L, mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+        const a = side(my, mx, nx, ny, 1), b = side(my, mx, nx, ny, -1);
+        (a >= 0 && b >= 0 && mem(a) !== mem(b) ? segMember : segInner).push([x0, y0, x1, y1]);
+      }
+    });
   }
   function layer() {
     const c = document.createElement("canvas");
@@ -504,9 +546,15 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     x.strokeStyle = T.rline; x.lineWidth = 0.6; x.beginPath();
     segInner.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
     x.stroke();
-    x.strokeStyle = T.line; x.lineWidth = 1.1; x.beginPath();
-    segOuter.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
-    x.stroke();
+    // state border, 1 January 1932 (CShapes 2.0)
+    const st = META.geo.states, hasLT = !!scen()._hasLT;
+    x.strokeStyle = T.line; x.lineWidth = 1.1;
+    (hasLT ? st.outline : st.PL).forEach((p) => { polyPath(x, p, !hasLT); x.stroke(); });
+    clipPath = new Path2D();
+    (hasLT ? st.PL.concat(st.LT) : st.PL).forEach((p) => {
+      p.forEach((q, k) => (k ? clipPath.lineTo(px(q[0]), py(q[1])) : clipPath.moveTo(px(q[0]), py(q[1]))));
+      clipPath.closePath();
+    });
     x.strokeStyle = T.halo; x.lineWidth = 3.2; x.beginPath();
     segMember.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
     x.stroke();
@@ -608,6 +656,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
     if (state.rail || state.road) ctx.globalAlpha = 0.6;
     const x0 = px(BB[0]), x1 = px(BB[0] + W * G.dlon), y0 = py(BB[1] + H * G.dlat), y1 = py(BB[1]);
+    if (clipPath) ctx.clip(clipPath);
     ctx.drawImage(rcan, 0, 0, W, H, x0, y0, x1 - x0, y1 - y0);
     ctx.restore();
     ctx.drawImage(topLayer, 0, 0);

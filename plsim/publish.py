@@ -29,8 +29,8 @@ SCENARIO_NOTES = {
     "ukraine_autonomy_tricantonal": "Ukrainian autonomy (Lwów, Tarnopol, Stanisławów, Volhynia) and a Grand Duchy of "
                                     "Lithuanian, Polish and Belarusian cantons east of the Curzon line",
     "ukraine_autonomy_tricantonal_rc": "The same, from the religion-corrected 1931 start",
-    "baseline_counties": "The baseline on 269 counties, started from the 1931 county tables in the east",
-    "ukraine_autonomy_tricantonal_counties": "The autonomy and cantons on 269 counties",
+    "baseline_counties": "The baseline on the 1931 counties, started from the county tables in the east",
+    "ukraine_autonomy_tricantonal_counties": "The autonomy and cantons on the 1931 counties",
 }
 
 CSS = """

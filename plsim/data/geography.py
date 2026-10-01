@@ -3,21 +3,19 @@ anchors used to place each language inside its voivodeship.
 
 Territory
 ---------
-No digital boundary layer of the interwar state was reachable, so the
-territory is reconstructed as follows. A regular grid of 0.0625° x 0.1° cells
-(about 7 x 7 km) is laid over the area. A cell belongs to the state when:
+A regular grid of 0.0625° x 0.1° cells (about 7 x 7 km) is laid over the
+area. A cell belongs to the state when its centre lies on land (GSHHS
+coastline from basemap-data, lakes removed) and inside the borders of
+Poland or Lithuania on 1 January 1932, as given by CShapes 2.0
+(``borders_1932.json``; Schvitz et al. 2022). Land cells within 2.5 km of
+the Polish or Lithuanian coastline are also kept: the two coastlines differ
+by a few km on the Hel peninsula and the Curonian Spit.
 
-* it lies on land (GSHHS coastline from basemap-data);
-* its nearest point among the domestic towns and a ring of foreign "mask"
-  towns is domestic;
-* that nearest point is within 70 km.
-
-The foreign mask towns trace the 1938 borders: the German Reich, the Free
-City of Danzig, East Prussia, Latvia, the USSR, Romania and Czechoslovakia.
 Cells are assigned to a voivodeship or Lithuanian unit by a multiplicatively
-weighted Voronoi diagram of the domestic towns, with one weight per region
-calibrated so that the cell areas match the official region areas. Internal
-borders are therefore approximations.
+weighted Voronoi diagram of the domestic towns of their state, with one
+weight per region calibrated so that the cell areas match the official
+region areas. State borders are therefore exact to the cell; internal
+borders are approximations.
 
 County anchors
 --------------
@@ -51,37 +49,6 @@ from .regions import REGIONS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-# Foreign towns tracing the 1938 borders (only used for masking).
-FOREIGN_MASK = [
-    # German Reich (west) and Silesia
-    (53.15, 16.74), (53.27, 16.47), (52.73, 15.24), (52.42, 15.58), (51.66, 16.08), (51.72, 16.31),
-    (51.21, 17.39), (51.07, 17.72), (50.97, 18.22), (50.67, 17.93), (50.88, 18.42), (50.09, 18.22),
-    (50.35, 18.55), (50.20, 18.62), (54.54, 17.75), (54.46, 17.03), (54.17, 17.49), (54.05, 16.98),
-    (53.36, 17.05), (53.75, 17.20), (52.95, 16.20), (52.05, 15.80), (51.45, 17.20), (51.30, 17.55),
-    (50.75, 18.30), (50.55, 18.40),
-    # Free City of Danzig
-    (54.44, 18.56), (54.27, 19.12), (54.30, 18.85),
-    # East Prussia
-    (54.16, 19.40), (54.03, 19.03), (53.73, 18.92), (53.60, 19.57), (53.70, 19.97), (53.36, 20.43),
-    (53.56, 20.99), (53.62, 21.81), (53.83, 22.36), (54.31, 22.30), (53.78, 20.49), (54.60, 22.20),
-    (54.03, 22.55), (54.63, 22.65), (55.05, 21.98), (54.40, 21.00), (53.45, 21.40), (53.35, 20.95),
-    (53.30, 19.95), (53.90, 22.00), (54.35, 22.70), (54.85, 22.30), (55.00, 22.50),
-    # Latvia
-    (56.45, 21.60), (56.68, 22.00), (56.41, 24.19), (56.50, 25.86), (56.16, 25.75), (55.98, 26.30),
-    (55.90, 27.17), (56.50, 27.33), (56.55, 23.00), (56.45, 26.70),
-    # USSR
-    (55.49, 28.79), (54.88, 28.70), (54.23, 28.50), (53.03, 27.55), (52.05, 29.24), (52.07, 27.74),
-    (51.21, 27.65), (50.95, 28.64), (50.59, 27.62), (49.20, 26.84), (48.68, 26.58), (50.25, 28.66),
-    (55.79, 27.97), (55.19, 30.20), (54.50, 27.90), (53.55, 27.20), (52.70, 27.80), (51.70, 27.50),
-    (50.15, 27.40), (49.70, 26.60), (49.00, 26.70),
-    # Romania
-    (48.25, 25.19), (48.51, 26.49), (48.52, 25.85), (48.16, 25.72), (47.99, 25.08), (48.35, 26.20),
-    # Czechoslovakia
-    (48.62, 22.29), (48.06, 24.20), (48.27, 24.37), (48.71, 23.19), (49.29, 21.28), (48.99, 21.24),
-    (49.30, 20.69), (49.06, 20.30), (49.36, 19.61), (49.44, 18.79), (49.27, 21.90), (48.99, 22.15),
-    (48.89, 22.46), (49.31, 21.57), (49.14, 20.43), (49.41, 19.48), (49.68, 18.35), (49.86, 18.50),
-    (49.20, 20.00), (49.10, 21.00), (48.80, 23.60), (48.40, 23.80),
-]
 
 
 # fmt: off
@@ -242,6 +209,60 @@ def load_base_geography() -> dict:
         return json.load(fh)
 
 
+_BORDERS = None
+
+
+def load_borders() -> dict:
+    """State borders on 1 January 1932 (CShapes 2.0): rings of Poland and
+    Lithuania, their coastlines, and the Polish-Lithuanian border."""
+    global _BORDERS
+    if _BORDERS is None:
+        with open(os.path.join(HERE, "borders_1932.json"), encoding="utf-8") as fh:
+            _BORDERS = json.load(fh)
+    return _BORDERS
+
+
+def _inside(polygons, lon, lat) -> np.ndarray:
+    pts = np.column_stack([lon, lat])
+    m = np.zeros(len(lon), dtype=bool)
+    for rings in polygons:
+        a = Path(np.array(rings[0])).contains_points(pts)
+        for hole in rings[1:]:
+            a &= ~Path(np.array(hole)).contains_points(pts)
+        m |= a
+    return m
+
+
+def _dist_to_lines(lon, lat, lines) -> np.ndarray:
+    """Distance (km, local flat approximation) from points to polylines."""
+    kx = 111.2 * np.cos(np.radians(np.mean(lat) if len(lat) else 52.0))
+    best = np.full(len(lon), np.inf)
+    qx, qy = np.asarray(lon) * kx, np.asarray(lat) * 111.2
+    for line in lines:
+        p = np.array(line)
+        ax, ay = p[:-1, 0] * kx, p[:-1, 1] * 111.2
+        dx, dy = p[1:, 0] * kx - ax, p[1:, 1] * 111.2 - ay
+        L = np.maximum(dx * dx + dy * dy, 1e-12)
+        t = np.clip(((qx[:, None] - ax) * dx + (qy[:, None] - ay) * dy) / L, 0, 1)
+        d = np.hypot(qx[:, None] - ax - t * dx, qy[:, None] - ay - t * dy)
+        best = np.minimum(best, d.min(axis=1))
+    return best
+
+
+def state_of(lat, lon, coast_km: float = 2.5) -> np.ndarray:
+    """'PL', 'LT' or '' for each point (1932 borders; see module docstring)."""
+    lat, lon = np.atleast_1d(np.asarray(lat, float)), np.atleast_1d(np.asarray(lon, float))
+    b = load_borders()
+    out = np.full(len(lat), "", dtype="<U2")
+    for st in ("PL", "LT"):
+        out[(out == "") & _inside(b[st], lon, lat)] = st
+    for st in ("PL", "LT"):
+        free = np.where(out == "")[0]
+        if len(free):
+            out[free[_dist_to_lines(lon[free], lat[free], b["coast"][st]) < coast_km]] = st
+    return out
+
+
 def haversine_matrix(lat1, lon1, lat2, lon2) -> np.ndarray:
     p1, p2 = np.radians(lat1)[:, None], np.radians(lat2)[None, :]
     dphi = p2 - p1
@@ -307,24 +328,21 @@ def build_grid(region_codes: list[str], dlat: float = CELL_DLAT, dlon: float = C
     for poly in geo["lakes"]:
         land &= ~Path(np.array(poly)).contains_points(pts)
     reg_idx = {c: i for i, c in enumerate(region_codes)}
+    reg_state = np.array(["LT" if c.startswith("LT") else "PL" for c in region_codes])
+    state = np.full(len(la), "", dtype="<U2")
+    state[land] = state_of(la[land], lo[land])
+    idx = np.where(np.isin(state, np.unique(reg_state)))[0]
+    la, lo, cell_state = la[idx], lo[idx], state[idx]
     dom = [(n.lat, n.lon, reg_idx[n.region]) for n in NODES if n.region in reg_idx]
-    foreign = [(n.lat, n.lon) for n in NODES if n.region not in reg_idx] + FOREIGN_MASK
     nlat = np.array([d[0] for d in dom])
     nlon = np.array([d[1] for d in dom])
     dreg = np.array([d[2] for d in dom])
-    flat = np.array([f[0] for f in foreign])
-    flon = np.array([f[1] for f in foreign])
-    sel = np.where(land)[0]
-    Dd = haversine_matrix(la[sel], lo[sel], nlat, nlon)
-    Df = haversine_matrix(la[sel], lo[sel], flat, flon)
-    dmin = Dd.min(axis=1)
-    keep = (dmin < Df.min(axis=1)) & (dmin < 70.0)
-    idx = sel[keep]
-    la, lo = la[idx], lo[idx]
+    # a cell can only go to a town (and region) of its own state
+    Dk = haversine_matrix(la, lo, nlat, nlon)
+    Dk[cell_state[:, None] != reg_state[dreg][None, :]] = np.inf
     km2 = (dlat * 111.2) * (dlon * 111.2 * np.cos(np.radians(la)))
     # multiplicatively weighted Voronoi: region weights calibrated so that
     # cell areas match the official region areas
-    Dk = Dd[keep]
     area_of = {r.code: r.area_km2 for r in REGIONS}
     target = np.array([area_of[c] for c in region_codes])
     w = np.ones(len(region_codes))

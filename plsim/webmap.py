@@ -22,7 +22,7 @@ import os
 
 import numpy as np
 
-from .data.geography import BBOX, build_grid, load_base_geography
+from .data.geography import BBOX, build_grid, load_base_geography, load_borders
 from .data.languages import LANG_INDEX
 from .data.regions import REGIONS
 from .maps import CAT_COLOR, CAT_LABEL, CATS, LABEL_TOWNS, REGIONAL, display_shares
@@ -106,7 +106,13 @@ def geo_payload(ndigits: int = 2) -> dict:
 
     def rnd(lines, min_pts=2):
         return [[[round(x, ndigits), round(y, ndigits)] for x, y in ln] for ln in lines if len(ln) >= min_pts]
-    return {"land": rnd(geo["land"], 3), "lakes": rnd(geo["lakes"], 3), "rivers": rnd(geo["rivers"])}
+    b = load_borders()                    # 1932 state borders, to about 100 m
+
+    def r3(lines):
+        return [[[round(x, 3), round(y, 3)] for x, y in ln] for ln in lines]
+    states = {"PL": r3([p[0] for p in b["PL"]]), "LT": r3([p[0] for p in b["LT"]]),
+              "outline": r3(b["outline"]), "plLt": r3(b["PL_LT"])}
+    return {"land": rnd(geo["land"], 3), "lakes": rnd(geo["lakes"], 3), "rivers": rnd(geo["rivers"]), "states": states}
 
 
 def legend_payload() -> list:

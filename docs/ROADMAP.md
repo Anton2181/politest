@@ -11,15 +11,18 @@ Each names the part of the code it touches.
 |---|---|---|---|
 | 1 | "As a census would print it" maps | The observation model exists (`language.census_view`). Applying it per cell would show, for the same latent population, what a 1931-style Polish census, a 1923-style Lithuanian census or a modern self-identification census would record. This turns census unreliability into something visible. | small |
 | 2 | Identity as a state separate from home language | Many key cases are identity, not language: Catholic Belarusian speakers declaring Polish, Polish-speaking Lauda gentry who became Lithuanian by identity, Polish-speaking Jews. The census regimes would then map identity, and "Lithuanisation" could be modelled as identity shift with or without language shift. | medium |
-| 3 | County-level (powiat) projection — **partly done** | `partition: counties` now runs every voivodeship as its powiats (269 regions; `data/counties.py`, METHODOLOGY §12.6). The 1931 county tables are in for the eight eastern voivodeships (grade A); Lublin has county populations only, and the centre, the west and Lithuania have seats only. Still to do: the central and western county tables (Kashubian, German and Jewish districts), the 1923 Lithuanian apskritis tables (Lauda), county religion for all voivodeships, and digitised powiat boundaries. | small (data entry) |
+| 3 | County-level (powiat) projection — **partly done** | `partition: counties` now runs every voivodeship as its powiats (270 regions; `data/counties.py`, METHODOLOGY §12.6). The 1931 county tables are in for the eight eastern voivodeships (grade A); Lublin has county populations only, and the centre, the west and Lithuania have seats only. Still to do: the central and western county tables (Kashubian, German and Jewish districts), the 1923 Lithuanian apskritis tables (Lauda), county religion for all voivodeships, and digitised powiat boundaries. | small (data entry) |
 | 4 | Calibration by history matching | Fit shift propensities, status and institutional parameters to observed changes rather than by hand. Targets: 1897→1931 county language change, 1921 vs 1931 censuses, interwar Lithuanian censuses, and analogues (Carinthia, Bukovina, Finland Swedes). | medium |
 | 5 | Probability maps from ensembles | Downscale every ensemble member and map, for example, the probability that Belarusian still leads a cell in 2032. Shows which fronts are robust and which are noise. | small |
 
 ## Spatial resolution and geography
 
-* **Real boundaries.** Replace the weighted-Voronoi voivodeships and county
-  assignment with digitised 1938 powiat boundaries from historical GIS
-  sources. `data/geography.py` keeps the same interface. County shapes
+* **Real boundaries.** The state borders now come from CShapes 2.0. The
+  voivodeships and counties inside them are still weighted Voronoi
+  approximations. Digitised 1931 voivodeship and powiat boundaries
+  (historical GIS sources, e.g. the MPIDR Population History GIS
+  Collection) would replace them; `data/geography.py` keeps the same
+  interface. County shapes
   would then come from the boundaries rather than from the cells nearest
   each seat; on the maps, a county now ends halfway to the next seat.
 * **County-level calibration.** County runs inherit the voivodeship

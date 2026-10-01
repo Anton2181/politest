@@ -704,7 +704,7 @@ Reports give medians with 50 % and 90 % bands.
 ## 12. Maps: spatial downscaling and local language shift
 
 The projection works with 23 regions x rural/urban. To draw maps,
-`plsim/spatial.py` places each region on a grid of 9,148 cells of
+`plsim/spatial.py` places each region on a grid of 9,383 cells of
 0.0625° x 0.1° (about 7 x 7 km) and carries the cells forward year by year.
 Every year the cells and towns of a region add up exactly to the main
 model's figures (by region x rural/urban x language). The spatial layer adds
@@ -712,15 +712,26 @@ model's figures (by region x rural/urban x language). The spatial layer adds
 
 ### 12.1 Territory and regions
 
-* **Territory.** No digital boundary layer of the interwar state was
-  reachable. A cell belongs to the state when it is on land (GSHHS
-  coastline) and its nearest town, among the 230 domestic network towns and
-  a ring of about 110 foreign "mask" towns tracing the 1938 borders, is
-  domestic and within 70 km.
+* **Territory.** A cell belongs to the state when its centre is on land
+  (GSHHS coastline, lakes removed) and inside the borders of Poland or
+  Lithuania on 1 January 1932. The borders are from CShapes 2.0 (Schvitz et
+  al. 2022), with a median vertex spacing of 3.5 km. Land cells within
+  2.5 km of the Polish or Lithuanian coast are also kept, because the
+  GSHHS and CShapes coastlines differ by a few km on the Hel peninsula and
+  the Curonian Spit. The grid has 9,383 cells: 386,700 km² for Poland
+  (official 388,600 km²) and 55,600 km² for Lithuania (official 55,750 km²).
+* **Before CShapes.** The territory used to be approximated by the
+  nearest-town rule (domestic towns against about 110 foreign "mask" towns).
+  That misplaced about 36,000 km² of Poland and 8,500 km² of Lithuania,
+  mostly in bands up to 25 km deep along the Soviet and Latvian borders.
 * **Regions.** Cells are assigned by a multiplicatively weighted Voronoi
-  diagram of the domestic towns, with one weight per region calibrated so
-  that cell areas match the official areas. Cell coverage is about 5 % below
-  the official total; Warsaw city has two cells.
+  diagram of the domestic towns of their own state, with one weight per
+  region calibrated so that cell areas match the official areas (all
+  within 2.5 %). Warsaw city has two cells. State borders are therefore
+  exact to the cell; voivodeship borders are approximations.
+* **Drawing.** Maps clip the cell colours to the CShapes polygons and draw
+  the state border and the Polish-Lithuanian border as lines, so the
+  border itself is not stair-stepped at 7 km.
 * **Terrain.** Rural density is thinned in the Polesie marshes (-40 %), the
   Carpathians (-35 %) and the Hutsul highlands (-30 %), with smooth edges.
 
@@ -862,8 +873,10 @@ Townspeople start less competent.
 
 `partition: counties` runs every voivodeship as its 1931 powiaty, and the
 Lithuanian units as their apskritys. Warsaw city and Kaunas city stay whole,
-which gives 269 regions in place of 23. The county table is
+which gives 270 regions in place of 23. The county table is
 `plsim/data/counties.py` (sources and grades in `docs/DATA_SOURCES.md`).
+It has 269 counties. Węgrów's seat wins no cell on the approximate
+voivodeship map, so it is merged into its neighbours.
 
 **Initial state.** Cells and towns are assigned to the nearest county seat,
 as for the named splits. The county's population and languages are then
@@ -971,7 +984,7 @@ and mortality, fertility and migration push would all be wrong.
   measured to each county (Gdynia included) rather than to Toruń, and the
   Kashubian counties draw fewer Polish speakers. Klaipėda is 13 % larger.
 * **What the county level adds is *where*.** The plurality language
-  changes in 34 of 269 counties:
+  changes in 34 of 268 counties:
   * the Belarusian blocks of eastern wileńskie (Głębokie, Mołodeczno,
     Wilejka) and of Nowogródek (Nieśwież, Nowogródek, Słonim) turn
     Polish-plurality;
@@ -1093,6 +1106,13 @@ rescaling alone removes about 30 k Belarusian speakers.
 * de Haas, H. (2010). Migration transitions. IMI Working Paper 24, Oxford.
 * Davis, J. C., & Henderson, J. V. (2003). Evidence on the political economy
   of the urbanization process. *Journal of Urban Economics* 53(1), 98-125.
+
+**Borders**
+
+* Schvitz, G., Girardin, L., Rüegger, S., Weidmann, N. B., Cederman, L.-E.,
+  & Gleditsch, K. S. (2022). Mapping the international system, 1886-2019:
+  The CShapes 2.0 dataset. *Journal of Conflict Resolution* 66(1), 144-161.
+  Data from the R package cshapes 2.0 (CRAN).
 
 **Language: spatial models and downscaling**
 
