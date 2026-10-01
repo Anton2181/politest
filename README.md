@@ -33,7 +33,7 @@ python -m plsim census                  # 1931 census-reconstruction consistency
 python -m plsim ensemble baseline -n 32 # Monte-Carlo ensemble -> outputs/ensemble_baseline/*.csv
 python -m plsim report -n 32            # all scenarios + ensembles + figures + outputs/report.html
 python -m plsim maps                    # 7 km maps, GIF animations and the interactive atlas (outputs/atlas/)
-pytest -q                               # 46 tests
+pytest -q                               # 53 tests
 ```
 
 A 100-year run takes about 20 s. The full report takes about 7 minutes on 4
@@ -134,9 +134,11 @@ plus 6 Lithuanian units.
 7 x 7 km and draws the result:
 
 * **Interactive atlas**: `outputs/atlas/index.html`. It has a time slider,
-  12 scenarios, and four layers: plurality language, one language
-  (optionally as change since 1932), density and growth. It also reads out
-  any cell.
+  13 scenarios, and four layers: plurality language, one language
+  (optionally as change since 1932), density and growth. It overlays the
+  railway and road network as it grows, with km by class and the latest
+  openings, and dashes the borders between federal members (cantons,
+  autonomies). It also reads out any cell.
 * **Static maps and animations**: `outputs/maps/`, including
   `anim_languages.gif` and `anim_density.gif`.
 
@@ -189,6 +191,8 @@ Baseline, area where each language leads (thousand km²):
 | census_vernacular | 46.3 | 64.2 | 19.0 | 3.9 | 4.2 | 4.2 | 951 |
 | finnish_path | 49.1 | 67.8 | 16.4 | 3.8 | 2.7 | 4.3 | 915 |
 | stagnation | 39.0 | 65.7 | 17.2 | 4.4 | 3.1 | 4.6 | 1,006 |
+| ukraine_autonomy_tricantonal | 45.5 | 58.8 | 18.5 | 4.5 | 8.2 | 4.4 | 1,347 |
+| ukraine_autonomy_tricantonal_rc | 45.5 | 55.4 | 20.2 | 4.5 | 9.9 | 4.4 | 1,348 |
 
 Polish-speakers in the Lithuanian units in 2032:
 
@@ -198,9 +202,24 @@ Polish-speakers in the Lithuanian units in 2032:
 | forced_lithuanization | ~28 k |
 | polonizing_union | ~310 k |
 | starting from the 1923 Polish claim | 181 k -> ~140 k |
+| Ukrainian autonomy + tri-cantonal Grand Duchy (Polish schools in the Lithuanian canton) | ~125 k |
+
+**Ukrainian autonomy + tri-cantonal Lithuania.** Lwów, Tarnopol and
+Stanisławów voivodeships plus Volhynia form a Ukrainian autonomy, on the
+never-implemented 1922 statute. Everything east of the later Curzon line and
+north of Volhynia joins Lithuania as a Grand Duchy of Lithuanian, Polish
+(Wilno–Lida–Grodno) and Belarusian (eastern Wilno lands, Nowogródek,
+Polesie) cantons. Voivodeships are split along county lines for this, via
+the 7 km grid. By 2032:
+
+* Belarusian speakers number 3.9 M (1.4 M in the baseline). Belarusian
+  becomes the majority language of its canton (28 → 51 %).
+* Ukrainian rises from 51 to 65 % of the autonomy. Tarnopol turns
+  Ukrainian-plurality; west of the San stays Polish.
+* Polish falls to 59 % of the union.
 
 The full table is in `outputs/scenario_summary.csv`; the assumptions are in
-`docs/SCENARIOS.md`.
+`docs/SCENARIOS.md`. Proposed further developments are in `docs/ROADMAP.md`.
 
 ## Repository layout
 
@@ -220,13 +239,15 @@ plsim/
   validate.py            1932-39 back-validation and plausibility checks
   report.py, export.py   figures, CSVs, HTML report
   data/geography.py      7 km grid, territory mask, county language anchors (1931)
+  data/subregions.py     county-line splits of voivodeships (Curzon line, cantons, the San)
+  partition.py           1931 population of sub-regions, via the grid
   data/geo_base.json     coastline, lakes and rivers (GSHHS via basemap-data)
   spatial.py             downscaling + neighbourhood (Prochazka-Vogl) language-shift allocation
   maps.py, webmap.py     static maps, GIF animations, interactive atlas data
   atlas_template.html    the interactive atlas page
   cli.py                 command-line interface
-scenarios/*.yaml         12 scenarios (extends/override)
-docs/                    METHODOLOGY, DATA_SOURCES (with reliability grades), SCENARIOS
+scenarios/*.yaml         14 scenarios (extends/override)
+docs/                    METHODOLOGY, DATA_SOURCES (with reliability grades), SCENARIOS, ROADMAP
 outputs/                 report.html, figures/, maps/, atlas/, scenario_summary.csv, ensemble CSVs, baseline run CSVs
 tests/                   census reconstruction, demography, language, network, model accounting
 ```

@@ -55,6 +55,7 @@ import numpy as np
 
 from .data.languages import COMMUNITIES, GROUP_INDEX, GROUPS, LANG_INDEX, LANGUAGES, NG, NL, SHIFT_TARGETS
 from .economy import piecewise
+from .params import matching_patterns, region_lookup
 
 CENSUS_CATEGORIES = ["pl", "uk", "ruth", "be", "tut", "yi", "he", "de", "ru", "lt", "cs", "lv",
                      "csb", "rue", "rom", "kdr", "wym", "other"]
@@ -109,11 +110,11 @@ class LanguageModel:
         s = np.zeros((self.R, NL))
         for l in LANGUAGES:
             s[:, LANG_INDEX[l.code]] = _lang_sched_value(p["status"].get(l.code, p["status"]["default"]), year)
-        for pattern, over in p.get("status_regions", {}).items():
-            for r, code in enumerate(self.codes):
-                if code == pattern or (pattern.endswith("*") and code.startswith(pattern[:-1])):
-                    for lc, spec in over.items():
-                        s[r, LANG_INDEX[lc]] = _lang_sched_value(spec, year)
+        sr = p.get("status_regions", {})
+        for r, code in enumerate(self.codes):
+            for pattern in matching_patterns(sr, code):
+                for lc, spec in sr[pattern].items():
+                    s[r, LANG_INDEX[lc]] = _lang_sched_value(spec, year)
         # The dominant language of a region always has at least the reference status.
         s[np.arange(self.R), self.dom] = np.maximum(s[np.arange(self.R), self.dom], 1.0)
         return s
@@ -124,28 +125,20 @@ class LanguageModel:
         for g, (c, l) in enumerate(GROUPS):
             spec = p["own_schooling"].get(f"{c}:{l}", p["own_schooling"].get(l, 0.0))
             o[:, g] = _lang_sched_value(spec, year)
-        for pattern, over in p.get("own_schooling_regions", {}).items():
-            for r, code in enumerate(self.codes):
-                if code == pattern or (pattern.endswith("*") and code.startswith(pattern[:-1])):
-                    for key, spec in over.items():
-                        for g, (c, l) in enumerate(GROUPS):
-                            if key == l or key == f"{c}:{l}":
-                                o[r, g] = _lang_sched_value(spec, year)
+        osr = p.get("own_schooling_regions", {})
+        for r, code in enumerate(self.codes):
+            for pattern in matching_patterns(osr, code):
+                for key, spec in osr[pattern].items():
+                    for g, (c, l) in enumerate(GROUPS):
+                        if key == l or key == f"{c}:{l}":
+                            o[r, g] = _lang_sched_value(spec, year)
         # own-language schooling is meaningless for the dominant language
         o[self.group_lang[None, :] == self.dom[:, None]] = 0.0
         return np.clip(o, 0, 1)
 
     def pressure(self, year: float) -> np.ndarray:
         p = self.p
-        base = _lang_sched_value(p["pressure"]["default"], year)
-        out = np.full(self.R, base)
-        for pattern, spec in p["pressure"].items():
-            if pattern == "default":
-                continue
-            for r, code in enumerate(self.codes):
-                if code == pattern or (pattern.endswith("*") and code.startswith(pattern[:-1])):
-                    out[r] = _lang_sched_value(spec, year)
-        return out
+        return np.array([_lang_sched_value(region_lookup(p["pressure"], code), year) for code in self.codes])
 
     # ---------------------------------------------------------------- shares
     def competence_shares(self, P: np.ndarray) -> np.ndarray:

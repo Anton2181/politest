@@ -278,6 +278,22 @@ def _terrain_factor(lat, lon) -> np.ndarray:
 
 
 def build_grid(region_codes: list[str], dlat: float = CELL_DLAT, dlon: float = CELL_DLON) -> Grid:
+    parents = list(dict.fromkeys(c.split(".")[0] for c in region_codes))
+    if parents != list(region_codes):
+        # sub-regions (``PARENT.CHILD``): build the parent grid, then split by county seats
+        from dataclasses import replace
+
+        from .subregions import assign
+        base = build_grid(parents, dlat, dlon)
+        idx = {c: i for i, c in enumerate(region_codes)}
+        region = np.empty(len(base.lat), dtype=int)
+        for pi, pc in enumerate(parents):
+            m = base.region == pi
+            if pc in idx:
+                region[m] = idx[pc]
+            else:
+                region[m] = [idx[k] for k in assign(pc, base.lat[m], base.lon[m])]
+        return replace(base, region=region, region_codes=list(region_codes))
     lats = np.arange(BBOX[1] + dlat / 2, BBOX[3], dlat)
     lons = np.arange(BBOX[0] + dlon / 2, BBOX[2], dlon)
     LA, LO = np.meshgrid(lats, lons, indexing="ij")

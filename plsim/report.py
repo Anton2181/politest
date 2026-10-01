@@ -17,7 +17,6 @@ import numpy as np  # noqa: E402
 
 from .data.languages import GROUPS, LANG_INDEX, LANGUAGES, NL  # noqa: E402
 from .data.network import NODES  # noqa: E402
-from .data.regions import REGIONS  # noqa: E402
 from .ensemble import QUANTILES  # noqa: E402
 from .language import CENSUS_CATEGORIES  # noqa: E402
 
@@ -388,7 +387,7 @@ def fig_regional(res, path: str):
     u1 = A["pop"][i1][:, 1].sum(axis=1) / A["pop"][i1].sum(axis=(1, 2)) * 100
     rel0 = np.array(res.rel_income[0])
     rel1 = np.array(res.rel_income[-1])
-    names = [next(r.name for r in REGIONS if r.code == c) for c in codes]
+    names = [res.region_names[res.region_codes.index(c)] for c in codes]
     y = np.arange(len(codes))
     fig, axes = plt.subplots(1, 3, figsize=(13, 6.8), sharey=True)
     for ax, a, b, t in [(axes[0], p0, p1, "Population (millions)"), (axes[1], u0, u1, "Urban share (%)"),
@@ -408,7 +407,7 @@ def fig_regional(res, path: str):
 
 def fig_region_languages(res, path: str, years=(1932, 2032)):
     codes = res.region_codes
-    names = [next(r.name for r in REGIONS if r.code == c) for c in codes]
+    names = [res.region_names[res.region_codes.index(c)] for c in codes]
     fig, axes = plt.subplots(1, len(years), figsize=(13, 7.2), sharey=True)
     for ax, yv in zip(axes, years):
         i = res.years.index(yv) if yv in res.years else 0
@@ -492,7 +491,7 @@ def fig_migration(res, path: str):
     for j, d in enumerate(decades):
         idx = [i for i, y in enumerate(yrs) if d < y <= d + 10]
         M[:, j] = net[idx].mean(axis=0)
-    names = [next(r.name for r in REGIONS if r.code == c) for c in codes]
+    names = [res.region_names[res.region_codes.index(c)] for c in codes]
     fig, ax = plt.subplots(figsize=(9, 7))
     lim = np.abs(M).max()
     from matplotlib.colors import LinearSegmentedColormap

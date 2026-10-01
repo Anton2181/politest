@@ -418,9 +418,26 @@ BILINGUAL_0_LT: dict[tuple[str, str], tuple[float, float]] = {
 }
 
 
+# In regions where an East Slavic language is dominant (D = uk or be: autonomies,
+# cantons), competence in it.  Close vernaculars understand it well; rural
+# Poles of the Kresy commonly spoke the local East Slavic speech, townspeople less.
+BILINGUAL_0_EAST: dict[tuple[str, str], tuple[float, float]] = {
+    ("OR", "pls"): (.85, .85), ("RC", "pls"): (.80, .80), ("OR", "be"): (.55, .65), ("RC", "be"): (.55, .60),
+    ("OR", "uk"): (.55, .65), ("GC", "uk"): (.55, .65), ("RC", "uk"): (.6, .7), ("GC", "rue"): (.75, .80),
+    ("OR", "rue"): (.75, .80), ("OR", "ru"): (.60, .75), ("RC", "ru"): (.5, .6), ("OT", "ru"): (.5, .6),
+    ("RC", "pl"): (.55, .30), ("GC", "pl"): (.85, .60), ("OR", "pl"): (.85, .60), ("PR", "pl"): (.3, .2),
+    ("JW", "pl"): (.30, .25), ("JW", "yi"): (.50, .40), ("JH", "yi"): (.40, .30), ("JW", "ru"): (.5, .5),
+    ("PR", "de"): (.30, .30), ("RC", "de"): (.3, .3), ("RC", "cs"): (.55, .55), ("OR", "cs"): (.65, .65),
+    ("PR", "cs"): (.5, .5), ("RC", "lt"): (.25, .25), ("RC", "rom"): (.5, .5), ("OT", "kdr"): (.6, .6),
+}
+
+
 def bilingual_share(group: tuple[str, str], dominant: str, urban: int) -> float:
     if group[1] == dominant:
         return 1.0
+    if dominant in ("uk", "be"):
+        rur, urb = BILINGUAL_0_EAST.get(group, (.3, .3))
+        return urb if urban else rur
     table = BILINGUAL_0_LT if dominant == "lt" else BILINGUAL_0
     rur, urb = table.get(group, (.4, .7))
     return urb if urban else rur

@@ -133,8 +133,11 @@ def build_atlas(atlasdir: str) -> list[str]:
     with open(os.path.join(atlasdir, "data", "baseline.txt"), encoding="ascii") as fh:
         base_b64 = fh.read().strip()
     full = full_grid()
+    from .data.network import NODES
     meta = {"frames": FRAMES, "densScale": DENS_SCALE, "cats": legend_payload(), "grid": grid_payload(full),
-            "geo": geo_payload(), "scenarios": entries}
+            "geo": geo_payload(), "scenarios": entries,
+            "nodes": [[round(n.lat, 3), round(n.lon, 3)] for n in NODES],
+            "rail": RAIL_CLS, "road": ROAD_CLS}
     here = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(here, "atlas_template.html"), encoding="utf-8") as fh:
         tpl = fh.read()
@@ -148,3 +151,65 @@ def build_atlas(atlasdir: str) -> list[str]:
                  '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
                  "</head><body>\n" + body + "\n</body></html>\n")
     return [frag, page]
+
+
+# ---------------------------------------------------------------------------------
+# Transport network and political geometry (per scenario)
+# ---------------------------------------------------------------------------------
+RAIL_CLS = ["nar", "sec", "main", "main_el", "hsr"]
+ROAD_CLS = ["dirt", "gravel", "paved", "express", "motorway"]
+MEMBER_LABELS = {"PL": "Poland", "LT": "Lithuania", "UA": "Ukrainian autonomy",
+                 "GD-L": "Grand Duchy: Lithuanian canton", "GD-P": "Grand Duchy: Polish canton",
+                 "GD-B": "Grand Duchy: Belarusian canton"}
+LOG_KINDS = {"new", "dated", "closure"}
+LOG_UPGRADES = {"hsr", "motorway"}
+
+
+def network_payload(res, frames=FRAMES) -> dict:
+    """Edges active in any frame, their class in each frame (0 = absent;
+    rail 1-5, road 1-5 in ``RAIL_CLS``/``ROAD_CLS`` order), km by class, and the
+    notable openings and closures."""
+    snaps = res.network_snapshots
+    years = sorted(snaps)
+    key_idx, edges = {}, []
+    cls = []
+    for f, y in enumerate(frames):
+        sy = max([s for s in years if s <= y] or [years[0]])
+        for u, v, m, c in snaps[sy]:
+            k = (min(u, v), max(u, v), int(m))
+            if k not in key_idx:
+                key_idx[k] = len(edges)
+                edges.append(list(k))
+                cls.append([0] * len(frames))
+            order = RAIL_CLS if m == 0 else ROAD_CLS
+            cls[key_idx[k]][f] = order.index(c) + 1
+    cls_arr = np.array(cls, dtype=np.uint8).reshape(len(edges), len(frames))
+    ry = list(res.years)
+    km = []
+    for y in frames:
+        j = min(range(len(ry)), key=lambda i: abs(ry[i] - y))
+        d = res.km[j]
+        km.append([round(d[f"rail_{c}"]) for c in RAIL_CLS] + [round(d[f"road_{c}"]) for c in ROAD_CLS])
+    log = []
+    for p in res.project_log:
+        if p["kind"] in LOG_KINDS or (p["kind"] == "upgrade" and p["class"] in LOG_UPGRADES):
+            log.append([int(p["open"]), p["kind"], p["mode"], p["class"], p["from"], p["to"]])
+    log.sort(key=lambda r: r[0])
+    return {"e": edges, "c": base64.b64encode(cls_arr.tobytes()).decode(), "km": km, "log": log}
+
+
+def geometry_payload(res, sr, full) -> dict:
+    """Regions and federal members of a scenario, mapped onto the full grid."""
+    idx = cell_map(full, sr.grid)
+    cellreg = np.full(len(full.lat), 255, dtype=np.uint8)
+    ok = idx >= 0
+    cellreg[idx[ok]] = sr.grid.region[ok].astype(np.uint8)
+    members = list(getattr(res, "members", []) or ["LT" if c.startswith("LT") else "PL" for c in res.region_codes])
+    return {"codes": list(res.region_codes), "names": list(res.region_names),
+            "members": [MEMBER_LABELS.get(m, m) for m in members],
+            "dominant": list(getattr(res, "dominant", []) or []),
+            "cellreg": base64.b64encode(cellreg.tobytes()).decode()}
+
+
+def nodes_payload(res) -> list:
+    return [[round(a, 3), round(b, 3)] for a, b in zip(res.node_lat, res.node_lon)]

@@ -228,7 +228,7 @@ class Downscaler:
         sig = self.p["anchor_sigma_km"]
         for r, code in enumerate(self.codes):
             cells = np.where(g.region == r)[0]
-            anc = [a for a in ANCHORS if a.region == code]
+            anc = [a for a in ANCHORS if a.region == code.split(".")[0]]
             if not anc or not len(cells):
                 continue
             D = haversine_matrix(g.lat[cells], g.lon[cells], np.array([a.lat for a in anc]),

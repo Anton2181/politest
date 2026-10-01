@@ -22,6 +22,10 @@ DEFAULTS: dict[str, Any] = {
     "census_variant": "official",        # official | religion_corrected | vernacular
     "lt_variant": "census_1923",         # census_1923 | polish_claim_1923 | imperial_1897
     "dominant_language": {"default": "pl", "LT_*": "lt"},
+    # Federal member state of each region (migration friction between members).
+    "members": {"default": "PL", "LT_*": "LT"},
+    # Voivodeships to split into sub-regions (see plsim/data/subregions.py).
+    "partition": [],
     "snapshot_years": [1932, 1939, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020, 2032],
 
     # ------------------------------------------------------------------ demography
@@ -232,6 +236,39 @@ UNCERTAINTY: dict[str, tuple[str, float, float]] = {
     "infrastructure.gravity_beta": ("uniform", 0.22, 0.38),
     "infrastructure.bcr_threshold": ("uniform", 0.9, 1.3),
 }
+
+
+def _specificity(code: str, pattern: str) -> int:
+    """0 = no match; 1 = wildcard; 2 = parent region; 3 = exact.
+
+    Sub-regions are named ``PARENT.CHILD`` (e.g. ``WIL.E``) and inherit any
+    setting given for their parent unless a more specific key overrides it."""
+    if pattern == code:
+        return 3
+    if pattern == code.split(".")[0]:
+        return 2
+    if pattern.endswith("*") and code.startswith(pattern[:-1]):
+        return 1
+    return 0
+
+
+def region_match(code: str, pattern: str) -> bool:
+    return _specificity(code, pattern) > 0
+
+
+def matching_patterns(spec: dict, code: str) -> list:
+    """Keys of ``spec`` that apply to ``code``, least specific first, so that
+    applying them in order lets the most specific one win."""
+    keys = [(k, _specificity(code, k)) for k in spec if k != "default"]
+    return [k for k, s in sorted((x for x in keys if x[1] > 0), key=lambda x: x[1])]
+
+
+def region_lookup(spec: dict, code: str, default=None):
+    """Most specific value of a region-keyed mapping (falls back to 'default')."""
+    keys = matching_patterns(spec, code)
+    if keys:
+        return spec[keys[-1]]
+    return spec.get("default", default)
 
 
 def deep_merge(base: dict, over: dict) -> dict:

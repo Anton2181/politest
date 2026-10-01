@@ -40,8 +40,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from .data.languages import COMMUNITIES, GROUPS, LANG_INDEX, NG
+from .data.languages import COMMUNITIES, GROUPS, LANG_INDEX, LANGUAGES, NG
 from .economy import piecewise
+from .params import region_lookup
 
 AGES = np.arange(101)
 
@@ -82,8 +83,19 @@ class MigrationModel:
         self.is_jewish = np.isin(self.group_comm, [comm_codes.index("JW"), comm_codes.index("JH")])
         self.is_haredi = self.group_comm == comm_codes.index("JH")
         self.is_german = self.group_lang == LANG_INDEX["de"]
-        self.country = np.array([r.country for r in regions])
+        self.country = np.array([r.country for r in regions])          # 1931 state (origin)
+        self.member = self.country.copy()                                # federal member (set by the model)
         self.logit_fe = None
+
+    def _member_friction(self) -> np.ndarray:
+        p = self.p
+        f = np.where(self.member[:, None] != self.member[None, :], p["cross_border_factor"], 1.0)
+        for pair, val in p.get("member_friction", {}).items():
+            a, b = pair.split("|")
+            m = ((self.member[:, None] == a) & (self.member[None, :] == b)) | \
+                ((self.member[:, None] == b) & (self.member[None, :] == a))
+            f = np.where(m, val, f)
+        return f
 
     # ---------------------------------------------------------------- rural-urban
     def urbanisation(self, P: np.ndarray, u_target: np.ndarray, year: int) -> dict:
@@ -128,9 +140,9 @@ class MigrationModel:
             (yd / yd.mean()) ** p["income_elasticity"]
         det = np.exp(-p["beta_time"] * t_reg)       # (R,R)
         np.fill_diagonal(det, 0.0)
-        # cross-border (PL <-> LT) friction
-        cross = self.country[:, None] != self.country[None, :]
-        det = det * np.where(cross, p["cross_border_factor"], 1.0)
+        # friction between federal members (PL <-> LT by default); a pair can
+        # have its own factor, e.g. {"PL|UA": 0.5} for an autonomy inside Poland
+        det = det * self._member_friction()
         # affinity: share of own-language speakers at destination (ethnic networks)
         xl = x_lang.mean(axis=1)                     # (R, NL)
         aff = (xl[:, self.group_lang] + p["affinity_floor"]) ** p["affinity_power"]   # (R_dest, G)
@@ -159,8 +171,8 @@ class MigrationModel:
             return
         from .data.languages import GROUP_INDEX
         g = GROUP_INDEX[("RC", "pl")]
-        orig = np.array([s["origins"].get(c, 0.0) for c in self.codes])
-        dest = np.array([s["destinations"].get(c, 0.0) for c in self.codes])
+        orig = np.array([region_lookup(s["origins"], c, 0.0) for c in self.codes], dtype=float)
+        dest = np.array([region_lookup(s["destinations"], c, 0.0) for c in self.codes], dtype=float)
         if orig.sum() <= 0 or dest.sum() <= 0:
             return
         orig /= orig.sum()
@@ -221,8 +233,8 @@ class MigrationModel:
                 dom_g = None
                 if l == "DOM":
                     for r in range(self.R):
-                        lang = "lt" if self.country[r] == "LT" else "pl"
-                        g = GROUP_INDEX[("RC", lang)]
+                        lang = LANGUAGES[self.dom[r]].code
+                        g = GROUP_INDEX.get(("RC", lang), GROUP_INDEX[("RC", "pl")])
                         add = imm * share * w[r] * age
                         P[r, 1, g, 1, 0] += add * 0.5
                         P[r, 1, g, 1, 1] += add * 0.5

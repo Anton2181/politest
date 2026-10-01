@@ -1,0 +1,127 @@
+# Two federal reconstructions at once, starting in 1938.
+#
+# 1. Ukrainian autonomy for the lwowskie, tarnopolskie and stanisławowskie
+#    voivodeships (the never-implemented statute of 26 September 1922, "on the
+#    voivodeship self-government of Lwów, Tarnopol and Stanisławów") extended
+#    to Volhynia. It is a member of the federation with its own diet, a
+#    Ukrainian university in Lwów and a Ukrainian school system. Administration
+#    speaks the language of the district majority: Ukrainian east of the San,
+#    Polish in the western districts of lwowskie. Polish stays the federal
+#    language, with Polish schools for the Polish minority.
+#
+# 2. A tri-cantonal Lithuania (a Grand Duchy) covering the Lithuanian
+#    Republic plus all lands east of the later Curzon line and north of
+#    Volhynia: wileńskie, nowogródzkie, poleskie and the Grodno and Wołkowysk
+#    counties of białostockie. The cantons follow county pluralities:
+#      Lithuanian canton: the six Lithuanian units (Lithuanian official);
+#      Polish canton: Wilno, Troki, Oszmiana, Święciany, Lida, Szczuczyn,
+#        Grodno, Wołkowysk (Polish official, Wilno the ducal capital);
+#      Belarusian canton: eastern wileńskie, eastern nowogródzkie, Polesie
+#        (Belarusian official).
+#    Each canton schools its minorities in their own language. In
+#    particular the Lauda Poles keep Polish schools: there is no forced
+#    Lithuanisation. Polish military settlement in the east stops in 1938.
+extends: baseline
+meta:
+  name: ukraine_autonomy_tricantonal
+  description: "Ukrainian autonomy (Lwów, Tarnopol, Stanisławów voivodeships + Volhynia, 1922 statute) and a tri-cantonal Lithuanian-Polish-Belarusian Grand Duchy east of the Curzon line"
+partition: [BIA, WIL, NOW, LWO]
+members:          # federal members; the Grand Duchy's cantons are members of their own (GD-*)
+  _replace: true
+  default: PL
+  "LT_*": GD-L      # Lithuanian canton
+  WIL.W: GD-P       # Polish canton
+  NOW.W: GD-P
+  BIA.E: GD-P
+  WIL.E: GD-B       # Belarusian canton
+  NOW.E: GD-B
+  POL: GD-B
+  LWO: UA           # Ukrainian autonomy
+  TAR: UA
+  STA: UA
+  WOL: UA
+dominant_language:
+  _replace: true
+  default: pl
+  "LT_*": lt
+  WIL.W: pl
+  NOW.W: pl
+  BIA.E: pl
+  WIL.E: be
+  NOW.E: be
+  POL: be
+  LWO.W: pl
+  LWO.E: uk
+  TAR: uk
+  STA: uk
+  WOL: uk
+economy:
+  regional_programmes:
+    LWO.E: [[1931, 0.0]]          # the Central Industrial District lies west of the San
+migration:
+  # Migration friction between members (1 = none; the Poland-Lithuania factor
+  # of the baseline, 0.10, applies to pairs not listed). Cantons of one Grand
+  # Duchy and the autonomy inside Poland are closer than separate states;
+  # language-sharing pairs are closer than others.
+  member_friction:
+    "PL|UA": 0.5
+    "GD-L|GD-P": 0.4
+    "GD-L|GD-B": 0.25
+    "GD-P|GD-B": 0.5
+    "PL|GD-P": 0.35
+    "PL|GD-B": 0.2
+    "UA|GD-B": 0.2
+    "UA|GD-P": 0.15
+  settlement:
+    per_year: [[1931, 8000], [1937, 8000], [1938, 0]]
+language:
+  status:
+    uk: [[1931, 0.35], [1938, 0.60], [1960, 0.75]]
+    be: [[1931, 0.15], [1938, 0.35], [1960, 0.50]]
+    lt: [[1931, 0.35], [1938, 0.45]]
+    rue: 0.20
+    yi: [[1931, 0.30], [1970, 0.25]]
+  status_regions:
+    _replace: true
+    "LT_*": {lt: 1.0, pl: 0.70, be: 0.30, de: 0.40}
+    LT_KLA: {lt: 1.0, de: 0.90}
+    WIL.W: {lt: [[1931, 0.40], [1938, 0.65]], be: [[1931, 0.2], [1938, 0.45]]}
+    NOW.W: {be: [[1931, 0.2], [1938, 0.45]], lt: 0.5}
+    BIA.E: {be: [[1931, 0.2], [1938, 0.45]], lt: 0.5}
+    WIL.E: {pl: 0.80, lt: 0.40, ru: 0.20}
+    NOW.E: {pl: 0.80, lt: 0.30, ru: 0.20}
+    POL: {pl: 0.75, uk: [[1931, 0.30], [1938, 0.55]], ru: 0.20}
+    LWO.W: {uk: [[1931, 0.40], [1938, 0.70], [1960, 0.75]]}
+    LWO.E: {pl: 0.85}
+    TAR: {pl: 0.85}
+    STA: {pl: 0.80}
+    WOL: {pl: 0.80, cs: 0.30}
+  own_schooling:
+    uk: [[1931, 0.15], [1938, 0.60], [1950, 0.80]]
+    GC:uk: [[1931, 0.20], [1938, 0.70], [1950, 0.90]]
+    be: [[1931, 0.03], [1938, 0.40], [1950, 0.60]]
+    lt: [[1931, 0.50], [1938, 0.70]]
+    rue: 0.30
+    JW:yi: 0.30
+  own_schooling_regions:
+    _replace: true
+    "LT_*": {pl: [[1931, 0.30], [1938, 0.65]], RC:pl: [[1931, 0.30], [1938, 0.65]], de: 0.50, ru: 0.30, be: 0.40}
+    WIL.E: {pl: 0.70, RC:pl: 0.70}
+    NOW.E: {pl: 0.70, RC:pl: 0.70}
+    POL: {pl: 0.70, RC:pl: 0.70, uk: 0.60}
+    LWO.E: {pl: 0.75, RC:pl: 0.75}
+    TAR: {pl: 0.75, RC:pl: 0.75}
+    STA: {pl: 0.70, RC:pl: 0.70}
+    WOL: {pl: 0.65, RC:pl: 0.65}
+  pressure:
+    _replace: true
+    default: [[1931, 1.0], [1938, 0.75], [1990, 0.65]]
+    "LT_*": [[1931, 0.8], [1938, 0.6]]
+    WIL: [[1931, 1.0], [1938, 0.55]]
+    NOW: [[1931, 1.0], [1938, 0.55]]
+    POL: [[1931, 1.0], [1938, 0.55]]
+    BIA.E: [[1931, 1.0], [1938, 0.55]]
+    LWO: [[1931, 1.0], [1938, 0.5]]
+    TAR: [[1931, 1.0], [1938, 0.5]]
+    STA: [[1931, 1.0], [1938, 0.5]]
+    WOL: [[1931, 1.0], [1938, 0.5]]

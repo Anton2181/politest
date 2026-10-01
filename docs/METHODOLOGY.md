@@ -818,7 +818,46 @@ neighbourhood rule decides *which* cells give way first.
   read-out. Frames are quantised to 8 bits every 5 years (gzip, about
   0.6 MB per scenario) and interpolated in the browser.
 
-### 12.5 What the maps cannot show
+### 12.5 Sub-regions and federal members
+
+The spatial layer also works in the other direction. It splits voivodeships
+for scenarios whose borders cut through them, such as the Curzon line, a
+canton or an autonomy (`plsim/partition.py`, `plsim/data/subregions.py`).
+
+1. **Downscale.** The 1931 reconstruction of the voivodeship is downscaled
+   to the grid as in 12.2.
+2. **Assign.** Each cell and town goes to the sub-region of its nearest
+   county seat (a Voronoi approximation of the county borders).
+3. **Sum.** Each sub-region takes the rural and urban speakers of every
+   language on its cells and in its towns. Within a language, the split by
+   community is the parent's. Fertility, mortality, income and literacy are
+   inherited. Area is the parent's official area times the sub-region's
+   share of the parent's cells.
+
+The children add up exactly to the parent (tested).
+
+Region-keyed settings resolve by specificity: an exact code (`WIL.E`) beats
+the parent code (`WIL`), which beats a wildcard (`LT_*`), which beats
+`default` (`params.region_lookup`).
+
+Two settings describe the political map:
+
+* `dominant_language`: the official language of each region.
+* `members`: the federal member each region belongs to. Migration between
+  members is damped by `member_friction` (per pair) or by the
+  Poland-Lithuania factor.
+
+The census origin of a region (Polish 1931 or Lithuanian 1923 tables) is a
+separate attribute. A Grand Duchy that includes Wilno still starts Wilno
+from the Polish census.
+
+In regions where Ukrainian or Belarusian is the official language, the
+starting competence in it comes from a separate table (`BILINGUAL_0_EAST`).
+Close vernaculars (West Polesian, Rusyn) start mostly competent, and so do
+rural Poles of the Kresy, who usually spoke the local East Slavic speech.
+Townspeople start less competent.
+
+### 12.6 What the maps cannot show
 
 * Towns use their region's urban mix, tilted by the hinterland. Strongly
   Jewish shtetls (Pińsk, Brody) therefore appear more mixed than they were.

@@ -30,6 +30,7 @@ from .demography import (FertilitySchedule, MortalityModel, alkema_decrement, ca
                          frontier_e0_female, mean_age_childbearing, sex_gap, stable_age_distribution, target_gap)
 from .economy import Economy, piecewise
 from .infrastructure import Network
+from .params import region_lookup
 from .language import LanguageModel, census_view
 from .migration import MigrationModel
 
@@ -43,17 +44,7 @@ def _mortality() -> MortalityModel:
 
 
 def _dominant(params: dict, regions) -> list[str]:
-    spec = params["dominant_language"]
-    out = []
-    for r in regions:
-        d = spec.get("default", "pl")
-        for pat, lang in spec.items():
-            if pat == "default":
-                continue
-            if r.code == pat or (pat.endswith("*") and r.code.startswith(pat[:-1])):
-                d = lang
-        out.append(d)
-    return out
+    return [region_lookup(params["dominant_language"], r.code, "pl") for r in regions]
 
 
 BILING_AGE = np.ones(101)
@@ -97,6 +88,8 @@ class Results:
     node_lon: list = field(default_factory=list)
     node_region: list = field(default_factory=list)
     national: list = field(default_factory=list)     # dict per year
+    members: list = field(default_factory=list)      # federal member state of each region
+    dominant: list = field(default_factory=list)     # dominant (official) language of each region
     pop0: np.ndarray | None = None                   # (R,2,G) initial state (start_year)
     town_pop0: np.ndarray | None = None              # (N,) initial town populations
 
@@ -119,6 +112,11 @@ class Simulation:
         self.econ_rng = np.random.default_rng(econ_ss)
         self.net_rng = np.random.default_rng(net_ss)
         self.regions = select_regions(p["include_lithuania"])
+        self._comp = None
+        node_region = {}
+        if p.get("partition"):
+            from .partition import apply_partition
+            self.regions, self._comp, node_region = apply_partition(self.regions, p)
         self.codes = [r.code for r in self.regions]
         self.R = len(self.regions)
         self.dominant = _dominant(p, self.regions)
@@ -130,7 +128,10 @@ class Simulation:
         self.econ = Economy(p["economy"], self.regions, self.econ_rng)
         self.lang = LanguageModel(p["language"], self.regions, self.dominant)
         self.mig = MigrationModel(p["migration"], self.regions, self.dominant)
+        self.member = [region_lookup(p["members"], c, "PL") for c in self.codes]
+        self.mig.member = np.array(self.member)
         infra_p = copy.deepcopy(p["infrastructure"])
+        infra_p["node_region"] = node_region
         self.net = Network(infra_p, self.codes, federation=p["federation"] and p["include_lithuania"], rng=self.net_rng)
         self._init_population()
         self._init_vital_rates()
@@ -147,6 +148,8 @@ class Simulation:
         self.res.node_lat = self.net.lat.tolist()
         self.res.node_lon = self.net.lon.tolist()
         self.res.node_region = self.net.region.tolist()
+        self.res.members = list(self.member)
+        self.res.dominant = list(self.dominant)
         self.res.pop0 = self.P.sum(axis=(3, 4, 5)).astype(np.float32)
         self.res.town_pop0 = self.net.pop.copy()
         self._last_log_ma = None
@@ -156,7 +159,8 @@ class Simulation:
     # ------------------------------------------------------------------ initialisation
     def _init_population(self):
         p = self.params
-        comp = build_initial_composition(self.regions, p["census_variant"], p["lt_variant"])
+        comp = self._comp if self._comp is not None else \
+            build_initial_composition(self.regions, p["census_variant"], p["lt_variant"]).pop
         fert = p["fertility"]
         mort = p["mortality"]
         R = self.R
@@ -164,7 +168,7 @@ class Simulation:
         for r, reg in enumerate(self.regions):
             for u in (0, 1):
                 for c in range(NC):
-                    gs = [g for g in range(NG) if self.group_comm[g] == c and comp.pop[r, u, g] > 0]
+                    gs = [g for g in range(NG) if self.group_comm[g] == c and comp[r, u, g] > 0]
                     if not gs:
                         continue
                     cc = COMMUNITIES[c].code
@@ -189,7 +193,7 @@ class Simulation:
                         grp = GROUPS[g]
                         bsh = bilingual_share(grp, self.dominant[r], u)
                         bage = np.clip(bsh * BILING_AGE, 0, 0.98) if bsh < 1 else np.ones(101)
-                        tot = comp.pop[r, u, g]
+                        tot = comp[r, u, g]
                         for s in (0, 1):
                             self.P[r, u, g, 1, s] = tot * ages[s] * bage
                             self.P[r, u, g, 0, s] = tot * ages[s] * (1 - bage)

@@ -25,6 +25,7 @@
   --halo: rgba(250, 250, 247, 0.92);
   --d0: #f3f2ed; --d1: #c9dcf2; --d2: #86b6ef; --d3: #2a78d6; --d4: #1c5cab; --d5: #0d366b; --d6: #05172f;
   --neg2: #a8431c; --neg1: #f2a07f; --mid: #f0efea; --pos1: #86b6ef; --pos2: #1c5cab;
+  --rail: #1b1a18; --road-case: #5a5750; --road-fill: #fbfbf9; --member: #1b1a18;
   --font-display: "Spectral", "Iowan Old Style", Georgia, serif;
   --font-body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -39,6 +40,7 @@
     --rline: rgba(17, 18, 17, 0.8); --label: #ebeae5; --halo: rgba(17, 18, 17, 0.88);
     --d0: #1b1c1b; --d1: #10263f; --d2: #0d3e78; --d3: #1c5cab; --d4: #2a78d6; --d5: #86b6ef; --d6: #e4eefb;
     --neg2: #f2a07f; --neg1: #a8431c; --mid: #2a2b29; --pos1: #1c5cab; --pos2: #86b6ef;
+    --rail: #f0efe9; --road-case: #b5b3ab; --road-fill: #1a1b1a; --member: #f0efe9;
     color-scheme: dark;
   }
 }
@@ -49,6 +51,7 @@
   --rline: rgba(17, 18, 17, 0.8); --label: #ebeae5; --halo: rgba(17, 18, 17, 0.88);
   --d0: #1b1c1b; --d1: #10263f; --d2: #0d3e78; --d3: #1c5cab; --d4: #2a78d6; --d5: #86b6ef; --d6: #e4eefb;
   --neg2: #f2a07f; --neg1: #a8431c; --mid: #2a2b29; --pos1: #1c5cab; --pos2: #86b6ef;
+  --rail: #f0efe9; --road-case: #b5b3ab; --road-fill: #1a1b1a; --member: #f0efe9;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -88,6 +91,19 @@ button:focus-visible, select:focus-visible, input:focus-visible, .chip:focus-vis
 .dot { width: 10px; height: 10px; border-radius: 2px; flex: none; }
 .check { display: flex; gap: 8px; align-items: center; font-size: var(--step--1); color: var(--ink2); }
 .legend { display: grid; gap: 4px; }
+.overlays { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.overlays .panel-h { margin-right: 4px; }
+.netbox { display: grid; gap: 10px; border-top: 1px solid var(--rule); padding-top: 14px; }
+.netkey { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; font-size: var(--step--1); color: var(--ink2); }
+.netkey span { display: flex; align-items: center; gap: 8px; }
+.netkey svg { width: 30px; height: 10px; flex: none; }
+.kmtab { width: 100%; border-collapse: collapse; font-size: var(--step--1); }
+.kmtab td { padding: 3px 0; border-bottom: 1px solid var(--rule); }
+.kmtab td.n { text-align: right; font-family: var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink); }
+.kmtab td.sub { padding-left: 12px; color: var(--ink2); }
+.netlog { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: var(--step--1); color: var(--ink2); }
+.netlog li { display: grid; grid-template-columns: 3.2rem minmax(0, 1fr); gap: 8px; }
+.netlog .y { font-family: var(--font-data); color: var(--muted); font-variant-numeric: tabular-nums; }
 .legend-row { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: var(--step--1); padding: 3px 4px; border-radius: 4px; border: 0; background: transparent; color: var(--ink); text-align: left; font-family: inherit; cursor: pointer; }
 button.legend-row:hover { background: var(--ctl); }
 .legend-row .sw { width: 14px; height: 14px; border-radius: 3px; }
@@ -162,6 +178,11 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
         <button type="button" role="radio" data-mode="density" aria-checked="false">Density</button>
         <button type="button" role="radio" data-mode="growth" aria-checked="false">Growth</button>
       </div>
+      <div class="overlays">
+        <span class="panel-h">Overlay</span>
+        <label class="check" for="show-rail"><input type="checkbox" id="show-rail"> Railways</label>
+        <label class="check" for="show-road"><input type="checkbox" id="show-road"> Main roads</label>
+      </div>
       <div class="share-opts" id="share-opts" hidden>
         <div class="chips" id="chips" aria-label="Language"></div>
         <label class="check" for="change"><input type="checkbox" id="change"> Show change since 1932 (percentage points)</label>
@@ -180,6 +201,13 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
         <figcaption>Home languages of the whole population, 1932–2032 (share of residents)</figcaption>
         <svg id="chart" viewBox="0 0 360 170" role="img" aria-label="Stacked area chart of national home-language shares"></svg>
       </figure>
+      <div class="netbox">
+        <div class="panel-h">Transport network · <span id="net-year">1932</span></div>
+        <div class="netkey" id="netkey"></div>
+        <table class="kmtab" id="kmtab"></table>
+        <div class="panel-h">Recent openings and closures</div>
+        <ol class="netlog" id="netlog"></ol>
+      </div>
     </aside>
   </main>
 
@@ -191,6 +219,8 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
         <li><strong>1932.</strong> County language shares from the 1931 Polish census (and estimates where the census was silent, such as Kashubian, Lemko and the Lauda gentry) are interpolated inside each voivodeship and fitted to its totals by iterative proportional fitting.</li>
         <li><strong>Each year.</strong> The region's net language shift is placed where speakers of the gaining language live nearby. Following Prochazka &amp; Vogl, the chance to shift grows with the gaining language's share in a Gaussian neighbourhood (10 km), plus a constant part for school, church and state. Towns reach further into their hinterland as they grow.</li>
         <li><strong>Population.</strong> Towns follow the transport-network model. Rural cells near growing towns gain a little each year; remote ones lose, which produces suburban rings and rural exodus.</li>
+        <li><strong>Transport.</strong> The network grows by cost–benefit appraisal under rail and road budgets, plus the dated 1930s projects and the 1939 plans. Lines are drawn straight between the 230 modelled towns, so they show connections, not alignments. The map shows the network as of the latest 5-year frame.</li>
+        <li><strong>Federal members.</strong> Dashed lines mark the borders between federal members, such as Poland and Lithuania, or the autonomy and the cantons in the cantonal scenario. Within a member, each sub-region has its own official language.</li>
       </ul>
     </div>
     <div>
@@ -252,13 +282,6 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   for (let i = 0; i < N; i++) RIDX[ROW[i] * W + COL[i]] = i;
   const latOf = (i) => BB[1] + (ROW[i] + 0.5) * G.dlat;
   const lonOf = (i) => BB[0] + (COL[i] + 0.5) * G.dlon;
-  const regionCodes = G.regions.map((r) => r.code);
-  const WAW = regionCodes.indexOf("WAW"), WAR = regionCodes.indexOf("WAR");
-  function regionLabel(k) {
-    const r = G.regions[k];
-    if (!r) return "";
-    return r.code.startsWith("LT_") || r.code === "WAW" ? r.name : "woj. " + r.name;
-  }
 
   const store = {};
   function unpack(bytes) {
@@ -302,6 +325,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
       dens: ["--d0", "--d1", "--d2", "--d3", "--d4", "--d5", "--d6"].map((n) => hexRgb(g(n))),
       div: ["--neg2", "--neg1", "--mid", "--pos1", "--pos2"].map((n) => hexRgb(g(n))),
       fontBody: g("--font-body"),
+      rail: g("--rail"), roadCase: g("--road-case"), roadFill: g("--road-fill"), member: g("--member"),
     };
   }
   const CAT_RGB = CATS.map((c) => hexRgb(c.color));
@@ -313,10 +337,29 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   const rgbStr = (c) => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
 
   // ---------------------------------------------------------------- state
-  const state = { scen: META.scenarios[0].name, mode: "plurality", cat: 1, change: false, year: Y0, playing: false, hover: -1 };
+  const state = { scen: META.scenarios[0].name, mode: "plurality", cat: 1, change: false, year: Y0, playing: false, hover: -1,
+    rail: false, road: false };
   let cur = null;                         // unpacked data of the current scenario
   const VS = new Float32Array(N * 8), VD = new Float32Array(N);
   const scenByName = Object.fromEntries(META.scenarios.map((s) => [s.name, s]));
+  const LANG_NAME = { pl: "Polish", lt: "Lithuanian", uk: "Ukrainian", be: "Belarusian", de: "German" };
+  function prep(sc) {
+    if (sc._cellreg) return sc;
+    sc._cellreg = b64bytes(sc.geo.cellreg);
+    sc._netc = b64bytes(sc.net.c);
+    const labels = [...new Set(sc.geo.members)];
+    sc._member = sc.geo.members.map((m) => labels.indexOf(m));
+    return sc;
+  }
+  const scen = () => scenByName[state.scen];
+  function regionInfo(i) {
+    const sc = scen(), k = sc._cellreg[i];
+    if (k === 255) return null;
+    const code = sc.geo.codes[k], name = sc.geo.names[k];
+    const label = code.startsWith("LT_") || code === "WAW" || code.includes(".") ? name : "woj. " + name;
+    return { label, member: sc.geo.members[k], official: LANG_NAME[sc.geo.dominant[k]] || sc.geo.dominant[k] };
+  }
+  const frameFloor = (y) => { let f = 0; while (f < NF - 1 && FR[f + 1] <= y) f++; return f; };
 
   function frameAt(y) {
     let f = 0;
@@ -389,33 +432,35 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   }
 
   // ---------------------------------------------------------------- vector layers
-  let baseLayer = null, topLayer = null, segInner = [], segOuter = [];
+  let baseLayer = null, topLayer = null, segInner = [], segOuter = [], segMember = [];
   function computeBorders() {
-    // region borders and the state border from the raster, for this scenario's coverage
+    // region, member and state borders from the raster, for this scenario's coverage
+    const sc = scen(), codes = sc.geo.codes;
+    const waw = codes.indexOf("WAW"), war = codes.indexOf("WAR");
     const reg = new Int16Array(W * H).fill(-1);
     for (let i = 0; i < N; i++) {
-      if (!cur.dens[i]) continue;
-      let r = REG[i];
-      if (r === WAW && WAR >= 0) r = WAR;
-      reg[ROW[i] * W + COL[i]] = r;
+      const k = sc._cellreg[i];
+      if (!cur.dens[i] || k === 255) continue;
+      reg[ROW[i] * W + COL[i]] = k === waw && war >= 0 ? war : k;
     }
-    segInner = []; segOuter = [];
+    const mem = (k) => sc._member[k];
+    segInner = []; segOuter = []; segMember = [];
+    const push = (a, b, seg) => {
+      if (a === b || Math.max(a, b) < 0) return;
+      if (Math.min(a, b) < 0) segOuter.push(seg);
+      else if (mem(a) !== mem(b)) segMember.push(seg);
+      else segInner.push(seg);
+    };
     for (let r = 0; r < H; r++) {
       for (let c = 0; c < W; c++) {
         const a = reg[r * W + c];
         if (c + 1 < W) {
-          const b = reg[r * W + c + 1];
-          if (a !== b && Math.max(a, b) >= 0) {
-            const lon = BB[0] + (c + 1) * G.dlon, s = [lon, BB[1] + r * G.dlat, lon, BB[1] + (r + 1) * G.dlat];
-            (Math.min(a, b) >= 0 ? segInner : segOuter).push(s);
-          }
+          const lon = BB[0] + (c + 1) * G.dlon;
+          push(a, reg[r * W + c + 1], [lon, BB[1] + r * G.dlat, lon, BB[1] + (r + 1) * G.dlat]);
         }
         if (r + 1 < H) {
-          const b = reg[(r + 1) * W + c];
-          if (a !== b && Math.max(a, b) >= 0) {
-            const lat = BB[1] + (r + 1) * G.dlat, s = [BB[0] + c * G.dlon, lat, BB[0] + (c + 1) * G.dlon, lat];
-            (Math.min(a, b) >= 0 ? segInner : segOuter).push(s);
-          }
+          const lat = BB[1] + (r + 1) * G.dlat;
+          push(a, reg[(r + 1) * W + c], [BB[0] + c * G.dlon, lat, BB[0] + (c + 1) * G.dlon, lat]);
         }
       }
     }
@@ -453,6 +498,44 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     x.strokeStyle = T.line; x.lineWidth = 1.1; x.beginPath();
     segOuter.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
     x.stroke();
+    x.strokeStyle = T.halo; x.lineWidth = 3.2; x.beginPath();
+    segMember.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
+    x.stroke();
+    x.strokeStyle = T.member; x.lineWidth = 1.5; x.setLineDash([5, 3]); x.lineCap = "butt"; x.beginPath();
+    segMember.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
+    x.stroke(); x.setLineDash([]);
+  }
+
+  // transport network: rail classes 1-5 (narrow, secondary, main, electrified, high-speed),
+  // road classes 1-5 (dirt, gravel, paved, expressway, motorway)
+  const RAIL_W = [0, 0.7, 1.0, 1.5, 2.1, 3.0];
+  function drawNetwork() {
+    if (!state.rail && !state.road) return;
+    const sc = scen(), e = sc.net.e, c = sc._netc, f = frameFloor(state.year), nodes = META.nodes;
+    const paths = { r: [0, 1, 2, 3, 4, 5].map(() => new Path2D()), d: [0, 1, 2, 3, 4, 5].map(() => new Path2D()) };
+    for (let k = 0; k < e.length; k++) {
+      const cls = c[k * NF + f];
+      if (!cls) continue;
+      const a = nodes[e[k][0]], b = nodes[e[k][1]], P = paths[e[k][2] === 0 ? "r" : "d"][cls];
+      P.moveTo(px(a[1]), py(a[0])); P.lineTo(px(b[1]), py(b[0]));
+    }
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    if (state.road) {
+      ctx.globalAlpha = 0.45; ctx.strokeStyle = T.roadCase; ctx.lineWidth = 0.7; ctx.stroke(paths.d[3]); ctx.globalAlpha = 1;
+      for (const [k, wc, wf] of [[4, 3.6, 1.6], [5, 4.6, 2.4]]) {
+        ctx.strokeStyle = T.roadCase; ctx.lineWidth = wc; ctx.stroke(paths.d[k]);
+        ctx.strokeStyle = T.roadFill; ctx.lineWidth = wf; ctx.stroke(paths.d[k]);
+      }
+    }
+    if (state.rail) {
+      ctx.strokeStyle = T.halo; ctx.lineWidth = RAIL_W[5] + 2; ctx.stroke(paths.r[5]);
+      for (let k = 1; k <= 5; k++) {
+        ctx.strokeStyle = T.rail; ctx.lineWidth = RAIL_W[k];
+        if (k === 1) ctx.setLineDash([3, 2]);
+        ctx.stroke(paths.r[k]);
+        ctx.setLineDash([]);
+      }
+    }
   }
 
   // ---------------------------------------------------------------- drawing
@@ -514,12 +597,13 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     ctx.save();
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+    if (state.rail || state.road) ctx.globalAlpha = 0.6;
     const x0 = px(BB[0]), x1 = px(BB[0] + W * G.dlon), y0 = py(BB[1] + H * G.dlat), y1 = py(BB[1]);
     ctx.drawImage(rcan, 0, 0, W, H, x0, y0, x1 - x0, y1 - y0);
     ctx.restore();
     ctx.drawImage(topLayer, 0, 0);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    drawTowns(); drawHover(); drawScale();
+    drawNetwork(); drawTowns(); drawHover(); drawScale();
     updateReadouts();
   }
   let pending = false;
@@ -563,7 +647,42 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
       });
     }
     updateProbe();
+    updateNet();
     moveCursor();
+  }
+  const KIND = { new: "New", dated: "Opened", closure: "Closed", upgrade: "Upgraded to" };
+  const CLS_NAME = { nar: "narrow-gauge line", sec: "branch line", main: "main line", main_el: "electrified main line",
+    hsr: "high-speed line", dirt: "dirt road", gravel: "gravel road", paved: "paved road", express: "expressway", motorway: "motorway" };
+  let netYearShown = null;
+  function updateNet() {
+    const sc = scen(), y = Math.floor(state.year);
+    if (netYearShown === `${state.scen}:${y}`) return;
+    netYearShown = `${state.scen}:${y}`;
+    $("net-year").textContent = y;
+    const [f, t] = frameAt(state.year), a = sc.net.km[f], b = sc.net.km[f + 1];
+    const km = a.map((v, k) => v + (b[k] - v) * t);
+    const fmt = (v) => Math.round(v).toLocaleString("en-GB");
+    const rows = [
+      ["Railways", km[0] + km[1] + km[2] + km[3] + km[4], ""],
+      ["electrified", km[3] + km[4], "sub"], ["high-speed", km[4], "sub"],
+      ["Paved roads", km[7] + km[8] + km[9], ""], ["expressways", km[8], "sub"], ["motorways", km[9], "sub"],
+    ];
+    $("kmtab").innerHTML = rows.map((r) => `<tr><td class="${r[2]}">${r[0]}</td><td class="n">${fmt(r[1])} km</td></tr>`).join("");
+    const recent = sc.net.log.filter((r) => r[0] <= y).slice(-6).reverse();
+    $("netlog").innerHTML = recent.length ? recent.map((r) => `<li><span class="y">${r[0]}</span><span>${KIND[r[1]] || r[1]} ${CLS_NAME[r[3]] || r[3]}: ${r[4]}–${r[5]}</span></li>`).join("")
+      : `<li><span class="y"></span><span>Nothing yet.</span></li>`;
+  }
+  function buildNetKey() {
+    const sw = (inner) => `<svg viewBox="0 0 30 10" aria-hidden="true">${inner}</svg>`;
+    const line = (w, col, dash) => `<line x1="2" y1="5" x2="28" y2="5" stroke="${col}" stroke-width="${w}" stroke-linecap="round"${dash ? ' stroke-dasharray="3 2"' : ""}/>`;
+    $("netkey").innerHTML = [
+      [sw(line(3.0, "var(--rail)")), "High-speed rail"], [sw(line(2.1, "var(--rail)")), "Electrified main line"],
+      [sw(line(1.0, "var(--rail)")), "Branch line"], [sw(line(0.7, "var(--rail)", true)), "Narrow gauge"],
+      [sw(line(4.6, "var(--road-case)") + line(2.4, "var(--road-fill)")), "Motorway"],
+      [sw(line(3.6, "var(--road-case)") + line(1.6, "var(--road-fill)")), "Expressway"],
+      [sw(line(0.7, "var(--road-case)") .replace("<line", '<line opacity="0.45"')), "Paved road"],
+      [sw(`<line x1="2" y1="5" x2="28" y2="5" stroke="var(--member)" stroke-width="1.5" stroke-dasharray="5 3"/>`), "Federal member border"],
+    ].map(([g, l]) => `<span>${g}${l}</span>`).join("");
   }
   function updateProbe() {
     const box = $("probe"), i = state.hover;
@@ -577,7 +696,9 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     const ratio = q0 ? Math.pow(10, ld - logDens(q0)) : null;
     const sh = CATS.map((c, k) => ({ k, v: shareOf(i, k) })).sort((a, b) => b.v - a.v).filter((o) => o.v >= 0.005).slice(0, 4);
     const lat = latOf(i).toFixed(2), lon = lonOf(i).toFixed(2);
-    box.innerHTML = `<h3>${regionLabel(REG[i])}</h3>
+    const ri = regionInfo(i) || { label: "", member: "", official: "" };
+    box.innerHTML = `<h3>${ri.label}</h3>
+      <div class="meta">${ri.member} · official: ${ri.official}</div>
       <div class="meta">${lat}°N ${lon}°E · ${Math.floor(state.year)}</div>
       <div class="meta">${dens >= 100 ? dens.toFixed(0) : dens.toFixed(1)} per km² · about ${fmtCount(dens * area)} residents${ratio ? ` · ×${ratio.toFixed(2)} since 1932` : ""}</div>
       <div class="bars">${sh.map((o) => `<div class="bar"><span>${CATS[o.k].label}</span><span class="track"><span class="fill" style="display:block;width:${(o.v * 100).toFixed(1)}%;background:${CATS[o.k].color}"></span></span><span class="v">${fmtPct(o.v)}</span></div>`).join("")}</div>`;
@@ -682,6 +803,8 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
       status("");
     }
     state.scen = name;
+    prep(scenByName[name]);
+    netYearShown = null;
     cur = store[name];
     $("scen-desc").textContent = scenByName[name].description;
     computeBorders(); buildLayers(); buildChart(); buildLegend(); schedule();
@@ -757,12 +880,15 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     }
   });
   $("change").addEventListener("change", (e) => { state.change = e.target.checked; buildLegend(); schedule(); });
+  $("show-rail").addEventListener("change", (e) => { state.rail = e.target.checked; schedule(); });
+  $("show-road").addEventListener("change", (e) => { state.road = e.target.checked; schedule(); });
   const sel = $("scenario");
   sel.innerHTML = META.scenarios.map((s) => `<option value="${s.name}">${s.title}</option>`).join("");
   sel.addEventListener("change", () => loadScenario(sel.value));
 
   readTheme();
   buildChips();
+  buildNetKey();
   resize();
   loadScenario(state.scen);
 })();

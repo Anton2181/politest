@@ -22,6 +22,57 @@ mapping instead of being merged into it.
 | `lt_polish_claim` | Baseline, but Lithuania starts with the Polish electoral committee's 1923 estimate of Poles (~10 %). | Contested Lithuanian census. |
 | `finnish_path` | Fast convergence (kappa up to 0.88), larger infrastructure budgets, less emigration. | Finland and Austria: agrarian successor states that converged fast. |
 | `stagnation` | Low convergence (kappa ~0.45), 1939 plans not executed, no Poland-A/B equalisation, heavy emigration. | Interwar Argentina and the Latin-American middle-income trap; the chronic 1930s budget constraint. |
+| `ukraine_autonomy_tricantonal` | From 1938: (1) a **Ukrainian autonomy** of the lwowskie, tarnopolskie and stanisławowskie voivodeships plus Volhynia, with Ukrainian schools and a Ukrainian university; the official language follows the district majority (Ukrainian east of the San, Polish in western lwowskie). (2) A **tri-cantonal Lithuania** (a Grand Duchy) holding everything east of the later Curzon line and north of Volhynia, in Lithuanian, Polish (Wilno–Lida–Grodno) and Belarusian (eastern Wilno lands, eastern Nowogródek, Polesie) cantons, each schooling its minorities. No forced Lithuanisation of the Lauda Poles; Polish settlement in the east stops. | The voivodeship self-government statute of 26 Sep 1922 for Lwów, Tarnopol and Stanisławów (passed, never implemented); the Hymans plan of 1921 for a two-canton Lithuania (Kaunas and Vilnius) in union with Poland; Belarusian national claims of 1918-20; the Moravian (1905) and Bukovinian (1910) compromises, which gave language rights by district majority. |
+| `ukraine_autonomy_tricantonal_rc` | The same settlement, started from the religion-corrected 1931 census reading. | Many Catholic Belarusians and Greek-Catholic Ukrainians were recorded as Polish speakers in 1931. |
+
+## Sub-regions, cantons and federal members
+
+The 1931 voivodeships are too coarse for some settlements: the Curzon line
+cuts białostockie, and a Belarusian canton would take eastern wileńskie but
+not Wilno. A scenario can therefore split voivodeships along county lines:
+
+```yaml
+partition: [BIA, WIL, NOW, LWO]       # see plsim/data/subregions.py
+members: {default: PL, "LT_*": GD-L, WIL.W: GD-P, WIL.E: GD-B, ...}
+dominant_language: {default: pl, WIL.E: be, LWO.E: uk, ...}
+migration:
+  member_friction: {"PL|UA": 0.5, "GD-L|GD-P": 0.4, ...}
+```
+
+* **Splitting.** The voivodeship's 1931 reconstruction is downscaled to the
+  7 km grid (county anchors + IPF), and each sub-region takes the people on
+  its own cells and in its own towns. Sub-regions are named `PARENT.CHILD`
+  and inherit every setting given for the parent unless one is given for
+  them.
+* **Members** are the units of the federation (Poland, the Ukrainian
+  autonomy, each canton of the Grand Duchy). Migration between members is
+  damped by `member_friction`. Pairs not listed get the baseline
+  Poland-Lithuania factor (0.10). The listed values are assumptions:
+  autonomy and cantons are closer than separate states, and pairs sharing a
+  language are closer than others.
+
+### Results: `ukraine_autonomy_tricantonal` (seeded run)
+
+| Member | 1933 | 2032 | Home languages 1933 → 2032 |
+|---|---|---|---|
+| Poland (crown lands) | 20.0 M | 26.6 M | Polish 85 → 84 %, Yiddish 9 → 5 % |
+| Ukrainian autonomy | 8.4 M | 11.2 M | Ukrainian 51 → 65 %, Polish 39 → 28 % |
+| Lithuanian canton | 2.42 M | 2.16 M | Lithuanian 82 → 83 %, Polish 3.2 → 5.8 % |
+| Polish canton (Wilno–Lida–Grodno) | 1.46 M | 1.97 M | Polish 69 → 64 %, Belarusian 15 → 21 % |
+| Belarusian canton | 2.47 M | 5.66 M | Belarusian 28 → 51 %, West Polesian 29 → 20 %, Polish 30 → 22 % |
+
+* **Belarusian** speakers number 3.9 M in 2032, against 1.4 M in the
+  baseline. They come from Belarusian schooling, from West Polesian
+  speakers shifting to Belarusian instead of Polish, and from high Polesian
+  fertility.
+* **Ukrainian** speakers number 8.8 M, against 8.2 M in the baseline.
+  Tarnopol turns from a Polish to a Ukrainian plurality (49/46 → 38/56).
+  Eastern lwowskie, with Lwów, reaches 56 % Ukrainian. West of the San,
+  Polish holds (64 %), with a growing Ukrainian minority (12 → 25 %).
+* **Lauda Poles** stay at about 6 % of the Lauda unit. In the baseline they
+  end at 4 %. Under `forced_lithuanization` they fall to 1.5 %, from 23 k to
+  6 k speakers.
+* **Polish** falls to 59 % of the whole union, from 68 % in the baseline.
 
 ## What scenarios do *not* vary
 

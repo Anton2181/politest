@@ -112,7 +112,8 @@ class Network:
         self.N = len(NODES)
         self.lat = np.array([n.lat for n in NODES])
         self.lon = np.array([n.lon for n in NODES])
-        self.region = np.array([reg_idx.get(n.region, -1) for n in NODES])
+        override = params.get("node_region", {})          # towns of split voivodeships
+        self.region = np.array([reg_idx.get(override.get(n.name, n.region), -1) for n in NODES])
         self.foreign = self.region < 0
         self.pop = np.array([n.pop_1931 for n in NODES], dtype=float)  # thousands (urban)
         self.base_pop = self.pop.copy()

@@ -67,6 +67,7 @@ SCENARIO_TITLES = {
     "finnish_path": "Fast convergence",
     "stagnation": "Stagnation",
     "ii_rp_only": "Poland alone, no union",
+    "ukraine_autonomy_tricantonal": "Ukrainian autonomy + tri-cantonal Lithuania",
 }
 
 
@@ -82,6 +83,7 @@ def build_maps(outroot: str, scenarios: list[str] | None = None, gifs: bool = Tr
     for name in names:
         t = time.time()
         p = load_scenario(name)
+        p["snapshot_years"] = sorted(set(p["snapshot_years"]) | set(webmap.FRAMES))   # network frames
         res = Simulation(p).run()
         sr = downscale(res)
         title = SCENARIO_TITLES.get(name, name)
@@ -92,7 +94,8 @@ def build_maps(outroot: str, scenarios: list[str] | None = None, gifs: bool = Tr
         last[name] = (sr.grid, mp.display_shares(sr.display(sr.frame(sr.years[-1]))))
         webmap.write_data(atlasdir, name, webmap.encode_frames(sr, full))
         entries.append({"name": name, "title": title, "description": p["meta"]["description"],
-                        "series": webmap.national_series(res), "towns": webmap.town_series(sr)})
+                        "series": webmap.national_series(res), "towns": webmap.town_series(sr),
+                        "net": webmap.network_payload(res), "geo": webmap.geometry_payload(res, sr, full)})
         print(f"  {name}: {time.time() - t:.1f}s")
         del sr, res
     mp.fig_scenarios_plurality(last, os.path.join(mapdir, "scenarios_plurality_2032.png"),

@@ -27,6 +27,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from .params import region_lookup
+
 
 def piecewise(year: float, schedule, kind: str = "linear") -> float:
     """Evaluate a [[year, value], ...] schedule (linear interpolation, or step)."""
@@ -111,10 +113,11 @@ class Economy:
         if d_log_ma is not None:
             drel += p["ma_elasticity"] * d_log_ma
         bonus = np.zeros(len(self.regions))
-        for code, sched in p.get("regional_programmes", {}).items():
-            idx = [i for i, r in enumerate(self.regions) if r.code == code]
-            if idx:
-                bonus[idx[0]] += piecewise(year, sched)
+        progs = p.get("regional_programmes", {})
+        for i, r in enumerate(self.regions):
+            sched = region_lookup(progs, r.code)
+            if sched is not None:
+                bonus[i] += piecewise(year, sched)
         # Poland A/B equalisation policy: extra convergence for poor regions.
         eq = piecewise(year, p["equalisation"])
         drel += eq * np.maximum(0, -np.log(self.rel))
