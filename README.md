@@ -37,8 +37,9 @@ python -m plsim run baseline_counties   # the baseline on 269 counties (about 4 
 pytest -q                               # 67 tests
 ```
 
-A 100-year run takes about 20 s. The full report takes about 7 minutes on 4
-cores.
+A 100-year run takes about 20 s (about 4 minutes at county level). The
+full report takes about 17 minutes on 4 cores, half of it for the two
+county-level scenarios.
 
 ## What is modelled
 
@@ -226,6 +227,7 @@ are in `docs/METHODOLOGY.md` §12.6.
 | Scenario | Polish-unit pop. (M) | Polish % | Ukrainian % | Yiddish % | Belarusian % | Lithuanian % | W. Polesian (k) |
 |---|---|---|---|---|---|---|---|
 | baseline | 46.2 | 67.5 | 16.9 | 3.9 | 2.9 | 4.4 | 950 |
+| baseline_counties | 46.1 | 67.4 | 17.0 | 3.9 | 2.9 | 4.3 | 923 |
 | ii_rp_only | 46.3 | 70.3 | 17.9 | 4.1 | 3.1 | 0.2 | 993 |
 | federal_autonomy | 46.2 | 62.6 | 18.2 | 4.6 | 4.2 | 4.4 | 1,570 |
 | integral_nationalism | 45.7 | 71.5 | 15.7 | 3.2 | 2.1 | 4.3 | 547 |
@@ -235,8 +237,9 @@ are in `docs/METHODOLOGY.md` §12.6.
 | census_vernacular | 46.3 | 64.2 | 19.0 | 3.9 | 4.2 | 4.2 | 951 |
 | finnish_path | 49.1 | 67.8 | 16.4 | 3.8 | 2.7 | 4.3 | 915 |
 | stagnation | 39.0 | 65.7 | 17.2 | 4.4 | 3.1 | 4.6 | 1,006 |
-| ukraine_autonomy_tricantonal | 45.5 | 58.8 | 18.5 | 4.5 | 8.2 | 4.4 | 1,347 |
-| ukraine_autonomy_tricantonal_rc | 45.5 | 55.4 | 20.2 | 4.5 | 9.9 | 4.4 | 1,348 |
+| ukraine_autonomy_tricantonal | 45.7 | 59.4 | 18.2 | 4.5 | 7.9 | 4.4 | 1,339 |
+| ukraine_autonomy_tricantonal_rc | 45.7 | 56.0 | 19.9 | 4.5 | 9.6 | 4.4 | 1,341 |
+| ukraine_autonomy_tricantonal_counties | 45.6 | 59.5 | 18.3 | 4.5 | 7.8 | 4.4 | 1,328 |
 
 Polish-speakers in the Lithuanian units in 2032:
 
