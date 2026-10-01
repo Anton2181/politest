@@ -186,6 +186,24 @@ DEFAULTS: dict[str, Any] = {
         "haredi_exit": [[1931, 0.20], [1970, 0.15], [2000, 0.12]],
         "haredi_entry": 0.01,
     },
+
+    # ------------------------------------------------------------------ spatial downscaling (maps only)
+    "spatial": {
+        "anchor_sigma_km": 22.0,     # county-anchor interpolation kernel
+        "sigma_km": 10.0,            # neighbourhood kernel (Prochazka & Vogl 2017)
+        "cutoff_sigmas": 3.0,
+        "town_sigma_km": 8.0,        # town influence radius at 20k inhabitants...
+        "town_sigma_exp": 0.3,       # ...growing as (pop / 20k)^exp (Trudgill gravity)
+        "town_weight": 1.0,          # extra weight of towns in the neighbourhood
+        "a": 1.31,                   # exponent on neighbourhood share (Abrams-Strogatz)
+        "kappa0": 0.15,              # neighbourhood-independent (institutional) part of shift
+        "beta_access": 0.004,        # yearly rural growth elasticity w.r.t. town potential
+        "pull_km": 25.0,             # decay length of the town potential
+        "seed_floor": 0.01,          # share of arrivals placed independent of existing speakers
+        "town_seed_floor": 0.05,     # initial town composition: (floor + rural share)^exp
+        "town_seed_exp": 0.8,
+        "urban_density": 4000.0,     # persons/km2 used to draw towns as areas on maps
+    },
 }
 
 # Parameters re-drawn in Monte-Carlo runs: path -> (distribution, a, b)

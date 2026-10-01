@@ -100,3 +100,15 @@ observation regime.
 | Wymysorys | 92 % (1880) -> 72 % (1890) of Wilamowice | A |
 | Scottish Gaelic shift rate | ~0.035 per year (Sutherland 1891-1971, Kandler et al. 2010) | A |
 | Abrams-Strogatz exponent | a ~ 1.31 | A |
+| Spatial shift kernel (maps) | Gaussian neighbourhood; front velocity 0.11 km/y, D = 0.136 km²/y, k = 0.022/y (southern Carinthia, 1 km grid) | A | Prochazka & Vogl 2017, PNAS 114: 4365 |
+
+## Geography (maps only)
+
+| Item | Value | Grade | Source / note |
+|---|---|---|---|
+| Coastline, lakes, rivers | GSHHS / World Data Bank II, intermediate resolution, clipped to 13.5-30.5 E, 47.3-57.2 N | A | basemap-data 2.0; `plsim/data/geo_base.json` |
+| State territory (1938) | land cells nearest to a domestic town; about 110 foreign "mask" towns trace the borders with Germany, Danzig, East Prussia, Latvia, the USSR, Romania and Czechoslovakia | C | no digital interwar boundary layer was reachable; total cell area about 5 % below the official area |
+| Voivodeship borders | weighted Voronoi of county towns, with weights calibrated to the official areas | C | approximate shapes, exact areas (±5 %) |
+| County language anchors, 1931 (26) | e.g. Sokal 55.0 % Ukrainian, Turka 70.3 %, Lesko 63.0 %, Lubaczów 43.8 %, Przemyśl 36.9 %, Jarosław 14.2 %, Łuck 59.2 %, Kostopol 64.3 %, Krzemieniec 80.7 %, Kamień Koszyrski 8.7 % Ukrainian, Nieśwież 67.4 % Belarusian, Baranowicze 43.9 %, Mołodeczno 53.7 %, Wilejka 49.8 %, Bielsk 34.8 %, Grodno 32.8 %, Lida 11.2 %, Oszmiana 9.7 % | A | 1931 county tables as quoted in secondary sources |
+| Other county anchors (189) | Kashubian counties (not enumerated in 1931), German colonies in Poznań, Pomorze, Łódź and Volhynia, Lemko districts, Old Believers, Latvians, Lauda; zero anchors for counties without a minority | C | shape the pattern inside a voivodeship only; regional totals come from the census reconstruction |
+| Terrain thinning | Polesie marshes -40 %, Carpathians -35 %, Hutsul highlands -30 % rural density | C | |

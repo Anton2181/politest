@@ -17,8 +17,9 @@ It is written so that each assumption can be checked and changed.
 9. [How the parts are coupled](#9-how-the-parts-are-coupled)
 10. [Calibration and validation](#10-calibration-and-validation)
 11. [Uncertainty](#11-uncertainty)
-12. [Limitations](#12-limitations)
-13. [References](#13-references)
+12. [Maps: spatial downscaling and local language shift](#12-maps-spatial-downscaling-and-local-language-shift)
+13. [Limitations](#13-limitations)
+14. [References](#14-references)
 
 ---
 
@@ -700,11 +701,139 @@ comparisons use common random numbers:
 
 Reports give medians with 50 % and 90 % bands.
 
-## 12. Limitations
+## 12. Maps: spatial downscaling and local language shift
 
-* **Spatial grain.** The unit is the voivodeship/apskritis (x urban/rural),
-  not the powiat. The enclave factors are a reduced-form substitute for
-  village-level geography.
+The projection works with 23 regions x rural/urban. To draw maps,
+`plsim/spatial.py` places each region on a grid of 9,148 cells of
+0.0625° x 0.1° (about 7 x 7 km) and carries the cells forward year by year.
+Every year the cells and towns of a region add up exactly to the main
+model's figures (by region x rural/urban x language). The spatial layer adds
+*where*, never *how many*.
+
+### 12.1 Territory and regions
+
+* **Territory.** No digital boundary layer of the interwar state was
+  reachable. A cell belongs to the state when it is on land (GSHHS
+  coastline) and its nearest town, among the 230 domestic network towns and
+  a ring of about 110 foreign "mask" towns tracing the 1938 borders, is
+  domestic and within 70 km.
+* **Regions.** Cells are assigned by a multiplicatively weighted Voronoi
+  diagram of the domestic towns, with one weight per region calibrated so
+  that cell areas match the official areas. Cell coverage is about 5 % below
+  the official total; Warsaw city has two cells.
+* **Terrain.** Rural density is thinned in the Polesie marshes (-40 %), the
+  Carpathians (-35 %) and the Hutsul highlands (-30 %), with smooth edges.
+
+### 12.2 Initial state (spatial microsimulation)
+
+The 1931 regional composition is downscaled by iterative proportional
+fitting (IPF; Ballas et al. 2005; Lovelace & Dumont 2016):
+
+1. **Rural population.** Each region's rural population goes to its cells
+   in proportion to area x terrain x (town potential)^0.1.
+2. **Seed of language shares.** County anchors (`data/geography.py`, 215
+   county seats with 1931 minority shares) are interpolated with a Gaussian
+   kernel (σ = 22 km) inside the region. 26 anchors are graded "A": the
+   county figure comes from the 1931 tables as quoted in secondary sources
+   (e.g. Sokal 55.0 % Ukrainian, Turka 70.3 %, Łuck 59.2 %, Krzemieniec
+   80.7 %, Nieśwież 67.4 % Belarusian). The rest are "C" estimates from the
+   known linguistic geography (Kashubian counties, German colonies, Lemko
+   districts, Old Believers, Lauda), including zero anchors that mark
+   counties without a given minority. Anchors only shape the pattern inside
+   a region; regional totals always come from the census reconstruction. Languages without
+   anchors get the regional share. The dominant language (Polish, or
+   Lithuanian in the Lithuanian units) fills the remainder.
+3. **Fit.** IPF fits the seed to cell totals and region x language totals.
+4. **Towns.** Network towns start from the region's urban mix, multiplied
+   by (0.05 + hinterland share)^0.8 and re-fitted, so a town in a
+   Ukrainian district is more Ukrainian than the regional capital.
+5. **Small towns.** Urban population not in network towns is spread over
+   cells like the rural population.
+
+### 12.3 Yearly update
+
+For every region x stratum (rural cells; network towns plus small-town
+population):
+
+1. **Totals.**
+   * Towns take the network model's populations.
+   * Rural cells grow with their region, multiplied by
+     `exp(β (ln Φ_i - mean ln Φ))`, where `Φ_i = Σ_n P_n e^{-d_in/25 km}` is
+     the potential of nearby towns and β = 0.004 per year. Near growing
+     towns this produces suburban rings; far from them it produces rural
+     exodus. Over a century the gap between suburban and remote cells
+     reaches about 3x.
+2. **Language shift with a neighbourhood rule.** The main model records the
+   region's net shift Δ_l, vertical plus horizontal; gainers have Δ_l > 0.
+   Following Prochazka & Vogl (2017), the most important driver of shift is
+   the number of speakers of each language in the village and its Gaussian
+   neighbourhood. The neighbourhood share K_{i,l} is computed with a
+   Gaussian kernel of σ = 10 km over all cells. Towns enter with their own,
+   wider kernel, σ_n = 8 km x (P_n / 20 000)^0.3: hierarchical
+   town-to-hinterland diffusion (Trudgill 1974).
+   * **Losses.** A loser's losses are allocated in proportion to
+     `n_{i,l} (κ0 + G_i^a)`, where `G_i = Σ_{gainers} K_{i,l'}`,
+     a = 1.31 (Abrams & Strogatz 2003) and κ0 = 0.15. κ0 is the part of
+     shift that does not need neighbours: school, church, army, state.
+   * **Gains.** These are placed in proportion to `(κ0 + K_{i,l'})^a` and
+     IPF-fitted to the regional gains.
+   * **Consequences.** Language islands erode before the core. Contact
+     zones retreat as fronts (Patriarca & Heinsalu 2009; Isern & Fort
+     2014). The interface sharpens where one language is locally
+     overwhelming, as in surface-tension models of dialect boundaries
+     (Burridge 2017).
+3. **Fit to the model.** The result is IPF-fitted to the new unit totals and
+   to the region x language totals. Differences in fertility, mortality and
+   migration between language groups therefore act evenly within the
+   stratum, while shift is placed where contact happens.
+
+The method is checked in `tests/test_spatial.py`:
+
+* region totals are reproduced to better than 10⁻⁴;
+* no cell goes negative;
+* a speaker in a 90 % gainer neighbourhood is more than three times as
+  likely to shift as one in a 10 % neighbourhood.
+
+**Scale.** Prochazka & Vogl fitted, for southern Carinthia on a 1 km grid,
+a front velocity of about 0.11 km per year (diffusion D = 0.136 km²/y,
+growth k = 0.022/y). Over a century that is 11 km, under two of our cells.
+On the 7 km grid, most visible change therefore comes from the regional
+shift rates set by the main model (schools, cities, policy). The
+neighbourhood rule decides *which* cells give way first.
+
+### 12.4 Outputs
+
+`python -m plsim maps` writes:
+
+* `outputs/maps/`, the static maps:
+  * plurality language, 1932-2032;
+  * per-language shares;
+  * share change;
+  * density;
+  * population change;
+  * a scenario comparison;
+* two GIF animations (`anim_languages.gif`, `anim_density.gif`);
+* `outputs/atlas/`, an interactive atlas: 12 scenarios, a time slider,
+  language, single-language, density and growth layers, and a cell
+  read-out. Frames are quantised to 8 bits every 5 years (gzip, about
+  0.6 MB per scenario) and interpolated in the browser.
+
+### 12.5 What the maps cannot show
+
+* Towns use their region's urban mix, tilted by the hinterland. Strongly
+  Jewish shtetls (Pińsk, Brody) therefore appear more mixed than they were.
+* Internal borders are approximate. A cell averages several villages, so
+  single Lauda manors or the Karaim of Troki are below the resolution.
+* Region-level differences in shift rates show up as edges along
+  voivodeship lines, e.g. Polesian ("tutejszy") shift inside the Polesie
+  voivodeship, where the census category was defined.
+
+## 13. Limitations
+
+* **Spatial grain.** The unit of the projection is the voivodeship/apskritis
+  (x urban/rural), not the powiat. The enclave factors are a reduced-form
+  substitute for village-level geography. The 7 km maps (section 12) are a
+  downscaling of those regional results, not an independent spatial model.
 * **Starting data.** Some regional inputs (religion-by-voivodeship shares,
   regional income indices, urban shares, Lithuanian unit breakdowns) are
   rounded reconstructions and are graded in `DATA_SOURCES.md`.
@@ -725,7 +854,7 @@ Reports give medians with 50 % and 90 % bands.
   competence in the dominant language). Diglossia, dialect levelling and
   literacy in a third language are not represented.
 
-## 13. References
+## 14. References
 
 **Data**
 
@@ -789,6 +918,31 @@ Reports give medians with 50 % and 90 % bands.
 * de Haas, H. (2010). Migration transitions. IMI Working Paper 24, Oxford.
 * Davis, J. C., & Henderson, J. V. (2003). Evidence on the political economy
   of the urbanization process. *Journal of Urban Economics* 53(1), 98-125.
+
+**Language: spatial models and downscaling**
+
+* Prochazka, K., & Vogl, G. (2017). Quantifying the driving factors for
+  language shift in a bilingual region. *PNAS* 114(17), 4365-4369.
+  https://www.pnas.org/doi/10.1073/pnas.1617252114
+* Kandler, A., & Steele, J. (2017). Modeling language shift. *PNAS*
+  114(19), 4851-4853. https://doi.org/10.1073/pnas.1703509114
+* Patriarca, M., & Heinsalu, E. (2009). Influence of geography on language
+  competition. *Physica A* 388(2), 174-186.
+* Isern, N., & Fort, J. (2014). Language extinction and linguistic fronts.
+  *Journal of the Royal Society Interface* 11, 20140028.
+* Burridge, J. (2017). Spatial evolution of human dialects. *Physical Review
+  X* 7, 031008.
+* Trudgill, P. (1974). Linguistic change and diffusion: description and
+  explanation in sociolinguistic dialect geography. *Language in Society*
+  3(2), 215-246.
+* Ballas, D., Rossiter, D., Thomas, B., Clarke, G., & Dorling, D. (2005).
+  *Geography Matters: Simulating the Local Impacts of National Social
+  Policies*. York: Joseph Rowntree Foundation.
+* Lovelace, R., & Dumont, M. (2016). *Spatial Microsimulation with R*.
+  CRC Press.
+* Wessel, P., & Smith, W. H. F. (1996). A global, self-consistent,
+  hierarchical, high-resolution shoreline database. *Journal of Geophysical
+  Research* 101(B4), 8741-8743 (GSHHS, via basemap-data).
 
 **Language**
 

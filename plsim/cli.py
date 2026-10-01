@@ -5,6 +5,7 @@
     python -m plsim ensemble baseline -n 24       # Monte-Carlo ensemble
     python -m plsim census                        # 1931 census-reconstruction consistency
     python -m plsim report -n 24                  # everything + outputs/report.html
+    python -m plsim maps                          # spatial layer: maps, GIFs, outputs/atlas/
 """
 from __future__ import annotations
 
@@ -21,6 +22,9 @@ from .ensemble import run_ensemble, save
 from .export import export_ensemble, export_run
 from .language import CENSUS_CATEGORIES, census_view
 from .model import Simulation
+from . import maps as mp
+from . import webmap
+from .spatial import downscale
 from .params import load_scenario
 from . import report as rp
 from .validate import historical_checks, plausibility_checks
@@ -48,6 +52,54 @@ def run_one(name: str, outroot: str, seed: int | None = None):
     export_run(res, os.path.join(outroot, "runs", name))
     print(f"  {name}: {time.time() - t:.1f}s")
     return res
+
+
+SCENARIO_TITLES = {
+    "baseline": "Baseline federation",
+    "federal_autonomy": "Ukrainian autonomy",
+    "integral_nationalism": "Integral nationalism",
+    "polonizing_union": "Polonising unitary union",
+    "forced_lithuanization": "Forced Lithuanisation",
+    "wilno_lithuanian": "Wilno as Lithuanian capital",
+    "lt_polish_claim": "Polish 1923 estimate for Lithuania",
+    "census_religion_corrected": "Religion-corrected 1931 start",
+    "census_vernacular": "Vernacular 1931 start",
+    "finnish_path": "Fast convergence",
+    "stagnation": "Stagnation",
+    "ii_rp_only": "Poland alone, no union",
+}
+
+
+def build_maps(outroot: str, scenarios: list[str] | None = None, gifs: bool = True) -> None:
+    """Run each scenario, downscale it to the 7 km grid and write the static
+    maps, the GIF animations (baseline) and the data of the interactive atlas."""
+    names = scenarios or [n for n in SCENARIO_TITLES if n in all_scenarios()]
+    mapdir = os.path.join(outroot, "maps")
+    atlasdir = os.path.join(outroot, "atlas")
+    os.makedirs(mapdir, exist_ok=True)
+    full = webmap.full_grid()
+    entries, last = [], {}
+    for name in names:
+        t = time.time()
+        p = load_scenario(name)
+        res = Simulation(p).run()
+        sr = downscale(res)
+        title = SCENARIO_TITLES.get(name, name)
+        if name == "baseline":
+            mp.write_maps(sr, mapdir, gifs=gifs)
+        else:
+            mp.fig_plurality(sr, os.path.join(mapdir, f"{name}_map_plurality.png"), title=title)
+        last[name] = (sr.grid, mp.display_shares(sr.display(sr.frame(sr.years[-1]))))
+        webmap.write_data(atlasdir, name, webmap.encode_frames(sr, full))
+        entries.append({"name": name, "title": title, "description": p["meta"]["description"],
+                        "series": webmap.national_series(res), "towns": webmap.town_series(sr)})
+        print(f"  {name}: {time.time() - t:.1f}s")
+        del sr, res
+    mp.fig_scenarios_plurality(last, os.path.join(mapdir, "scenarios_plurality_2032.png"),
+                               labels={n: SCENARIO_TITLES.get(n, n) for n in last})
+    with open(os.path.join(atlasdir, "scenarios.json"), "w", encoding="utf-8") as fh:
+        fh.write(webmap.dumps(entries))
+    webmap.build_atlas(atlasdir)
 
 
 def census_consistency() -> list[list]:
@@ -192,6 +244,10 @@ def main(argv=None):
     d.add_argument("--workers", type=int)
     d.add_argument("--out", default=os.path.join(ROOT, "outputs"))
     d.add_argument("--scenarios", nargs="*")
+    m = sub.add_parser("maps")
+    m.add_argument("--out", default=os.path.join(ROOT, "outputs"))
+    m.add_argument("--scenarios", nargs="*")
+    m.add_argument("--no-gifs", action="store_true")
     sub.add_parser("list")
     args = ap.parse_args(argv)
     if args.cmd == "run":
@@ -213,6 +269,8 @@ def main(argv=None):
             print(", ".join(row))
     elif args.cmd == "report":
         build_report(args.out, args.n, args.scenarios, args.workers)
+    elif args.cmd == "maps":
+        build_maps(args.out, args.scenarios, gifs=not args.no_gifs)
     elif args.cmd == "list":
         for n in all_scenarios():
             print(n, "-", load_scenario(n)["meta"]["description"])

@@ -82,6 +82,7 @@ class Results:
     internal: list = field(default_factory=list)     # (R,R)
     rural_urban: list = field(default_factory=list)  # (R,)
     shifts: list = field(default_factory=list)       # (NL_from, NL_to) births raised in another language
+    shift_net: list = field(default_factory=list)    # (R,2,NL) net language shift (vertical + horizontal)
     econ: list = field(default_factory=list)         # dict per year
     rel_income: list = field(default_factory=list)   # (R,)
     km: list = field(default_factory=list)           # dict per year
@@ -96,11 +97,13 @@ class Results:
     node_lon: list = field(default_factory=list)
     node_region: list = field(default_factory=list)
     national: list = field(default_factory=list)     # dict per year
+    pop0: np.ndarray | None = None                   # (R,2,G) initial state (start_year)
+    town_pop0: np.ndarray | None = None              # (N,) initial town populations
 
     def arrays(self) -> dict:
         return {k: np.array(getattr(self, k)) for k in
                 ["pop", "bil", "births", "deaths", "tfr", "e0", "imr", "emig", "immig", "internal",
-                 "rural_urban", "shifts", "rel_income", "town_pop", "access"]}
+                 "rural_urban", "shifts", "shift_net", "rel_income", "town_pop", "access"]}
 
 
 class Simulation:
@@ -144,6 +147,8 @@ class Simulation:
         self.res.node_lat = self.net.lat.tolist()
         self.res.node_lon = self.net.lon.tolist()
         self.res.node_region = self.net.region.tolist()
+        self.res.pop0 = self.P.sum(axis=(3, 4, 5)).astype(np.float32)
+        self.res.town_pop0 = self.net.pop.copy()
         self._last_log_ma = None
         self._d_log_ma = np.zeros(self.R)
         self._shift_acc = np.zeros((NL, NL))
@@ -367,6 +372,8 @@ class Simulation:
         for g in range(NG):
             for k in np.nonzero(flows[g] > 0)[0]:
                 self._shift_acc[self.group_lang[g], self.group_lang[k]] += flows[g, k]
+        fl_ru = dist * shifted.sum(axis=3)[..., None]                        # (R,2,G,G)
+        shift_net = self._lang_ru(fl_ru.sum(axis=2)) - self._lang_ru(fl_ru.sum(axis=3))
         # ---- mortality & ageing
         e0f_g = self.e0f[:, :, self.group_comm] + self.group_e0[None, None, :]      # (R,2,G)
         gap = sex_gap(year, p["mortality"]["sex_gap"])
@@ -390,7 +397,9 @@ class Simulation:
         self.P = P = Pn
         self.mig.reset_competence(P)
         # ---- horizontal language processes
+        before_l = self._lang_ru(P.sum(axis=(3, 4, 5)))
         self.lang.horizontal(year, P, self.econ.enrollment, M, ma_norm)
+        shift_net += self._lang_ru(P.sum(axis=(3, 4, 5))) - before_l
         # ---- migration
         ur = self.mig.urbanisation(P, self.econ.urban_target(), year)
         x_lang = self.lang.competence_shares(P)
@@ -427,6 +436,7 @@ class Simulation:
         res.internal.append(flows_int.astype(np.float32))
         res.rural_urban.append(ur["rural_urban"])
         res.shifts.append(self._shift_acc.copy())
+        res.shift_net.append(shift_net.astype(np.float32))
         self._shift_acc[:] = 0
         res.econ.append({"y_nat": self.econ.y_nat, "y_frontier": self.econ.y_frontier,
                          "vehicles_per_1000": self.econ.vehicles_per_1000,
@@ -439,6 +449,12 @@ class Simulation:
         if (year + 1) in p["snapshot_years"]:
             self._snapshot(year + 1)
         self.year += 1
+
+    def _lang_ru(self, x: np.ndarray) -> np.ndarray:
+        """Sum a (R,2,G) array over groups into languages: (R,2,NL)."""
+        out = np.zeros(x.shape[:2] + (NL,))
+        np.add.at(out, (slice(None), slice(None), self.group_lang), x)
+        return out
 
     def _snapshot(self, year: int):
         P = self.P

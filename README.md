@@ -32,7 +32,8 @@ python -m plsim validate baseline       # 1932-39 back-validation and plausibili
 python -m plsim census                  # 1931 census-reconstruction consistency test
 python -m plsim ensemble baseline -n 32 # Monte-Carlo ensemble -> outputs/ensemble_baseline/*.csv
 python -m plsim report -n 32            # all scenarios + ensembles + figures + outputs/report.html
-pytest -q                               # 41 tests
+python -m plsim maps                    # 7 km maps, GIF animations and the interactive atlas (outputs/atlas/)
+pytest -q                               # 46 tests
 ```
 
 A 100-year run takes about 20 s. The full report takes about 7 minutes on 4
@@ -127,6 +128,53 @@ plus 6 Lithuanian units.
   Łapy-Ostrołęka-Przasnysz-Mława, Dębica-Jasło, and the COP Łódź-Dębica
   trunk.
 
+## Maps: language shift and population on a 7 km grid
+
+`python -m plsim maps` downscales every scenario to 9,148 cells of about
+7 x 7 km and draws the result:
+
+* **Interactive atlas**: `outputs/atlas/index.html`. It has a time slider,
+  12 scenarios, and four layers: plurality language, one language
+  (optionally as change since 1932), density and growth. It also reads out
+  any cell.
+* **Static maps and animations**: `outputs/maps/`, including
+  `anim_languages.gif` and `anim_density.gif`.
+
+How it works (details in `docs/METHODOLOGY.md` §12):
+
+* **1932.** County anchors from the 1931 census, 26 of them county figures,
+  the rest graded estimates, shape each voivodeship's languages inside its
+  borders. Iterative proportional fitting keeps the regional totals exact.
+* **Each year.** The region's net shift from the main model is placed with
+  the neighbourhood rule of Prochazka & Vogl (2017, *PNAS*): speakers shift
+  where the gaining language is spoken nearby (Gaussian kernel, 10 km),
+  plus a constant institutional part. Towns spread their influence over a
+  wider radius as they grow (Trudgill's hierarchical diffusion). Language
+  islands therefore dissolve first, and contact zones retreat as fronts.
+* **Population.** Rural cells near growing towns gain population and remote
+  ones lose it, which gives suburban rings and rural exodus.
+
+![Plurality home language, baseline](outputs/maps/map_plurality.png)
+
+Baseline, area where each language leads (thousand km²):
+
+| | Polish | Ukrainian | Lithuanian | Belarusian | West Polesian | Kashubian/Lemko |
+|---|---|---|---|---|---|---|
+| 1932 | 246 | 71 | 55 | 18 | 34 | 3 |
+| 2032 | 309 | 64 | 55 | 1 | 0 | 0 |
+
+* **Ukrainian** holds its Volhynian and Pokuttya core. It retreats from the
+  San and the Lwów hinterland.
+* **Belarusian and West Polesian** survive as minorities in the villages,
+  but lead almost nowhere by 2032. In the "Ukrainian autonomy" scenario
+  (with Belarusian schooling) and the two alternative 1931 starting points,
+  Belarusian still leads along the eastern border.
+* **Population.** Two-thirds of the land area has fewer people in 2032 than
+  in 1932, and a fifth has less than half. Growth concentrates in the
+  cities, their suburban rings, and high-fertility Polesie and Volhynia.
+
+![Population change](outputs/maps/map_population_change.png)
+
 ## Scenarios (single seeded run each, 2032)
 
 | Scenario | Polish-unit pop. (M) | Polish % | Ukrainian % | Yiddish % | Belarusian % | Lithuanian % | W. Polesian (k) |
@@ -171,10 +219,15 @@ plsim/
   ensemble.py            Monte-Carlo parameter sampling and summaries
   validate.py            1932-39 back-validation and plausibility checks
   report.py, export.py   figures, CSVs, HTML report
+  data/geography.py      7 km grid, territory mask, county language anchors (1931)
+  data/geo_base.json     coastline, lakes and rivers (GSHHS via basemap-data)
+  spatial.py             downscaling + neighbourhood (Prochazka-Vogl) language-shift allocation
+  maps.py, webmap.py     static maps, GIF animations, interactive atlas data
+  atlas_template.html    the interactive atlas page
   cli.py                 command-line interface
 scenarios/*.yaml         12 scenarios (extends/override)
 docs/                    METHODOLOGY, DATA_SOURCES (with reliability grades), SCENARIOS
-outputs/                 report.html, figures/, scenario_summary.csv, ensemble CSVs, baseline run CSVs
+outputs/                 report.html, figures/, maps/, atlas/, scenario_summary.csv, ensemble CSVs, baseline run CSVs
 tests/                   census reconstruction, demography, language, network, model accounting
 ```
 
