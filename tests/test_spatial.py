@@ -76,3 +76,25 @@ def test_shift_lands_at_contact_zones(spatial):
     per_capita = loss / S[:, LANG_INDEX["uk"]]
     assert per_capita[1] > 3 * per_capita[0]
     assert np.allclose(out.sum(axis=1), S.sum(axis=1))
+
+
+def test_atlas_cell_regions_survive_county_runs():
+    """County runs have more than 255 regions: the atlas must not wrap them."""
+    import base64
+    from types import SimpleNamespace
+
+    from plsim.data.subregions import county_seats
+    from plsim.webmap import full_grid, geometry_payload
+    codes = []
+    for r in REGIONS:
+        seats = county_seats(r.code)
+        codes += [c[0] for c in seats] if len(seats) > 1 else [r.code]
+    assert len(codes) > 255
+    grid = build_grid(codes)
+    res = SimpleNamespace(region_codes=codes, region_names=codes, members=["PL"] * len(codes), dominant=[])
+    full = full_grid()
+    reg = np.frombuffer(base64.b64decode(geometry_payload(res, SimpleNamespace(grid=grid), full)["cellreg"]), "<u2")
+    inside = reg[reg != 65535]
+    assert inside.max() == grid.region.max() > 255
+    lt = [i for i, c in enumerate(codes) if c.startswith("LT_")]
+    assert np.isin(inside, lt).sum() == np.isin(grid.region, lt).sum()

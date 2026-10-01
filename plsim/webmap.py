@@ -201,9 +201,11 @@ def network_payload(res, frames=FRAMES) -> dict:
 def geometry_payload(res, sr, full) -> dict:
     """Regions and federal members of a scenario, mapped onto the full grid."""
     idx = cell_map(full, sr.grid)
-    cellreg = np.full(len(full.lat), 255, dtype=np.uint8)
+    # 16 bits: county runs have more than 255 regions; 65535 = no region
+    cellreg = np.full(len(full.lat), 65535, dtype="<u2")
     ok = idx >= 0
-    cellreg[idx[ok]] = sr.grid.region[ok].astype(np.uint8)
+    assert len(res.region_codes) < 65535
+    cellreg[idx[ok]] = sr.grid.region[ok].astype("<u2")
     members = list(getattr(res, "members", []) or ["LT" if c.startswith("LT") else "PL" for c in res.region_codes])
     from .data.counties import BY_CODE
     parent_name = {r.code: r.name for r in REGIONS}

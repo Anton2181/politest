@@ -346,7 +346,9 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   const LANG_NAME = { pl: "Polish", lt: "Lithuanian", uk: "Ukrainian", be: "Belarusian", de: "German" };
   function prep(sc) {
     if (sc._cellreg) return sc;
-    sc._cellreg = b64bytes(sc.geo.cellreg);
+    const rb = b64bytes(sc.geo.cellreg);                 // uint16, little-endian; 65535 = no region
+    sc._cellreg = new Uint16Array(rb.length >> 1);
+    for (let i = 0; i < sc._cellreg.length; i++) sc._cellreg[i] = rb[2 * i] | (rb[2 * i + 1] << 8);
     sc._netc = b64bytes(sc.net.c);
     const labels = [...new Set(sc.geo.members)];
     sc._member = sc.geo.members.map((m) => labels.indexOf(m));
@@ -355,7 +357,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   const scen = () => scenByName[state.scen];
   function regionInfo(i) {
     const sc = scen(), k = sc._cellreg[i];
-    if (k === 255) return null;
+    if (k === 65535) return null;
     const code = sc.geo.codes[k], name = sc.geo.names[k];
     const label = sc.geo.labels ? sc.geo.labels[k] : (code.startsWith("LT_") || code === "WAW" || code.includes(".") ? name : "woj. " + name);
     return { label, member: sc.geo.members[k], official: LANG_NAME[sc.geo.dominant[k]] || sc.geo.dominant[k] };
@@ -441,17 +443,18 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     const reg = new Int16Array(W * H).fill(-1);
     for (let i = 0; i < N; i++) {
       const k = sc._cellreg[i];
-      if (!cur.dens[i] || k === 255) continue;
+      if (!cur.dens[i] || k === 65535) continue;
       reg[ROW[i] * W + COL[i]] = k === waw && war >= 0 ? war : k;
     }
     const mem = (k) => sc._member[k];
-    const par = codes.map((c) => c.split(".")[0]);
+    // Warsaw city belongs with its voivodeship (its counties at county level)
+    const par = codes.map((c) => (c === "WAW" ? "WAR" : c.split(".")[0]));
     segInner = []; segOuter = []; segMember = []; segCounty = [];
     const push = (a, b, seg) => {
       if (a === b || Math.max(a, b) < 0) return;
       if (Math.min(a, b) < 0) segOuter.push(seg);
       else if (mem(a) !== mem(b)) segMember.push(seg);
-      else if (par[a] === par[b] && codes[a].includes(".")) segCounty.push(seg);
+      else if (par[a] === par[b] && (codes[a].includes(".") || codes[b].includes("."))) segCounty.push(seg);
       else segInner.push(seg);
     };
     for (let r = 0; r < H; r++) {
