@@ -25,7 +25,19 @@ extends: baseline
 meta:
   name: ukraine_autonomy_tricantonal
   description: "Ukrainian autonomy (Lwów, Tarnopol, Stanisławów voivodeships + Volhynia, 1922 statute) and a tri-cantonal Lithuanian-Polish-Belarusian Grand Duchy east of the Curzon line"
-partition: [BIA, WIL, NOW, LWO]
+# The cantons and the language-of-administration districts are made of
+# 1931 counties (the model runs at county level).
+region_groups:
+  WIL.W: [WIL.wilno, WIL.oszmiana, WIL.swieciany]
+  WIL.E: [WIL.braslaw, WIL.glebokie, WIL.molodeczno, WIL.postawy, WIL.wilejka]
+  NOW.W: [NOW.lida, NOW.szczuczyn]
+  NOW.E: [NOW.baranowicze, NOW.nieswiez, NOW.nowogrodek, NOW.slonim, NOW.stolpce, NOW.wolozyn]
+  BIA.E: [BIA.grodno, BIA.wolkowysk]
+  LWO.W: [LWO.jaroslaw, LWO.przemysl, LWO.brzozow, LWO.sanok, LWO.krosno, LWO.rzeszow, LWO.lancut,
+          LWO.przeworsk, LWO.tarnobrzeg, LWO.nisko, LWO.kolbuszowa]
+  LWO.E: [LWO.bobrka, LWO.dobromil, LWO.drohobycz, LWO.grodekjagiello, LWO.jaworow, LWO.lesko,
+          LWO.lubaczow, LWO.lwow, LWO.mosciska, LWO.rawaruska, LWO.rudki, LWO.sambor, LWO.sokal,
+          LWO.turka, LWO.zolkiew]
 members:          # federal members; the Grand Duchy's cantons are members of their own (GD-*)
   _replace: true
   default: PL

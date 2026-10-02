@@ -24,13 +24,13 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from .data.census1931 import bilingual_share, build_initial_composition
-from .data.languages import COMM_INDEX, COMMUNITIES, GROUP_INDEX, GROUPS, LANG_INDEX, NC, NG, NL
+from .data.languages import COMM_INDEX, COMMUNITIES, GROUP_INDEX, GROUPS, LANG_INDEX, LANGUAGES, NC, NG, NL
 from .data.regions import select_regions
 from .demography import (FertilitySchedule, MortalityModel, alkema_decrement, catchup_rate,
                          frontier_e0_female, mean_age_childbearing, sex_gap, stable_age_distribution, target_gap)
 from .economy import Economy, piecewise
 from .infrastructure import Network
-from .params import region_lookup
+from .params import region_lookup, region_match
 from .language import LanguageModel, census_view
 from .migration import MigrationModel
 
@@ -43,8 +43,39 @@ def _mortality() -> MortalityModel:
     return _MORT_CACHE["m"]
 
 
-def _dominant(params: dict, regions) -> list[str]:
-    return [region_lookup(params["dominant_language"], r.code, "pl") for r in regions]
+def _lang_totals(comp: np.ndarray) -> np.ndarray:
+    """(R, NL) speakers of each home language from a (R, 2, G) composition."""
+    out = np.zeros((comp.shape[0], NL))
+    np.add.at(out, (slice(None), np.array([LANG_INDEX[l] for _, l in GROUPS])), comp.sum(axis=1))
+    return out
+
+
+def _dominant(params: dict, regions, comp: np.ndarray) -> list[str]:
+    """Contact language per region; "auto:a,b,c" picks the listed language
+    with the most 1931 speakers in the region ("b+d": b, counting d's
+    speakers with it)."""
+    out = []
+    L = _lang_totals(comp)
+    for i, r in enumerate(regions):
+        v = region_lookup(params["dominant_language"], r.code, "pl")
+        if isinstance(v, str) and v.startswith("auto"):
+            # "auto:pl,be+pls": Belarusian counts West Polesian speakers too
+            cand = v.split(":", 1)[1].split(",") if ":" in v else ["pl", "uk", "be", "lt"]
+            v = max(cand, key=lambda c: sum(L[i, LANG_INDEX[l]] for l in c.split("+"))).split("+")[0]
+        out.append(v)
+    return out
+
+
+def _official(params: dict, regions, dominant: list[str]) -> list[list[str]]:
+    """Official languages per region (the contact language is always one)."""
+    out = []
+    for r, d in zip(regions, dominant):
+        v = region_lookup(params.get("official_languages") or {}, r.code, None)
+        if v == "all":
+            v = [lg.code for lg in LANGUAGES]
+        langs = list(dict.fromkeys([d] + list(v or [])))
+        out.append(langs)
+    return out
 
 
 BILING_AGE = np.ones(101)
@@ -89,7 +120,8 @@ class Results:
     node_region: list = field(default_factory=list)
     national: list = field(default_factory=list)     # dict per year
     members: list = field(default_factory=list)      # federal member state of each region
-    dominant: list = field(default_factory=list)     # dominant (official) language of each region
+    dominant: list = field(default_factory=list)     # contact language of each region
+    official: list = field(default_factory=list)     # official languages of each region
     pop0: np.ndarray | None = None                   # (R,2,G) initial state (start_year)
     town_pop0: np.ndarray | None = None              # (N,) initial town populations
 
@@ -117,6 +149,14 @@ class Simulation:
         if p.get("partition"):
             from .partition import apply_partition
             self.regions, self._comp, node_region = apply_partition(self.regions, p)
+        if self._comp is None:
+            self._comp = build_initial_composition(self.regions, p["census_variant"], p["lt_variant"]).pop
+        if p.get("exclude"):
+            # regions left out of the state: their people, towns and land are foreign
+            keep = [i for i, r in enumerate(self.regions)
+                    if not any(region_match(r.code, e) for e in p["exclude"])]
+            self.regions = [self.regions[i] for i in keep]
+            self._comp = self._comp[keep]
         self.codes = [r.code for r in self.regions]
         self.R = len(self.regions)
         # Regional noise is drawn per 1931 voivodeship and shared by its
@@ -125,14 +165,15 @@ class Simulation:
         parents = list(dict.fromkeys(c.split(".")[0] for c in self.codes))
         self.parent_idx = np.array([parents.index(c.split(".")[0]) for c in self.codes])
         self.n_parent = len(parents)
-        self.dominant = _dominant(p, self.regions)
+        self.dominant = _dominant(p, self.regions, self._comp)
+        self.official = _official(p, self.regions, self.dominant)
         self.dom_idx = np.array([LANG_INDEX[d] for d in self.dominant])
         self.mort = _mortality()
         self.fsched = FertilitySchedule()
         self.group_comm = np.array([COMM_INDEX[c] for c, _ in GROUPS])
         self.group_lang = np.array([LANG_INDEX[l] for _, l in GROUPS])
         self.econ = Economy(p["economy"], self.regions, self.econ_rng)
-        self.lang = LanguageModel(p["language"], self.regions, self.dominant)
+        self.lang = LanguageModel(p["language"], self.regions, self.dominant, self.official)
         self.mig = MigrationModel(p["migration"], self.regions, self.dominant)
         self.member = [region_lookup(p["members"], c, "PL") for c in self.codes]
         self.mig.member = np.array(self.member)
@@ -159,6 +200,7 @@ class Simulation:
         self.res.node_region = self.net.region.tolist()
         self.res.members = list(self.member)
         self.res.dominant = list(self.dominant)
+        self.res.official = [list(o) for o in self.official]
         self.res.pop0 = self.P.sum(axis=(3, 4, 5)).astype(np.float32)
         self.res.town_pop0 = self.net.pop.copy()
         self._last_log_ma = None

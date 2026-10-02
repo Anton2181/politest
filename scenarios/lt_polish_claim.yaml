@@ -1,6 +1,7 @@
 # Lithuania's Polish-speaking population as claimed by the Polish electoral
-# committee in 1923 (~202k, ~10%) rather than the census 65.6k; federal
-# language regime (no forced Lithuanisation) as in the baseline.
+# committee in 1923 (~202k, ~10%) rather than the baseline ~150k (census:
+# 65.6k); federal language regime (no forced Lithuanisation) as in the
+# baseline.
 extends: baseline
 meta:
   name: lt_polish_claim

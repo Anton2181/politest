@@ -1,7 +1,0 @@
-# The same federal settlement, started from the religion-corrected
-# (Tomaszewski-style) reading of the 1931 census.
-extends: ukraine_autonomy_tricantonal
-meta:
-  name: ukraine_autonomy_tricantonal_rc
-  description: "Ukrainian autonomy + tri-cantonal Grand Duchy, from the religion-corrected 1931 start"
-census_variant: religion_corrected

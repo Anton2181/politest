@@ -131,10 +131,13 @@ LT_GROUPS_1923: dict[str, dict[tuple[str, str], float]] = {
 }
 
 # Extra Polish-speakers (share of region population, moved from RC:lt) implied by
-# the Polish electoral committee's 1923 claim (~202 k, ~10 % nationally) and by
-# the 1897 Kovno-governorate language tables (~9 %).
+# the Polish electoral committee's 1923 claim (~202 k, ~10 % nationally; held
+# "very probable" by Buchowski 1999), by the 1897 Kovno-governorate language
+# tables (~9 %), and by the historians' middle estimate of ~150 k ("research").
+_CLAIM = {"LT_KAU": .060, "LT_LAU": .080, "LT_NEA": .060, "LT_SUV": .015, "LT_ZEM": .015}
 LT_EXTRA_POLISH = {
-    "polish_claim_1923": {"LT_KAU": .060, "LT_LAU": .080, "LT_NEA": .060, "LT_SUV": .015, "LT_ZEM": .015},
+    "polish_claim_1923": _CLAIM,
+    "research": {k: v * 0.75 for k, v in _CLAIM.items()},
     "imperial_1897": {"LT_KAU": .050, "LT_LAU": .070, "LT_NEA": .055, "LT_SUV": .012, "LT_ZEM": .012},
 }
 
@@ -161,18 +164,29 @@ DE_RC_SHARE = {"SLA": .75, "POZ": .12, "POM": .12, "KRA": .5, "LWO": .3, "STA": 
 HAREDI_SHARE = {"WAW": .25, "RU": .36, "AT": .40, "DE": .10, "LT": .22}
 
 # Variant parameters -------------------------------------------------------------
-# religion_corrected: share of Polish-declared GC / Orthodox reassigned.
-RC_REASSIGN_GC = .80
-RC_REASSIGN_OR = .85
+# religion_corrected (Tomaszewski 1985): Greek Catholics and Orthodox are taken
+# as Ukrainian / Belarusian by nationality. For home language, 5 % of those
+# declared Polish keep Polish (Kubijovyč 1983 counts only 16.4 k Polish-speaking
+# Greek Catholics in Galicia in 1939, against ~330 k declared in 1931).
+RC_REASSIGN_GC = .95
+RC_REASSIGN_OR = .95
+# ... and part of the Polish-declared Protestants outside Cieszyn Silesia and
+# Warsaw are German speakers: Tomaszewski counts ~780 k Germans against 741 k
+# declared German speakers.
+PR_REASSIGN_DE = {"POZ": .30, "POM": .30, "LOD": .30, "WOL": .30, "LUB": .30, "WAR": .30, "BIA": .30}
 OR_PL_TARGET = {"BIA": "be", "WIL": "be", "NOW": "be", "POL": "uk", "WOL": "uk", "LUB": "uk",
                 "WAW": "be", "WAR": "be", "LWO": "uk", "STA": "uk", "TAR": "uk"}
-# vernacular: share of *rural* RC:pl moved to a minority vernacular.
+# vernacular (upper bound): share of *rural* RC:pl moved to a minority
+# vernacular. North-east: Catholic Belarusian and Lithuanian speech anchored on
+# the 1897 imperial census proportions. Galicia and Lublin: Latin-rite
+# Ukrainian speakers (latynnyky), calibrated to Kubijovyč (1983): 515 k in
+# Galicia on 1 Jan 1939 (~470 k in 1931), and his 5.85 M Ukrainians in Poland.
 VERNACULAR_RC_SHIFT = {
     "WIL": {"be": .42, "lt": .08},
     "NOW": {"be": .40},
     "BIA": {"be": .15},
-    "LWO": {"uk": .08}, "STA": {"uk": .12}, "TAR": {"uk": .12},
-    "LUB": {"uk": .05},
+    "LWO": {"uk": .18}, "STA": {"uk": .26}, "TAR": {"uk": .44},
+    "LUB": {"uk": .03},
 }
 
 
@@ -285,6 +299,8 @@ def build_region_shares(code: str, variant: str, lt_variant: str) -> dict[tuple[
             or_pl = shares.get(("OR", "pl"), 0.0)
             tgt = OR_PL_TARGET.get(code, "be")
             _move(shares, ("OR", "pl"), ("OR", tgt), or_pl * RC_REASSIGN_OR)
+            pr_pl = shares.get(("PR", "pl"), 0.0)
+            _move(shares, ("PR", "pl"), ("PR", "de"), pr_pl * PR_REASSIGN_DE.get(code, 0.0))
         if variant == "vernacular":
             for lang, frac in VERNACULAR_RC_SHIFT.get(code, {}).items():
                 # applied to the rural Catholic Polish-declared population:

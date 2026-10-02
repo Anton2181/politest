@@ -1,9 +1,0 @@
-# The baseline at county resolution: every voivodeship is split into its
-# powiaty and every Lithuanian unit into its apskritys (about 270 regions).
-# The eastern voivodeships start from the 1931 county tables; the others are
-# downscaled (see plsim/data/counties.py). Takes about 4 minutes per run.
-extends: baseline
-meta:
-  name: baseline_counties
-  description: "Baseline at county resolution (about 270 powiaty and apskritys; 1931 county tables in the east)"
-partition: counties

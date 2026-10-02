@@ -1,0 +1,37 @@
+# Poland with no official language, or equivalently with every language
+# official: the Polish state favours none of its languages. Lithuania, its
+# federal partner as in the baseline, keeps Lithuanian.
+#
+# * Every written standard language (Polish, Ukrainian, Belarusian, Yiddish,
+#   German, Russian, Lithuanian, Kashubian, Lemko, Czech, Latvian) has the
+#   same official status in the Polish lands, and its speakers have schools
+#   in it.
+# * Each county's working language (the contact language bilinguals learn)
+#   is the most spoken of Polish, Ukrainian and Belarusian (with West
+#   Polesian) there in 1931:
+#   the language people meet locally, not one the state sets.
+# * No state assimilation drive (low pressure) and no military settlement.
+#   Shift still happens through numbers, towns, schools and markets: big
+#   languages attract speakers because they are big.
+extends: baseline
+meta:
+  name: no_official_language
+  description: "Poland with no official language (all languages equal); Lithuania as in the baseline"
+dominant_language:
+  _replace: true
+  default: auto:pl,uk,be+pls
+  "LT_*": lt
+official_languages:
+  _replace: true
+  # every written standard language; West Polesian ("tutejszy") speech has no
+  # standard, so its speakers are schooled in Belarusian or Ukrainian
+  default: [pl, uk, be, yi, de, ru, lt, csb, rue, cs, lv]
+  "LT_*": [lt]
+language:
+  pressure:
+    _replace: true
+    default: [[1931, 0.5]]
+    "LT_*": 0.8
+migration:
+  settlement:
+    per_year: [[1931, 0]]

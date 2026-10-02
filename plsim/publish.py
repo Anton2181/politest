@@ -21,16 +21,18 @@ SCENARIO_NOTES = {
     "forced_lithuanization": "Federation, but the Lithuanian unit keeps closing Polish schools in Lauda and Kaunas",
     "polonizing_union": "Unitary union with Polish dominant in the Lithuanian lands too",
     "wilno_lithuanian": "Vilnius as the Lithuanian federal capital",
-    "census_religion_corrected": "Baseline from a religion-corrected (Tomaszewski-style) 1931 start",
-    "census_vernacular": "Baseline from a vernacular start anchored on the 1897 imperial census",
-    "lt_polish_claim": "Baseline with the 1923 Polish estimate of Poles in Lithuania",
+    "census_official": "Baseline from the 1931 and 1923 censuses as printed",
+    "census_vernacular": "Baseline from an upper-bound start (Kubijovyč; Catholic Belarusian speech as in 1897)",
+    "lt_polish_claim": "Baseline with the 1923 Polish claim of ~202 k Poles in Lithuania",
     "finnish_path": "Fast convergence, bigger infrastructure budgets",
     "stagnation": "Low convergence, 1939 plans shelved, heavy emigration",
     "ukraine_autonomy_tricantonal": "Ukrainian autonomy (Lwów, Tarnopol, Stanisławów, Volhynia) and a Grand Duchy of "
                                     "Lithuanian, Polish and Belarusian cantons east of the Curzon line",
-    "ukraine_autonomy_tricantonal_rc": "The same, from the religion-corrected 1931 start",
-    "baseline_counties": "The baseline on the 1931 counties, started from the county tables in the east",
-    "ukraine_autonomy_tricantonal_counties": "The autonomy and cantons on the 1931 counties",
+    "autonomy_grand_duchy_coofficial": "Ukrainian autonomy and an autonomous Grand Duchy with Lithuanian, Polish "
+                                       "and Belarusian co-official",
+    "poland_west_pl_be": "Poland without Volhynia, Stanisławów, Tarnopol and the Lithuanian-claimed Wilno lands; "
+                         "Polish and Belarusian co-official",
+    "no_official_language": "Poland with no official language (all languages equal); Lithuania as in the baseline",
 }
 
 CSS = """

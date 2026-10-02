@@ -1,0 +1,40 @@
+# Poland alone, without Volhynia, Stanisławów and Tarnopol, and without the
+# lands interwar Lithuania claimed under the 1920 Soviet-Lithuanian treaty
+# (Wilno and its environs). Polish and Belarusian are co-official throughout.
+#
+# * Territory: the Second Republic minus the wołyńskie, stanisławowskie and
+#   tarnopolskie voivodeships and the counties of Wilno-Troki, Święciany,
+#   Oszmiana, Brasław, Postawy, Lida, Szczuczyn and Grodno. Those lands and
+#   their people are outside the state from the start, like Lithuania in
+#   ii_rp_only. Sejny and part of Augustów, also claimed by Lithuania, stay
+#   Polish here.
+# * Languages: Polish and Belarusian have equal official status, schools in
+#   each for its speakers, and are both open to shift. Each county's working
+#   language is the one of the two with more speakers in 1931 (West
+#   Polesian speakers count with Belarusian). Other
+#   minorities (Ukrainians of lwowskie, Jews, Germans) are treated as in the
+#   baseline.
+# * Assimilation pressure is lighter, and there is no military settlement in
+#   the east.
+meta:
+  name: poland_west_pl_be
+  description: "Poland without Volhynia, Stanisławów, Tarnopol and the Lithuanian-claimed Wilno lands; Polish and Belarusian co-official"
+include_lithuania: false
+federation: false
+region_groups:
+  VILNIUS_CLAIM: [WIL.wilno, WIL.swieciany, WIL.oszmiana, WIL.braslaw, WIL.postawy, NOW.lida, NOW.szczuczyn,
+                  BIA.grodno]
+exclude: [WOL, STA, TAR, VILNIUS_CLAIM]
+dominant_language:
+  _replace: true
+  default: auto:pl,be+pls
+official_languages:
+  _replace: true
+  default: [pl, be]
+language:
+  pressure:
+    _replace: true
+    default: [[1931, 0.8], [1990, 0.65]]
+migration:
+  settlement:
+    per_year: [[1931, 0]]

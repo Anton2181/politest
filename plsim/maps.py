@@ -20,7 +20,8 @@ from matplotlib.colors import LinearSegmentedColormap, LogNorm, TwoSlopeNorm  # 
 from matplotlib.patches import Patch, PathPatch, Polygon  # noqa: E402
 from matplotlib.path import Path  # noqa: E402
 
-from .data.geography import BBOX, load_base_geography, load_borders  # noqa: E402
+from .data.geography import BBOX, build_grid, load_base_geography, load_borders  # noqa: E402
+from .data.regions import REGIONS  # noqa: E402
 from .data.languages import LANG_INDEX  # noqa: E402
 from .report import INK, INK2, MUTED, OTHER, SLOTS, SURFACE, _save  # noqa: E402
 
@@ -71,10 +72,73 @@ class Canvas:
         # state borders (CShapes, 1932): Poland, plus Lithuania when the grid has it
         b = load_borders()
         self.with_lt = any(c.startswith("LT") for c in grid.region_codes)
-        rings = [r[0] for st in (["PL", "LT"] if self.with_lt else ["PL"]) for r in b[st]]
+        states = ["PL", "LT"] if self.with_lt else ["PL"]
+        rings = [r[0] for st in states for r in b[st]]
         self.clip = Path.make_compound_path(*[Path(np.array(r), closed=True) for r in rings])
-        self.outline = b["outline"] if self.with_lt else rings
-        self.borders = self._borders() + (b["PL_LT"] if self.with_lt else [])
+        # land of the whole state(s); cells missing from this grid were left out (``exclude``)
+        whole = build_grid([r.code for r in REGIONS if ("LT" if r.code.startswith("LT") else "PL") in states],
+                           grid.dlat, grid.dlon)
+        self.terr = np.zeros((self.H, self.W), dtype=bool)
+        self.terr[self._rc(whole)] = True
+        self.kept = np.zeros((self.H, self.W), dtype=bool)
+        self.kept[self.row, self.col] = True
+        lines = b["outline"] if self.with_lt else rings
+        self.outline = self._split_lines(lines, inner=False) + self._excluded_edges()
+        self.borders = self._borders() + (self._split_lines(b["PL_LT"], inner=True) if self.with_lt else [])
+
+    def _rc(self, g):
+        return (np.round((g.lat - (BBOX[1] + g.dlat / 2)) / g.dlat).astype(int),
+                np.round((g.lon - (BBOX[0] + g.dlon / 2)) / g.dlon).astype(int))
+
+    def _side(self, lon, lat, nx, ny):
+        """Kept / excluded / unknown (1, 0, -1) for the first territory pixel
+        found from (lon, lat) along the direction (nx, ny)."""
+        for d in (0.5, 1.0, 2.0, 3.0):
+            la, lo = lat + ny * d * self.g.dlat, lon + nx * d * self.g.dlon
+            r = int(np.floor((la - BBOX[1]) / self.g.dlat))
+            c = int(np.floor((lo - BBOX[0]) / self.g.dlon))
+            if 0 <= r < self.H and 0 <= c < self.W and self.terr[r, c]:
+                return int(self.kept[r, c])
+        return -1
+
+    def _split_lines(self, lines, inner: bool) -> list:
+        """Keep the parts of the 1932 border lines that still bound this grid's
+        territory: for the outline, where the land inside is kept; for the
+        Polish-Lithuanian line (``inner``), where both sides are kept."""
+        out = []
+        for ln in lines:
+            p = np.array(ln)
+            run = [p[0]]
+            for a, b in zip(p[:-1], p[1:]):
+                d = b - a
+                L = np.hypot(d[0], d[1]) or 1.0
+                nx, ny = -d[1] / L, d[0] / L
+                m = (a + b) / 2
+                s1, s2 = self._side(m[0], m[1], nx, ny), self._side(m[0], m[1], -nx, -ny)
+                keep = (s1 != 0 and s2 != 0) if inner else (max(s1, s2) == 1 or (s1 == s2 == -1))
+                if keep:
+                    run.append(b)
+                else:
+                    if len(run) > 1:
+                        out.append(np.array(run))
+                    run = [b]
+            if len(run) > 1:
+                out.append(np.array(run))
+        return out
+
+    def _excluded_edges(self) -> list:
+        """Cell edges between kept territory and territory left out of the state."""
+        ex = self.terr & ~self.kept
+        if not ex.any():
+            return []
+        dl, dt = self.g.dlon, self.g.dlat
+        x0, y0 = BBOX[0], BBOX[1]
+        segs = []
+        rr, cc = np.nonzero(self.kept[:, :-1] & ex[:, 1:] | ex[:, :-1] & self.kept[:, 1:])
+        segs += [[(x0 + (c + 1) * dl, y0 + r * dt), (x0 + (c + 1) * dl, y0 + (r + 1) * dt)] for r, c in zip(rr, cc)]
+        rr, cc = np.nonzero(self.kept[:-1, :] & ex[1:, :] | ex[:-1, :] & self.kept[1:, :])
+        segs += [[(x0 + c * dl, y0 + (r + 1) * dt), (x0 + (c + 1) * dl, y0 + (r + 1) * dt)] for r, c in zip(rr, cc)]
+        return segs
 
     def raster(self, values: np.ndarray, fill=np.nan, dilate: bool = True) -> np.ndarray:
         """Grid values as an image.  With ``dilate``, empty pixels next to the
@@ -90,7 +154,8 @@ class Canvas:
             filled = done.copy()
             src = img.copy()
             for dr, dc in ((0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)):
-                take = np.roll(filled, (dr, dc), axis=(0, 1)) & ~done
+                # only past the state border (clipped there), never into land left out of the state
+                take = np.roll(filled, (dr, dc), axis=(0, 1)) & ~done & ~self.terr
                 img[take] = np.roll(src, (dr, dc), axis=(0, 1))[take]
                 done |= take
         return img
@@ -207,7 +272,7 @@ def fig_plurality(sr, path: str, years=(1932, 1950, 1970, 1990, 2010, 2032), tit
         fig.suptitle(title, x=0.01, ha="left", fontsize=13, fontweight="bold", color=INK)
     fig.tight_layout(rect=(0, 0.07, 1, 0.97 if title else 1))
     _legend_cats(fig, present, y=0.025)
-    fig.text(0.01, 0.005, "Colour: most widely spoken home language in each 7 km cell; pale = plurality below "
+    fig.text(0.01, 0.005, "Colour: most widely spoken home language in each 3.5 km cell; pale = plurality below "
              "about 50 %. Towns are drawn as areas at urban density.", fontsize=8, color=INK2)
     _save(fig, path)
 

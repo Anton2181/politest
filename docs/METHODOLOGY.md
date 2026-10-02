@@ -155,9 +155,13 @@ Orthodox 11.8 % (tested in `tests/test_census.py`).
 
 | `census_variant` | What it assumes | Polish % | Ukr.+Ruth. % | Belarusian % |
 |---|---|---|---|---|
-| `official` | the census as printed | 68.7 | 14.0 | 3.1 |
-| `religion_corrected` | Tomaszewski-style: 80 % of Polish-declared Greek Catholics -> Ukrainian, 85 % of Polish-declared Orthodox -> Belarusian/Ukrainian by region | 66.4 | 15.4 | 4.1 |
-| `vernacular` | the above, plus Catholic Belarusian/Lithuanian vernaculars in rural Wilno, Nowogródek and Białystok and latynnyky in Galicia/Lublin, anchored on 1897 proportions (upper bound) | 64.0 | 16.2 | 5.6 |
+| `official` | the census as printed (scenario `census_official`) | 68.7 | 14.0 | 3.1 |
+| `religion_corrected` (**baseline**) | Tomaszewski (1985): 95 % of Polish-declared Greek Catholics -> Ukrainian, 95 % of Polish-declared Orthodox -> Belarusian/Ukrainian by region, 30 % of Polish-declared Protestants outside Cieszyn Silesia and Warsaw -> German. Reproduces his 64.7 % ethnic Poles, 7.07 M Ukrainians and Belarusians, 0.78 M Germans | 65.9 | 15.6 | 4.2 |
+| `vernacular` | upper bound: the above, plus Catholic Belarusian and Lithuanian vernaculars in rural Wilno, Nowogródek and Białystok at 1897 proportions, and latynnyky calibrated to Kubijovyč (1983): 5.85 M Ukrainians, 515 k latynnyky in Galicia (scenario `census_vernacular`) | 62.6 | 17.2 | 5.7 |
+
+The Polish percentages here are home language, so they include about 0.4 M
+Polish-speaking Jews. Ethnic Poles are 67.5 %, 64.7 % and 61.4 %. Sources and
+the full comparison with the literature are in `docs/DATA_SOURCES.md`.
 
 ### 3.4 The census as an observation model
 
@@ -176,10 +180,12 @@ under a given regime:
 * `modern_selfid`: bilingual minority speakers partly identify with the
   dominant language.
 
-**Consistency test** (`python -m plsim census`). If you pass the
-religion-corrected or vernacular reconstruction through the 1931 regime, you
-get back the published national shares, with a total absolute error of 2.0
-and 2.8 points across the eight categories. So a population that really spoke
+**Consistency test** (`python -m plsim census`). If you pass the baseline
+(religion-corrected) or the vernacular reconstruction through the 1931
+regime, you get back the published national shares, with a total absolute
+error of 1.0 and 1.9 points across the eight categories. The recording
+probabilities were calibrated so that Tomaszewski's population gives back
+the printed census. So a population that really spoke
 the corrected languages at home would have produced the census that was
 actually printed. That is the quantitative form of the argument in §3.2. The
 model reports its results both as latent home languages and as a given census
@@ -196,8 +202,9 @@ bilingual in German. The Polish-speaking population has three variants
 
 | variant | Polish-speakers | source |
 |---|---|---|
-| `census_1923` | 65.6 k (3.2 %) | Lithuanian census |
-| `polish_claim_1923` | ~176 k (7.3 %) | Polish electoral committee's 1923 claim (202 k, ~10 %), from the Polish vote |
+| `census_1923` | 65.6 k declared (3.2 %); ~77 k Polish-speakers with Jews and others | Lithuanian census |
+| `research` (**baseline**) | ~150 k (6.3 %) | middle of the range; historians' estimates run from the census to the Polish claim, which Buchowski (1999) holds "very probable" |
+| `polish_claim_1923` | ~175 k (7.3 %) | Polish electoral committee's 1923 claim (202 k, ~10 %), from the Polish vote |
 | `imperial_1897` | ~160 k (6.8 %) | 1897 Kovno governorate native-language tables (~9 %) |
 
 The **Lauda** country (Kėdainiai-Panevėžys-Ukmergė-Raseiniai), home of the
@@ -508,13 +515,37 @@ Karaim and Wymysorys with ensemble ranges.
 ### 6.6 Policy levers (scenarios)
 
 Status schedules, own-language schooling shares, assimilation pressure and
-each region's dominant language are all scenario inputs. Examples:
+each region's languages are all scenario inputs. Examples:
 
 * Ukrainian autonomy makes Ukrainian the regional state language in
   Stanisławów, Tarnopol and Volhynia (`federal_autonomy`).
 * The Lithuanian unit closes Polish schools (`forced_lithuanization`).
 * Polish becomes dominant in the Lithuanian lands too (`polonizing_union`).
 * Vilnius becomes the Lithuanian federal capital (`wilno_lithuanian`).
+
+**Contact and official languages.** Each county has one *contact* language
+(`dominant_language`) and a set of *official* languages
+(`official_languages`, by default just the contact language).
+
+* **Contact language.** This is the language the bilingual state b = 1
+  refers to: the one a county's minorities learn at school, at work and in
+  the army, and the default target of shift.
+  `dominant_language: auto:lt,pl,be+pls` picks, per county, whichever listed
+  language had the most speakers in 1931. "be+pls" counts West Polesian
+  speakers with Belarusian.
+* **Official languages.** Every official language gets:
+  * at least the official status (`official_status`, 1.0, or a schedule);
+  * schools in that language for its own speakers (`official_schooling`,
+    0.9);
+  * a place among the languages people may shift to.
+
+  `official_languages: all` makes every language official, which is how
+  `no_official_language` models a state that favours none.
+
+Co-officiality therefore removes the status premium of one language and
+protects each official community with its own schools. It does not remove
+the pull of numbers: in the Abrams–Strogatz attraction, a bigger language
+still draws speakers, now only through its local share.
 
 ## 7. Transport networks
 
@@ -703,9 +734,12 @@ Reports give medians with 50 % and 90 % bands.
 
 ## 12. Maps: spatial downscaling and local language shift
 
-The projection works with 23 regions x rural/urban. To draw maps,
-`plsim/spatial.py` places each region on a grid of 9,383 cells of
-0.0625° x 0.1° (about 7 x 7 km) and carries the cells forward year by year.
+The projection works with 270 counties (or 23 voivodeships) x rural/urban.
+To draw maps, `plsim/spatial.py` places each region on a grid of 37,532
+cells of 0.03125° x 0.05° (about 3.5 x 3.4 km) and carries the cells
+forward year by year. The model itself uses a coarser grid of 9,383 cells
+of 0.0625° x 0.1° (about 7 x 7 km) to split voivodeships into counties and
+sub-regions (§12.5-12.6).
 Every year the cells and towns of a region add up exactly to the main
 model's figures (by region x rural/urban x language). The spatial layer adds
 *where*, never *how many*.
@@ -718,8 +752,9 @@ model's figures (by region x rural/urban x language). The spatial layer adds
   al. 2022), with a median vertex spacing of 3.5 km. Land cells within
   2.5 km of the Polish or Lithuanian coast are also kept, because the
   GSHHS and CShapes coastlines differ by a few km on the Hel peninsula and
-  the Curonian Spit. The grid has 9,383 cells: 386,700 km² for Poland
+  the Curonian Spit. The map grid has 37,532 cells: 387,000 km² for Poland
   (official 388,600 km²) and 55,600 km² for Lithuania (official 55,750 km²).
+  The 7 km model grid gives 386,800 and 55,800 km².
 * **Before CShapes.** The territory used to be approximated by the
   nearest-town rule (domestic towns against about 110 foreign "mask" towns).
   That misplaced about 36,000 km² of Poland and 8,500 km² of Lithuania,
@@ -727,11 +762,11 @@ model's figures (by region x rural/urban x language). The spatial layer adds
 * **Regions.** Cells are assigned by a multiplicatively weighted Voronoi
   diagram of the domestic towns of their own state, with one weight per
   region calibrated so that cell areas match the official areas (all
-  within 2.5 %). Warsaw city has two cells. State borders are therefore
+  within 2.5 %). Warsaw city has 11 cells. State borders are therefore
   exact to the cell; voivodeship borders are approximations.
 * **Drawing.** Maps clip the cell colours to the CShapes polygons and draw
   the state border and the Polish-Lithuanian border as lines, so the
-  border itself is not stair-stepped at 7 km.
+  border itself is not stair-stepped at the cell size.
 * **Terrain.** Rural density is thinned in the Polesie marshes (-40 %), the
   Carpathians (-35 %) and the Hutsul highlands (-30 %), with smooth edges.
 
@@ -807,8 +842,8 @@ The method is checked in `tests/test_spatial.py`:
 
 **Scale.** Prochazka & Vogl fitted, for southern Carinthia on a 1 km grid,
 a front velocity of about 0.11 km per year (diffusion D = 0.136 km²/y,
-growth k = 0.022/y). Over a century that is 11 km, under two of our cells.
-On the 7 km grid, most visible change therefore comes from the regional
+growth k = 0.022/y). Over a century that is 11 km, about three of our
+cells. On the 3.5 km grid, most visible change therefore comes from the regional
 shift rates set by the main model (schools, cities, policy). The
 neighbourhood rule decides *which* cells give way first.
 
@@ -832,8 +867,11 @@ neighbourhood rule decides *which* cells give way first.
 ### 12.5 Sub-regions and federal members
 
 The spatial layer also works in the other direction. It splits voivodeships
-for scenarios whose borders cut through them, such as the Curzon line, a
-canton or an autonomy (`plsim/partition.py`, `plsim/data/subregions.py`).
+into counties (§12.6, the default) or, in the voivodeship model, into named
+sub-regions for scenarios whose borders cut through them, such as the
+Curzon line, a canton or an autonomy (`partition: [BIA, WIL, ...]`;
+`plsim/partition.py`, `plsim/data/subregions.py`). At county level, a canton
+or an autonomy is a `region_groups` list of counties instead.
 
 1. **Downscale.** The 1931 reconstruction of the voivodeship is downscaled
    to the grid as in 12.2.
@@ -854,7 +892,9 @@ the parent code (`WIL`), which beats a wildcard (`LT_*`), which beats
 
 Two settings describe the political map:
 
-* `dominant_language`: the official language of each region.
+* `dominant_language`: the contact language of each region, also its
+  first official language; `official_languages` adds co-official ones
+  (§6.6).
 * `members`: the federal member each region belongs to. Migration between
   members is damped by `member_friction` (per pair) or by the
   Poland-Lithuania factor.
@@ -871,8 +911,8 @@ Townspeople start less competent.
 
 ### 12.6 County-level projection
 
-`partition: counties` runs every voivodeship as its 1931 powiaty, and the
-Lithuanian units as their apskritys. Warsaw city and Kaunas city stay whole,
+By default (`partition: counties`) every voivodeship runs as its 1931
+powiaty, and the Lithuanian units as their apskritys. Warsaw city and Kaunas city stay whole,
 which gives 270 regions in place of 23. The county table is
 `plsim/data/counties.py` (sources and grades in `docs/DATA_SOURCES.md`).
 It has 269 counties. Węgrów's seat wins no cell on the approximate
@@ -970,34 +1010,35 @@ and mortality, fertility and migration push would all be wrong.
 
   | | Voivodeship run | County run |
   |---|---|---|
-  | Population | 48.25 M | 48.15 M |
+  | Population | 48.31 M | 48.21 M |
   | Urban share | 66.1 % | 66.2 % |
-  | Ukrainian speakers | 8.17 M | 8.20 M |
-  | Belarusian speakers | 1.39 M | 1.40 M |
-  | Lithuanian speakers | 2.10 M | 2.09 M |
+  | Ukrainian speakers | 9.06 M | 9.10 M |
+  | Belarusian speakers | 1.92 M | 1.93 M |
+  | Lithuanian speakers | 2.03 M | 2.02 M |
   | West Polesian speakers | 0.95 M | 0.92 M |
 
   Every voivodeship's 2032 language shares are within about a point of the
-  voivodeship run.
+  voivodeship run (Klaipėda's German 1.6 points).
 * **Populations.** Most voivodeship totals are within ±5 %. Two differ
   more. Pomorze is 10 % smaller, because migrants' travel times are now
   measured to each county (Gdynia included) rather than to Toruń, and the
   Kashubian counties draw fewer Polish speakers. Klaipėda is 13 % larger.
 * **What the county level adds is *where*.** The plurality language
-  changes in 34 of 268 counties:
-  * the Belarusian blocks of eastern wileńskie (Głębokie, Mołodeczno,
-    Wilejka) and of Nowogródek (Nieśwież, Nowogródek, Słonim) turn
-    Polish-plurality;
+  changes in 34 of 270 counties:
+  * twelve Belarusian counties turn Polish-plurality: Grodno, Wołkowysk
+    and Bielsk; Głębokie, Mołodeczno, Postawy and Wilejka; and Nowogródek
+    voivodeship apart from Lida, Szczuczyn and Wołożyn;
   * all nine Polesie counties move from West Polesian to Polish;
   * Kartuzy, Kościerzyna and Wejherowo lose their Kashubian plurality;
-  * nine Lwów counties and six Tarnopol counties turn from Ukrainian to
-    Polish plurality.
+  * eight Lwów counties and Kamionka Strumiłowa turn from Ukrainian to
+    Polish plurality;
+  * Klaipėda turns from German to Lithuanian.
 
-  Volhynia and the core of Stanisławów stay Ukrainian (Łuck 60 → 65 %).
+  Volhynia and the core of Stanisławów stay Ukrainian (Łuck 59 → 65 %).
   The cities draw the rural surplus of their voivodeship: Lwów county
-  grows from 460 k to 829 k, Wilno from 415 k to 782 k, and Brześć from
+  grows from 460 k to 840 k, Wilno from 415 k to 803 k, and Brześć from
   227 k to 1.03 M.
-* **Cost.** A run takes about 4 minutes, against 25 s for the voivodeship
+* **Cost.** A run takes about 4 minutes, against 20 s for the voivodeship
   model.
 
 A first county run, before any of this nesting, gave 48.6 M people. In
@@ -1018,10 +1059,14 @@ rescaling alone removes about 30 k Belarusian speakers.
 
 ## 13. Limitations
 
-* **Spatial grain.** The unit of the projection is the voivodeship/apskritis
-  (x urban/rural), not the powiat. The enclave factors are a reduced-form
-  substitute for village-level geography. The 7 km maps (section 12) are a
-  downscaling of those regional results, not an independent spatial model.
+* **Spatial grain.** The unit of the projection is the powiat/apskritis
+  (x urban/rural). Its borders and the borders of the voivodeships are
+  approximated from the county seats (§12.1). Only the eight eastern
+  voivodeships have county census figures by language; elsewhere counties
+  are downscaled from the voivodeship. The enclave factors are a
+  reduced-form substitute for village-level geography. The 3.5 km maps
+  (section 12) are a downscaling of the county results, not an independent
+  spatial model.
 * **Starting data.** Some regional inputs (religion-by-voivodeship shares,
   regional income indices, urban shares, Lithuanian unit breakdowns) are
   rounded reconstructions and are graded in `DATA_SOURCES.md`.

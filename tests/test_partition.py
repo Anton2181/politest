@@ -73,15 +73,46 @@ def test_cantonal_scenario_short_run():
     p["end_year"] = 1935
     sim = Simulation(p)
     base = Simulation(load_scenario("baseline"))
-    assert len(sim.codes) == 27
+    assert len(sim.codes) == len(base.codes) == 270
     assert sim.P.sum() == pytest.approx(base.P.sum(), rel=1e-9)
-    assert sim.dominant[sim.codes.index("NOW.E")] == "be"
-    assert sim.dominant[sim.codes.index("LWO.W")] == "pl"
-    assert sim.member[sim.codes.index("POL")] == "GD-B"
+    dom = dict(zip(sim.codes, sim.dominant))
+    mem = dict(zip(sim.codes, sim.member))
+    assert dom["NOW.nieswiez"] == "be" and dom["LWO.przemysl"] == "pl" and dom["LWO.lwow"] == "uk"
+    assert mem["POL.pinsk"] == "GD-B" and mem["WIL.wilno"] == "GD-P" and mem["BIA.bielskpodlaski"] == "PL"
     assert (sim.net.region >= 0).sum() == (base.net.region >= 0).sum()
     res = sim.run()
     assert np.isfinite(np.array(res.pop)).all() and np.array(res.pop).min() >= 0
 
+
+def test_coofficial_languages():
+    """Lithuanian, Polish and Belarusian co-official in the Grand Duchy from 1938."""
+    from plsim.data.languages import GROUP_INDEX, LANG_INDEX
+    sim = Simulation(load_scenario("autonomy_grand_duchy_coofficial"))
+    i, k = sim.codes.index("WIL.wilno"), sim.codes.index("KRA.krakow")
+    assert set(sim.official[i]) == {"lt", "pl", "be"} and sim.official[k] == ["pl"]
+    assert sim.dominant[i] == "pl" and sim.dominant[sim.codes.index("POL.pinsk")] == "be"
+    s37, s40 = sim.lang.status(1937), sim.lang.status(1940)
+    assert s40[i, LANG_INDEX["be"]] == 1.0 and s37[i, LANG_INDEX["be"]] < 1.0
+    assert s40[k, LANG_INDEX["be"]] < 1.0
+    o = sim.lang.own_schooling(1940)
+    assert o[i, GROUP_INDEX[("OR", "be")]] >= 0.9 and o[i, GROUP_INDEX[("RC", "pl")]] == 0.0   # Polish is the contact language
+    assert sim.lang.targets[i, GROUP_INDEX[("RC", "pl")], GROUP_INDEX[("RC", "be")]]
+
+
+def test_excluded_territory():
+    """poland_west_pl_be: Volhynia, Stanisławów, Tarnopol and the Lithuanian-claimed counties are foreign."""
+    from plsim.data.geography import build_grid
+    sim = Simulation(load_scenario("poland_west_pl_be"))
+    gone = [c for c in sim.codes if c.split(".")[0] in ("WOL", "STA", "TAR") or c.startswith("LT")]
+    assert not gone and "WIL.wilno" not in sim.codes and "NOW.lida" not in sim.codes
+    assert "WIL.glebokie" in sim.codes and "LWO.lwow" in sim.codes
+    names = list(sim.net.names)
+    assert sim.net.region[names.index("Wilno")] < 0 and sim.net.region[names.index("Łuck")] < 0
+    assert sim.net.region[names.index("Lwów")] >= 0
+    g = build_grid(sim.codes)
+    full = build_grid(Simulation(load_scenario("ii_rp_only")).codes)          # Poland alone, whole
+    assert 0.6 < len(g.lat) / len(full.lat) < 0.8 and set(np.unique(g.region)) == set(range(len(sim.codes)))
+    assert {o for os_ in sim.official for o in os_} == {"pl", "be"}
 
 
 def test_units_nest_counties_within_members(split):
@@ -100,6 +131,7 @@ def test_split_voivodeships_migrate_like_the_whole():
     migrants as one unit: its total stays close to the unsplit run."""
     p = load_scenario("baseline")
     p["end_year"] = 1945
+    p["partition"] = []
     q = load_scenario("baseline")
     q["end_year"] = 1945
     q["partition"] = ["BIA", "WIL", "NOW", "LWO"]
@@ -151,6 +183,7 @@ def test_tarnopol_counties_reproduce_declared_languages():
 def county_split():
     p = load_scenario("baseline")
     p["partition"] = "counties"
+    p["census_variant"], p["lt_variant"] = "official", "census_1923"    # compared with the printed tables below
     regions = select_regions(True)
     return regions, apply_partition(regions, p), p
 

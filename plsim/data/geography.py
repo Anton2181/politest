@@ -3,8 +3,8 @@ anchors used to place each language inside its voivodeship.
 
 Territory
 ---------
-A regular grid of 0.0625° x 0.1° cells (about 7 x 7 km) is laid over the
-area. A cell belongs to the state when its centre lies on land (GSHHS
+A regular grid of 0.03125° x 0.05° cells (about 3.5 x 3.4 km; the model's
+own county split uses 0.0625° x 0.1°, about 7 km) is laid over the area. A cell belongs to the state when its centre lies on land (GSHHS
 coastline from basemap-data, lakes removed) and inside the borders of
 Poland or Lithuania on 1 January 1932, as given by CShapes 2.0
 (``borders_1932.json``; Schvitz et al. 2022). Land cells within 2.5 km of
@@ -199,8 +199,13 @@ ANCHORS: list[Anchor] = [
 ]
 # fmt: on
 
-CELL_DLAT = 0.0625
-CELL_DLON = 0.10
+# Map grid: 0.03125° x 0.05° (about 3.5 x 3.4 km). The model's own downscaling
+# (the 1931 population of counties, ``partition``) uses the 7 km grid, so model
+# results do not depend on the map resolution.
+CELL_DLAT = 0.03125
+CELL_DLON = 0.05
+MODEL_DLAT = 0.0625
+MODEL_DLON = 0.10
 BBOX = (13.5, 47.3, 30.5, 57.2)
 
 
@@ -299,23 +304,54 @@ def _terrain_factor(lat, lon) -> np.ndarray:
 
 
 def build_grid(region_codes: list[str], dlat: float = CELL_DLAT, dlon: float = CELL_DLON) -> Grid:
-    parents = list(dict.fromkeys(c.split(".")[0] for c in region_codes))
-    if parents != list(region_codes):
-        # sub-regions (``PARENT.CHILD``): build the parent grid, then split by county seats
-        from dataclasses import replace
+    """Grid of the regions in ``region_codes``.
 
-        from .subregions import assign
-        base = build_grid(parents, dlat, dlon)
-        idx = {c: i for i, c in enumerate(region_codes)}
-        region = np.empty(len(base.lat), dtype=int)
-        for pi, pc in enumerate(parents):
-            m = base.region == pi
-            if pc in idx:
-                region[m] = idx[pc]
-            else:
-                kids = [c for c in region_codes if c.split(".")[0] == pc]
-                region[m] = [idx[k] for k in assign(pc, base.lat[m], base.lon[m], kids)]
-        return replace(base, region=region, region_codes=list(region_codes))
+    The voivodeship-level grid of the whole state (Poland, plus Lithuania when
+    any Lithuanian unit is present) is built first, so that leaving regions
+    out (scenarios with ``exclude``) removes their land rather than handing it
+    to their neighbours.  Sub-regions (``PARENT.CHILD``: counties or named
+    splits) then take the cells nearest their seats, among all the children
+    of their parent."""
+    from dataclasses import replace
+
+    codes = list(region_codes)
+    states = {"LT" if c.startswith("LT") else "PL" for c in codes}
+    full = tuple(r.code for r in REGIONS if ("LT" if r.code.startswith("LT") else "PL") in states)
+    base = _base_grid(full, dlat, dlon)
+    if codes == list(full):
+        return base
+    from .counties import BY_CODE as COUNTY_CODES
+    from .subregions import assign, children
+    idx = {c: i for i, c in enumerate(codes)}
+    region = np.full(len(base.lat), -1)
+    for pi, pc in enumerate(full):
+        m = base.region == pi
+        if pc in idx:
+            region[m] = idx[pc]
+            continue
+        kids = [c for c in codes if c.split(".")[0] == pc]
+        if not kids:
+            continue                                    # left out of the state
+        mode = "county" if any(k in COUNTY_CODES for k in kids) else "named"
+        every = [k for k in children(pc, mode)]
+        region[m] = [idx.get(k, -1) for k in assign(pc, base.lat[m], base.lon[m], every)]
+    keep = region >= 0
+    return replace(base, lat=base.lat[keep], lon=base.lon[keep], region=region[keep], terrain=base.terrain[keep],
+                   cell_km2=base.cell_km2[keep], region_codes=codes)
+
+
+_GRIDS: dict = {}
+
+
+def _base_grid(codes: tuple, dlat: float, dlon: float) -> Grid:
+    """Voivodeship-level grid of whole states (cached; treat as read-only)."""
+    key = (codes, dlat, dlon)
+    if key not in _GRIDS:
+        _GRIDS[key] = _build_base_grid(list(codes), dlat, dlon)
+    return _GRIDS[key]
+
+
+def _build_base_grid(region_codes: list[str], dlat: float, dlon: float) -> Grid:
     lats = np.arange(BBOX[1] + dlat / 2, BBOX[3], dlat)
     lons = np.arange(BBOX[0] + dlon / 2, BBOX[2], dlon)
     LA, LO = np.meshgrid(lats, lons, indexing="ij")

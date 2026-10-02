@@ -81,11 +81,11 @@ def national_series(res) -> dict:
 
 
 def town_series(sr, frames=FRAMES) -> list:
+    """Every modelled town of the scenario; ``major`` towns are labelled first."""
     out = []
     for i, n in enumerate(sr.town_names):
-        if n in LABEL_TOWNS:
-            out.append({"name": n, "lat": round(float(sr.town_lat[i]), 3), "lon": round(float(sr.town_lon[i]), 3),
-                        "pop": [int(sr.towns[sr.frame(y)][i].sum()) for y in frames]})
+        out.append({"name": n, "lat": round(float(sr.town_lat[i]), 3), "lon": round(float(sr.town_lon[i]), 3),
+                    "major": int(n in LABEL_TOWNS), "pop": [int(sr.towns[sr.frame(y)][i].sum()) for y in frames]})
     return out
 
 
@@ -93,8 +93,8 @@ def grid_payload(full) -> dict:
     row, col = _rc(full)
     H = int(np.round((BBOX[3] - BBOX[1]) / full.dlat))
     W = int(np.round((BBOX[2] - BBOX[0]) / full.dlon))
-    region = full.region.astype(np.uint8)
-    blob = np.stack([row.astype(np.uint8), col.astype(np.uint8), region], axis=1).tobytes()
+    # rows (uint16) | columns (uint16) | voivodeship (uint8), little-endian
+    blob = row.astype("<u2").tobytes() + col.astype("<u2").tobytes() + full.region.astype(np.uint8).tobytes()
     return {"W": W, "H": H, "N": len(full.lat), "bbox": list(BBOX), "dlat": full.dlat, "dlon": full.dlon,
             "cells": base64.b64encode(blob).decode(), "km2": [round(float(a), 2) for a in full.cell_km2[:1]],
             "lat0": float(BBOX[1] + full.dlat / 2),
@@ -166,7 +166,7 @@ RAIL_CLS = ["nar", "sec", "main", "main_el", "hsr"]
 ROAD_CLS = ["dirt", "gravel", "paved", "express", "motorway"]
 MEMBER_LABELS = {"PL": "Poland", "LT": "Lithuania", "UA": "Ukrainian autonomy",
                  "GD-L": "Grand Duchy: Lithuanian canton", "GD-P": "Grand Duchy: Polish canton",
-                 "GD-B": "Grand Duchy: Belarusian canton"}
+                 "GD-B": "Grand Duchy: Belarusian canton", "GD": "Grand Duchy of Lithuania (autonomous)"}
 LOG_KINDS = {"new", "dated", "closure"}
 LOG_UPGRADES = {"hsr", "motorway"}
 
@@ -226,9 +226,20 @@ def geometry_payload(res, sr, full) -> dict:
             labels.append(name)
         else:
             labels.append(f"woj. {name}")
-    return {"codes": list(res.region_codes), "names": list(res.region_names), "labels": labels,
+    # label point of each region: the cell nearest the centroid of its cells
+    pts = []
+    for k in range(len(res.region_codes)):
+        m = np.where(sr.grid.region == k)[0]
+        if not len(m):
+            pts.append(None)
+            continue
+        la, lo = sr.grid.lat[m].mean(), sr.grid.lon[m].mean()
+        j = m[np.argmin((sr.grid.lat[m] - la) ** 2 + ((sr.grid.lon[m] - lo) * 0.6) ** 2)]
+        pts.append([round(float(sr.grid.lat[j]), 3), round(float(sr.grid.lon[j]), 3)])
+    return {"codes": list(res.region_codes), "names": list(res.region_names), "labels": labels, "seats": pts,
             "members": [MEMBER_LABELS.get(m, m) for m in members],
             "dominant": list(getattr(res, "dominant", []) or []),
+            "official": [list(o) for o in (getattr(res, "official", None) or [[d] for d in res.dominant])],
             "cellreg": base64.b64encode(cellreg.tobytes()).decode()}
 
 

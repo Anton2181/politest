@@ -56,12 +56,102 @@ observation regime.
 |---|---|---|
 | Mother tongue replaced nationality (1921 -> 1931) | 1921 recorded 3.90 M Ruthenians/Ukrainians and 1.04 M Belarusians by nationality; 1931 recorded 3.22 M Ukrainian + 1.22 M Ruthenian and 0.99 M Belarusian by mother tongue | latent home vernacular + `CensusRegime` observation model |
 | "Tutejszy" and "ruski" categories | 707 k "local" (62.5 % of Polesie); 1.22 M "Ruthenian" | Polesians carried as a vernacular (`pls`); census view reproduces the categories |
-| Polish-declared Orthodox and Greek Catholics | visible in the language x religion cross-read (e.g. Nowogródek 52 % Polish-speaking vs ~40 % Catholic) | `religion_corrected` variant |
+| Polish-declared Orthodox and Greek Catholics | visible in the language x religion cross-read (e.g. Nowogródek 52 % Polish-speaking vs ~40 % Catholic) | `religion_corrected`, the baseline |
 | Possible tampering | admission by E. Szturm de Sztrem (census office head) after WW2 | variants bracket the range |
-| Tomaszewski correction | ethnic Poles 64.7 %, Jews 9.8 %, others 25.5 % | reproduced by `religion_corrected` (tests) |
-| Kubijovyč (Galicia, 1939) | larger Ukrainian counts, ~360 k latynnyky in Podlachia/Chełm/Lublin; rounded village figures | `vernacular` variant (upper bound) |
-| Lithuania: Poles under-counted? | 65.6 k (census) vs 202 k (Polish claim) vs ~9 % Polish in 1897 Kovno governorate | `lt_variant` |
+| Tomaszewski correction | ethnic Poles 64.7 %, Jews 9.8 %, others 25.5 %; Ukrainians 5.11 M, Belarusians 1.95 M, Germans 0.78 M | reproduced by `religion_corrected`, the baseline (tests) |
+| Kubijovyč (Galicia, 1939) | 5.85 M Ukrainians in Poland (1931); 515 k latynnyky in Galicia; rounded village figures | `vernacular` variant (upper bound), calibrated to these |
+| Lithuania: Poles under-counted? | 65.6 k (census) vs ~150 k (middle estimate) vs 202 k (Polish claim) vs ~9 % Polish in 1897 Kovno governorate | `lt_variant` (baseline: ~150 k) |
 | Under-registration of deaths in the east | modelled CDR ~1 pt above registered | stated in the validation table |
+
+## The 1931 starting point: census or research estimates?
+
+The baseline no longer starts from the census as printed. It starts from the
+mainstream scholarly correction of the 1931 census (Tomaszewski 1985), which
+reads religion together with language. The printed census and the maximal
+estimates are kept as alternative scenarios (`census_official`,
+`census_vernacular`).
+
+**Why not the census?**
+
+* **Language, not nationality.** The 1931 census asked for mother tongue
+  rather than nationality. It offered "ruski" beside "ukraiński", and
+  "tutejszy" ("local") absorbed most of Polesie.
+* **Polish-declared Greek Catholics and Orthodox.** In the language x
+  religion cross-read, about 330 k Greek Catholics in eastern Galicia and
+  about 500 k Orthodox in the north-east, Lublin and Polesie were recorded as
+  Polish-speaking.
+* **Admitted tampering.** The head of the statistical office, E. Szturm de
+  Sztrem, later admitted that the administration may have altered forms.
+
+**Estimates in the literature, and what the model uses**
+
+| | 1931 census (language) | Tomaszewski 1985 | Kubijovyč 1983 | Other | Baseline (`religion_corrected`) | Upper bound (`vernacular`) |
+|---|---|---|---|---|---|---|
+| Ukrainians (with "Ruthenians", Lemkos) | 4.44 M | 5.11 M | 5.85 M (inflated per Polish historians) | | 4.98 M + share of West Polesian | 5.50 M (5.86 M with half the West Polesian) |
+| Belarusians | 0.99 M | 1.95 M | | most historians 1.7–2.0 M | 1.34 M + share of West Polesian | 1.83 M |
+| "Tutejszy" / West Polesian | 0.71 M | split between the two | | | 0.71 M, kept as a vernacular | 0.71 M |
+| Ukrainians + Belarusians + West Polesian | 6.17 M | 7.07 M | | | 7.03 M | 8.15 M |
+| Ethnic Poles | 68.9 % by language | 64.7 % | | | 64.7 % | 61.4 % |
+| Jews | 2.73 M Yiddish/Hebrew; 3.11 M by religion | 3.11 M (9.8 %) | | | 3.13 M | 3.13 M |
+| Germans | 0.74 M | 0.78 M | | | 0.785 M | 0.785 M |
+| Latin-rite Ukrainian speakers (latynnyky) | counted as Polish | counted as Poles | 515 k in Galicia (1939) | | not separated | 524 k |
+| Poles in Lithuania | 65.6 k (1923 census) | | | 202 k (Polish electoral committee, held "very probable" by Buchowski 1999); ~150 k (middle estimate) | ~150 k (`lt_variant: research`) | 160 k (1897 shares) |
+
+**How the baseline is built**
+
+* **Greek Catholics and Orthodox.** Of those declared Polish, 95 % are
+  reassigned to Ukrainian or Belarusian home language by region (Tomaszewski
+  counts them all; Kubijovyč finds only 16 k Polish-speaking Greek Catholics
+  in 1939).
+* **Protestants.** 30 % of Polish-declared Protestants outside Cieszyn
+  Silesia and Warsaw are reassigned to German.
+* **The Lemko and Kashubian carve-outs** are unchanged.
+* **Lithuania.** The Polish-speaking population is set at about 150 k, the
+  middle of the 65.6 k–202 k range.
+
+These settings reproduce Tomaszewski's totals (tested).
+
+**Check against the printed census.** Passed through the model of how the 1931
+census recorded people (`plsim.language.census_mapping`: Catholic Belarusian
+speakers mostly recorded as Polish, Greek Catholics split between
+"ukraiński", "ruski" and Polish, Polesians as "tutejszy"), the baseline gives
+back the printed national shares within 1.0 point in total across eight
+categories:
+
+| | Polish | Ukr.+Ruth. | Yiddish+Hebrew | Belarusian | German | Tutejszy |
+|---|---|---|---|---|---|---|
+| Printed census | 68.9 | 13.9 | 8.6 | 3.1 | 2.3 | 2.2 |
+| Baseline, as recorded | 68.7 | 14.1 | 8.5 | 3.2 | 2.2 | 2.2 |
+
+The census is therefore consistent with a population that was considerably
+less Polish-speaking at home than it printed.
+
+**What the baseline does not include.** Tomaszewski counts Roman Catholics as
+Poles. Ukrainian-speaking Latin-rite Catholics (latynnyky) and
+Belarusian-speaking Catholics in the Wilno and Nowogródek lands are
+therefore not in the baseline. They are in the upper bound
+(`census_vernacular`), at Kubijovyč's level for Galicia and at 1897
+proportions in the north-east. Their real number lies between the two.
+Regional studies such as Hryciuk (2005) on eastern Galicia and Volhynia
+could narrow it.
+
+**Sources**
+
+* Tomaszewski, J. (1985). *Ojczyzna nie tylko Polaków. Mniejszości narodowe w
+  Polsce w latach 1918–1939*. Warsaw: MAW.
+* Kubijovyč, V. (1983). *Etnichni hrupy pivdennozakhidnoi Ukrainy
+  (Halychyny) na 1.1.1939*. Wiesbaden.
+* Buchowski, K. (1999). *Polacy w niepodległym państwie litewskim
+  1918–1940*. Białystok.
+* Eberhardt, P. (2003). *Ethnic Groups and Population Changes in
+  Twentieth-Century Central-Eastern Europe*. Armonk: M. E. Sharpe.
+* Hryciuk, G. (2005). *Przemiany narodowościowe i ludnościowe w Galicji
+  Wschodniej i na Wołyniu w latach 1931–1948*. Toruń.
+* The figures were read through secondary summaries (Polish and English
+  Wikipedia articles on Ukrainians in the Second Republic, Belarusians in
+  Poland, Poles in Lithuania and Kubijovyč; Encyclopedia of Ukraine,
+  "Galicia"). The books themselves were not reachable from this
+  environment.
 
 ## Vital rates and life tables
 

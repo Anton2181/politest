@@ -69,7 +69,13 @@ select { font: inherit; color: var(--ink); background: var(--panel); border: 1px
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px); gap: 24px 32px; align-items: start; }
 .plate { display: grid; gap: 10px; min-width: 0; justify-items: center; }
 .mapbox { position: relative; width: min(100%, max(380px, calc((100vh - 300px) * var(--inv-ar, 0.9)))); aspect-ratio: var(--ar-css, 1 / 1.1); background: var(--sea); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--rule); }
-.mapbox canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; cursor: crosshair; }
+.mapbox canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+.mapbox canvas:focus-visible { outline: 2px solid var(--ctl-on); outline-offset: -2px; }
+.zoom { position: absolute; right: 10px; bottom: 10px; display: grid; gap: 4px; }
+.zoom button { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); font: 600 17px/1 var(--font-body); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.zoom button:disabled { opacity: 0.45; cursor: default; }
+.zoom button svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.zoom-hint { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); font-size: var(--step--1); color: var(--ink2); background: var(--panel); border: 1px solid var(--rule); border-radius: 999px; padding: 3px 10px; pointer-events: none; opacity: 0.92; white-space: nowrap; }
 .yearmark { position: absolute; left: 14px; top: 10px; pointer-events: none; display: grid; }
 #year-big { font-family: var(--font-display); font-weight: 600; font-size: clamp(2.2rem, 1.4rem + 3vw, 3.6rem); line-height: 1; font-variant-numeric: lining-nums tabular-nums; color: var(--ink); text-shadow: 0 0 6px var(--halo), 0 0 2px var(--halo); }
 #mode-cap { font-size: var(--step--1); color: var(--ink2); text-shadow: 0 0 4px var(--halo); max-width: 22ch; }
@@ -143,7 +149,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
 <div class="wrap">
   <header class="mast">
     <div>
-      <p class="eyebrow">Counterfactual · no Second World War · 7 km grid</p>
+      <p class="eyebrow">Counterfactual · no Second World War · county level · 3.5 km grid</p>
       <h1>Poland–Lithuania Atlas, 1932–2032</h1>
       <p class="lede">Home languages and population of a surviving interwar Poland in union with Lithuania, as projected by the plsim model. Press play to watch language shift and urbanisation unfold, or point at any cell to read it.</p>
     </div>
@@ -157,7 +163,13 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   <main class="layout">
     <section class="plate" aria-label="Map">
       <div class="mapbox" id="mapbox">
-        <canvas id="map" role="img" aria-label="Map of home languages"></canvas>
+        <canvas id="map" role="img" tabindex="0" aria-label="Map of home languages. Scroll or pinch to zoom, drag to pan; plus, minus and arrow keys work too."></canvas>
+        <div class="zoom" role="group" aria-label="Zoom">
+          <button type="button" id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button>
+          <button type="button" id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button>
+          <button type="button" id="zoom-reset" aria-label="Show the whole map" title="Show the whole map"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"/></svg></button>
+        </div>
+        <div class="zoom-hint" id="zoom-hint">Scroll or pinch to zoom · drag to pan</div>
         <div class="yearmark"><span id="year-big">1932</span><span id="mode-cap">Most widely spoken home language</span></div>
         <div class="status" id="status" hidden></div>
       </div>
@@ -215,20 +227,21 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     <div>
       <h2>How the maps are made</h2>
       <ul>
-        <li>Each scenario is a cohort-component projection for 23 regions: the 17 Polish voivodeships of 1931 and 6 Lithuanian units, split rural/urban, with 43 community–language groups. The maps place those regional numbers on 9,383 cells of about 7 × 7 km, so every region always adds up to the model.</li>
+        <li>Each scenario is a cohort-component projection for about 270 counties: the 1931 powiaty and the Lithuanian apskritys, split rural/urban, with 43 community–language groups. The eight eastern voivodeships start from the 1931 county tables of mother tongue; the other counties are downscaled from their voivodeship. The maps place those county numbers on about 37,500 cells of 3.5 × 3.4 km, so every county always adds up to the model.</li>
         <li><strong>1932.</strong> County language shares from the 1931 Polish census (and estimates where the census was silent, such as Kashubian, Lemko and the Lauda gentry) are interpolated inside each voivodeship and fitted to its totals by iterative proportional fitting.</li>
         <li><strong>Each year.</strong> The region's net language shift is placed where speakers of the gaining language live nearby. Following Prochazka &amp; Vogl, the chance to shift grows with the gaining language's share in a Gaussian neighbourhood (10 km), plus a constant part for school, church and state. Towns reach further into their hinterland as they grow.</li>
         <li><strong>Population.</strong> Towns follow the transport-network model. Rural cells near growing towns gain a little each year; remote ones lose, which produces suburban rings and rural exodus.</li>
         <li><strong>Transport.</strong> The network grows by cost–benefit appraisal under rail and road budgets, plus the dated 1930s projects and the 1939 plans. Lines are drawn straight between the 230 modelled towns, so they show connections, not alignments. The map shows the network as of the latest 5-year frame.</li>
-        <li><strong>County level.</strong> The two "county level" scenarios run the projection for about 270 counties (powiaty and Lithuanian apskritys) instead of 23 regions. The eight eastern voivodeships start from the 1931 county tables of mother tongue; the others are downscaled estimates. Faint lines mark county borders.</li>
-        <li><strong>Federal members.</strong> Dashed lines mark the borders between federal members, such as Poland and Lithuania, or the autonomy and the cantons in the cantonal scenario. Within a member, each sub-region has its own official language.</li>
+        <li><strong>Zoom.</strong> Scroll, pinch or use the buttons to zoom; drag to pan. Faint lines mark county borders, stronger ones voivodeships. County names and more towns appear as you zoom in.</li>
+        <li><strong>Federal members and official languages.</strong> Dashed lines mark the borders between federal members, such as Poland and Lithuania, or the autonomies and cantons. Pointing at a cell shows its county's official language(s). Where several are co-official, the first is the county's working language.</li>
+        <li><strong>Left-out land.</strong> In the scenario without the south-east and Wilno, the land outside the state is shown in the neutral colour.</li>
       </ul>
     </div>
     <div>
       <h2>Reading with care</h2>
       <ul>
         <li>The maps show the modelled home language, not what a census would print. The 1931 census counted many Belarusian, Ukrainian and Polesian speakers as Polish or "local". The two "1931 start" scenarios begin from alternative reconstructions.</li>
-        <li>The state borders are those of 1 January 1932 (CShapes 2.0). Internal borders are approximations (a weighted Voronoi of county towns). A 7 km cell averages over several villages, so a single Lauda manor or the Karaim quarter of Troki is below the grid's resolution.</li>
+        <li>The state borders are those of 1 January 1932 (CShapes 2.0). Voivodeship and county borders are approximations (weighted Voronoi diagrams of the towns and county seats). A 3.5 km cell still averages over a few villages, so a single Lauda manor or the Karaim quarter of Troki is below the grid's resolution.</li>
         <li>Towns take their region's urban language mix, tilted toward their hinterland. Shtetls with Jewish majorities, such as Pińsk or Brody, therefore look more mixed than they were.</li>
         <li>Paler colours in the language layer mean the leading language has a thin plurality, below about half of residents.</li>
       </ul>
@@ -277,9 +290,15 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     }
     return u;
   }
-  const cb = b64bytes(G.cells);
+  const cb = b64bytes(G.cells);           // rows (uint16) | columns (uint16) | voivodeship (uint8)
   const ROW = new Uint16Array(N), COL = new Uint16Array(N), REG = new Uint8Array(N);
-  for (let i = 0; i < N; i++) { ROW[i] = cb[3 * i]; COL[i] = cb[3 * i + 1]; REG[i] = cb[3 * i + 2]; }
+  for (let i = 0; i < N; i++) {
+    ROW[i] = cb[2 * i] | (cb[2 * i + 1] << 8);
+    COL[i] = cb[2 * N + 2 * i] | (cb[2 * N + 2 * i + 1] << 8);
+    REG[i] = cb[4 * N + i];
+  }
+  const CELL_LT = new Uint8Array(N);       // cell of the Lithuanian state (full grid)
+  for (let i = 0; i < N; i++) CELL_LT[i] = G.regions[REG[i]].code.startsWith("LT") ? 1 : 0;
   const RIDX = new Int32Array(W * H).fill(-1);
   for (let i = 0; i < N; i++) RIDX[ROW[i] * W + COL[i]] = i;
   const latOf = (i) => BB[1] + (ROW[i] + 0.5) * G.dlat;
@@ -304,9 +323,31 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   const mapbox = $("mapbox"), canvas = $("map"), ctx = canvas.getContext("2d");
   document.documentElement.style.setProperty("--ar-css", `1 / ${AR.toFixed(4)}`);
   document.documentElement.style.setProperty("--inv-ar", (1 / AR).toFixed(4));
-  let S = 1, CW = 0, CH = 0, DPR = 1;
-  const px = (lon) => ((lon - LONC) * K - XMIN) * S;
-  const py = (lat) => (YMAX - lat) * S;
+  let S = 1, CW = 0, CH = 0, DPR = 1, CW0 = 0, CH0 = 0;
+  // view: zoom Z and pan (OX, OY) in CSS pixels
+  let Z = 1, OX = 0, OY = 0, layersDirty = true;
+  const ZMAX = 24;
+  const px = (lon) => ((lon - LONC) * K - XMIN) * S * Z + OX;
+  const py = (lat) => (YMAX - lat) * S * Z + OY;
+  const lonAt = (x) => ((x - OX) / (S * Z) + XMIN) / K + LONC;
+  const latAt = (y) => YMAX - (y - OY) / (S * Z);
+  function clampView() {
+    const mw = (XMAX - XMIN) * S * Z, mh = (YMAX - YMIN) * S * Z;
+    OX = mw <= CW ? (CW - mw) / 2 : clamp(OX, CW - mw, 0);
+    OY = mh <= CH ? (CH - mh) / 2 : clamp(OY, CH - mh, 0);
+  }
+  function zoomAt(x, y, f) {
+    const z = clamp(Z * f, 1, ZMAX);
+    if (z === Z) return;
+    OX = x - (x - OX) * z / Z; OY = y - (y - OY) * z / Z; Z = z;
+    clampView(); viewChanged();
+  }
+  function viewChanged() {
+    layersDirty = true;
+    $("zoom-out").disabled = Z <= 1; $("zoom-in").disabled = Z >= ZMAX; $("zoom-reset").disabled = Z <= 1;
+    if (Z > 1) $("zoom-hint").hidden = true;
+    schedule();
+  }
 
   // ---------------------------------------------------------------- colours
   const css = () => getComputedStyle(document.documentElement);
@@ -344,7 +385,8 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   let cur = null;                         // unpacked data of the current scenario
   const VS = new Float32Array(N * 8), VD = new Float32Array(N);
   const scenByName = Object.fromEntries(META.scenarios.map((s) => [s.name, s]));
-  const LANG_NAME = { pl: "Polish", lt: "Lithuanian", uk: "Ukrainian", be: "Belarusian", de: "German" };
+  const LANG_NAME = { pl: "Polish", lt: "Lithuanian", uk: "Ukrainian", be: "Belarusian", de: "German", yi: "Yiddish",
+    ru: "Russian", pls: "West Polesian", csb: "Kashubian", rue: "Lemko", lv: "Latvian", cs: "Czech" };
   function prep(sc) {
     if (sc._cellreg) return sc;
     const rb = b64bytes(sc.geo.cellreg);                 // uint16, little-endian; 65535 = no region
@@ -361,7 +403,9 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     if (k === 65535) return null;
     const code = sc.geo.codes[k], name = sc.geo.names[k];
     const label = sc.geo.labels ? sc.geo.labels[k] : (code.startsWith("LT_") || code === "WAW" || code.includes(".") ? name : "woj. " + name);
-    return { label, member: sc.geo.members[k], official: LANG_NAME[sc.geo.dominant[k]] || sc.geo.dominant[k] };
+    const offs = sc.geo.official ? sc.geo.official[k] : [sc.geo.dominant[k]];
+    const official = offs.length > 6 ? "all languages" : offs.map((l) => LANG_NAME[l] || l).join(", ");
+    return { label, member: sc.geo.members[k], official, n: offs.length };
   }
   const frameFloor = (y) => { let f = 0; while (f < NF - 1 && FR[f + 1] <= y) f++; return f; };
 
@@ -436,10 +480,12 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     // spread one pixel into empty neighbours; the image is clipped to the 1932 border,
     // so cells whose centre lies just outside it leave no gaps
     src.set(d);
+    const hasLT = !!scen()._hasLT;
     for (let r = 0; r < H; r++) {
       for (let c = 0; c < W; c++) {
         const p = (r * W + c) * 4;
-        if (src[p + 3]) continue;
+        const q = RIDX[(H - 1 - r) * W + c];
+        if (src[p + 3] || (q >= 0 && (hasLT || !CELL_LT[q]))) continue;    // only past the state border
         for (let k = 0; k < 16; k += 2) {
           const rr = r + NB[k], cc = c + NB[k + 1];
           if (rr < 0 || cc < 0 || rr >= H || cc >= W) continue;
@@ -452,26 +498,31 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   }
 
   // ---------------------------------------------------------------- vector layers
-  let baseLayer = null, topLayer = null, clipPath = null, segInner = [], segMember = [], segCounty = [];
+  let baseLayer = null, topLayer = null, clipPath = null, segInner = [], segMember = [], segCounty = [], segOuter = [];
   function computeBorders() {
-    // region, member and state borders from the raster, for this scenario's coverage
+    // region, member and state borders for this scenario's coverage
     const sc = scen(), codes = sc.geo.codes;
     const waw = codes.indexOf("WAW"), war = codes.indexOf("WAR");
+    const isLT = codes.map((c) => c.startsWith("LT"));
+    sc._hasLT = isLT.some(Boolean);
+    // reg: region of each pixel; -2 = land of the state left out of this scenario; -1 = abroad
     const reg = new Int16Array(W * H).fill(-1);
     for (let i = 0; i < N; i++) {
-      const k = sc._cellreg[i];
-      if (!cur.dens[i] || k === 65535) continue;
-      reg[ROW[i] * W + COL[i]] = k === waw && war >= 0 ? war : k;
+      const k = sc._cellreg[i], p = ROW[i] * W + COL[i];
+      if (k !== 65535) reg[p] = k === waw && war >= 0 ? war : k;
+      else if (sc._hasLT || !CELL_LT[i]) reg[p] = -2;
     }
+    sc._reg = reg;
     const mem = (k) => sc._member[k];
     // Warsaw city belongs with its voivodeship (its counties at county level)
     const par = codes.map((c) => (c === "WAW" ? "WAR" : c.split(".")[0]));
-    const isLT = codes.map((c) => c.startsWith("LT"));
-    sc._hasLT = isLT.some(Boolean);
-    segInner = []; segMember = []; segCounty = [];
-    // the outer border and the Polish-Lithuanian border are drawn from the 1932 polylines
+    segInner = []; segMember = []; segCounty = []; segOuter = [];
+    // the 1932 state border and the Polish-Lithuanian border are drawn from polylines (below);
+    // the border with land left out of the state follows the cells
     const push = (a, b, seg) => {
-      if (a === b || Math.min(a, b) < 0 || isLT[a] !== isLT[b]) return;
+      if (a === b || Math.max(a, b) < 0) return;
+      if (Math.min(a, b) === -2) { segOuter.push(seg); return; }
+      if (Math.min(a, b) < 0 || isLT[a] !== isLT[b]) return;
       if (mem(a) !== mem(b)) segMember.push(seg);
       else if (par[a] === par[b] && (codes[a].includes(".") || codes[b].includes("."))) segCounty.push(seg);
       else segInner.push(seg);
@@ -489,28 +540,37 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
         }
       }
     }
-    if (!sc._hasLT) return;
-    // Polish-Lithuanian border: dashed where the regions on either side are in different members
+    // region (>= 0), left-out land (-2) or unknown (-1) on one side of a border segment
     const at = (lat, lon) => {
       const r = Math.floor((lat - BB[1]) / G.dlat), c = Math.floor((lon - BB[0]) / G.dlon);
       return r < 0 || c < 0 || r >= H || c >= W ? -1 : reg[r * W + c];
     };
     const side = (lat, lon, nx, ny, sgn) => {
-      for (const d of [0.04, 0.08, 0.12, 0.18]) {
-        const k = at(lat + sgn * ny * d, lon + sgn * nx * d);
-        if (k >= 0) return k;
+      for (const d of [0.5, 1, 2, 3]) {
+        const k = at(lat + sgn * ny * d * G.dlat, lon + sgn * nx * d * G.dlon);
+        if (k !== -1) return k;
       }
       return -1;
     };
-    META.geo.states.plLt.forEach((ln) => {
+    const eachSeg = (lines, fn) => lines.forEach((ln) => {
       for (let j = 0; j + 1 < ln.length; j++) {
         const [x0, y0] = ln[j], [x1, y1] = ln[j + 1];
         const kx = Math.cos(((y0 + y1) / 2) * Math.PI / 180), dx = (x1 - x0) * kx, dy = y1 - y0, L = Math.hypot(dx, dy);
         if (!L) continue;
         const nx = -dy / L / kx, ny = dx / L, mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
-        const a = side(my, mx, nx, ny, 1), b = side(my, mx, nx, ny, -1);
-        (a >= 0 && b >= 0 && mem(a) !== mem(b) ? segMember : segInner).push([x0, y0, x1, y1]);
+        fn([x0, y0, x1, y1], side(my, mx, nx, ny, 1), side(my, mx, nx, ny, -1));
       }
+    });
+    // 1932 state border: kept where the land inside is still part of the state
+    const st = META.geo.states;
+    eachSeg(sc._hasLT ? st.outline : st.PL, (seg, a, b) => {
+      if (Math.max(a, b) >= 0 || (a === -1 && b === -1)) segOuter.push(seg);
+    });
+    if (!sc._hasLT) return;
+    // Polish-Lithuanian border: dashed where the regions on either side are in different members
+    eachSeg(st.plLt, (seg, a, b) => {
+      if (a >= 0 && b >= 0) (mem(a) !== mem(b) ? segMember : segInner).push(seg);
+      else if (Math.max(a, b) >= 0) segOuter.push(seg);
     });
   }
   function layer() {
@@ -527,6 +587,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   }
   function buildLayers() {
     if (!CW) return;
+    layersDirty = false;
     let x;
     [baseLayer, x] = layer();
     x.fillStyle = T.sea; x.fillRect(0, 0, CW, CH);
@@ -546,10 +607,11 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     x.strokeStyle = T.rline; x.lineWidth = 0.6; x.beginPath();
     segInner.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
     x.stroke();
-    // state border, 1 January 1932 (CShapes 2.0)
+    // state border: 1 January 1932 (CShapes 2.0), and the edge of land left out of the state
     const st = META.geo.states, hasLT = !!scen()._hasLT;
-    x.strokeStyle = T.line; x.lineWidth = 1.1;
-    (hasLT ? st.outline : st.PL).forEach((p) => { polyPath(x, p, !hasLT); x.stroke(); });
+    x.strokeStyle = T.line; x.lineWidth = 1.1; x.lineJoin = "round"; x.beginPath();
+    segOuter.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
+    x.stroke();
     clipPath = new Path2D();
     (hasLT ? st.PL.concat(st.LT) : st.PL).forEach((p) => {
       p.forEach((q, k) => (k ? clipPath.lineTo(px(q[0]), py(q[1])) : clipPath.moveTo(px(q[0]), py(q[1]))));
@@ -600,35 +662,67 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     const [f, u] = frameAt(y);
     return t.pop[f] + (t.pop[f + 1] - t.pop[f]) * u;
   }
+  const overlaps = (box, placed) => placed.some((b) => !(box[2] < b[0] || box[0] > b[2] || box[3] < b[1] || box[1] > b[3]));
   function drawTowns() {
-    const towns = scenByName[state.scen].towns.map((t) => ({ t, pop: townPop(t, state.year) })).filter((o) => o.pop > 0);
-    towns.sort((a, b) => b.pop - a.pop);
-    const maxLabels = CW < 520 ? 8 : CW < 760 ? 13 : 18;
+    // more towns, and more labels, as the map is zoomed in; the national view keeps the main towns
+    const all = scenByName[state.scen].towns.map((t) => ({ t, pop: townPop(t, state.year) })).filter((o) => o.pop > 0);
+    all.sort((a, b) => (Z < 1.5 ? (b.t.major || 0) - (a.t.major || 0) : 0) || b.pop - a.pop);
+    const nDots = Math.round(24 * Z * Z), zl = Math.min(Z, 6);
+    const maxLabels = Math.round((CW < 520 ? 8 : CW < 760 ? 13 : 18) * zl);
     const placed = [];
     ctx.font = `500 ${CW < 520 ? 10 : 11}px ${T.fontBody}`;
     ctx.textBaseline = "middle";
-    towns.forEach((o, k) => {
-      const x = px(o.t.lon), y = py(o.t.lat), r = 1.4 + 4.0 * Math.sqrt(o.pop / 1e6);
+    let dots = 0, labels = 0;
+    for (const o of all) {
+      const x = px(o.t.lon), y = py(o.t.lat);
+      if (x < -20 || y < -20 || x > CW + 20 || y > CH + 20) continue;
+      if (dots++ >= nDots) break;
+      const r = (1.4 + 4.0 * Math.sqrt(o.pop / 1e6)) * Math.pow(Z, 0.25);
       ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fillStyle = T.label; ctx.fill();
       ctx.lineWidth = 1; ctx.strokeStyle = T.halo; ctx.stroke();
-      if (k >= maxLabels) return;
+      if (labels >= maxLabels) continue;
       const w = ctx.measureText(o.t.name).width, h = 12;
       for (const side of [1, -1]) {
         const lx = side > 0 ? x + r + 3 : x - r - 3 - w;
         const box = [lx - 1, y - h / 2, lx + w + 1, y + h / 2];
-        if (box[0] < 2 || box[2] > CW - 2) continue;
-        if (placed.some((b) => !(box[2] < b[0] || box[0] > b[2] || box[3] < b[1] || box[1] > b[3]))) continue;
-        placed.push(box);
+        if (box[0] < 2 || box[2] > CW - 2 || box[1] < 2 || box[3] > CH - 2) continue;
+        if (overlaps(box, placed)) continue;
+        placed.push(box); labels++;
         ctx.lineWidth = 3; ctx.strokeStyle = T.halo; ctx.lineJoin = "round";
         ctx.strokeText(o.t.name, lx, y);
         ctx.fillStyle = T.label; ctx.fillText(o.t.name, lx, y);
         break;
       }
+    }
+    return placed;
+  }
+  function drawRegionLabels(placed) {
+    // county (powiat, apskritis) names once the map is zoomed in
+    const g = scen().geo;
+    if (Z < 2.2 || !g.seats) return;
+    ctx.save();
+    ctx.globalAlpha = clamp((Z - 2.2) / 0.8, 0, 1);
+    ctx.font = `italic 500 ${CW < 520 ? 9.5 : 10.5}px ${T.fontBody}`;
+    ctx.textBaseline = "middle"; ctx.textAlign = "center"; ctx.lineJoin = "round";
+    g.codes.forEach((c, k) => {
+      const sp = g.seats[k];
+      if (!sp || !c.includes(".")) return;
+      const x = px(sp[1]), y = py(sp[0]);
+      if (x < 0 || y < 0 || x > CW || y > CH) return;
+      const name = g.names[k], w = ctx.measureText(name).width, h = 11;
+      const box = [x - w / 2 - 2, y - h / 2, x + w / 2 + 2, y + h / 2];
+      if (overlaps(box, placed)) return;
+      placed.push(box);
+      ctx.lineWidth = 3; ctx.strokeStyle = T.halo; ctx.strokeText(name, x, y);
+      ctx.fillStyle = T.muted; ctx.fillText(name, x, y);
     });
+    ctx.restore();
   }
   function drawScale() {
-    const km = CW < 520 ? 50 : 100, len = km / 111.32 * S, x0 = 14, y0 = CH - 16;
+    const kmPerPx = 111.32 / (S * Z), target = (CW < 520 ? 70 : 100) * kmPerPx;
+    const km = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500].filter((v) => v <= target).pop() || 1;
+    const len = km / kmPerPx, x0 = 14, y0 = CH - 16;
     ctx.strokeStyle = T.label; ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.moveTo(x0, y0 - 4); ctx.lineTo(x0, y0); ctx.lineTo(x0 + len, y0); ctx.lineTo(x0 + len, y0 - 4); ctx.stroke();
     ctx.font = `500 10.5px ${T.fontBody}`; ctx.textBaseline = "bottom";
@@ -646,6 +740,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   }
   function render() {
     if (!cur || !baseLayer) return;
+    if (layersDirty) buildLayers();
     sample(state.year);
     paintRaster();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -661,7 +756,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     ctx.restore();
     ctx.drawImage(topLayer, 0, 0);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    drawNetwork(); drawTowns(); drawHover(); drawScale();
+    drawNetwork(); drawRegionLabels(drawTowns()); drawHover(); drawScale();
     updateReadouts();
   }
   let pending = false;
@@ -756,7 +851,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     const lat = latOf(i).toFixed(2), lon = lonOf(i).toFixed(2);
     const ri = regionInfo(i) || { label: "", member: "", official: "" };
     box.innerHTML = `<h3>${ri.label}</h3>
-      <div class="meta">${ri.member} · official: ${ri.official}</div>
+      <div class="meta">${ri.member} · official: ${ri.official}${ri.n > 1 && ri.n <= 6 ? " (working language first)" : ""}</div>
       <div class="meta">${lat}°N ${lon}°E · ${Math.floor(state.year)}</div>
       <div class="meta">${dens >= 100 ? dens.toFixed(0) : dens.toFixed(1)} per km² · about ${fmtCount(dens * area)} residents${ratio ? ` · ×${ratio.toFixed(2)} since 1932` : ""}</div>
       <div class="bars">${sh.map((o) => `<div class="bar"><span>${CATS[o.k].label}</span><span class="track"><span class="fill" style="display:block;width:${(o.v * 100).toFixed(1)}%;background:${CATS[o.k].color}"></span></span><span class="v">${fmtPct(o.v)}</span></div>`).join("")}</div>`;
@@ -875,8 +970,12 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     DPR = Math.min(window.devicePixelRatio || 1, 2.5);
     CW = r.width; CH = r.height;
     canvas.width = Math.round(CW * DPR); canvas.height = Math.round(CH * DPR);
+    // keep the centre of the view and the zoom across resizes
+    const cx = S > 1 ? lonAt(CW0 / 2) : null, cy = S > 1 ? latAt(CH0 / 2) : null;
     S = Math.min(CW / (XMAX - XMIN), CH / (YMAX - YMIN));
-    buildLayers(); schedule();
+    if (cx !== null) { OX = CW / 2 - (px(cx) - OX); OY = CH / 2 - (py(cy) - OY); }
+    CW0 = CW; CH0 = CH;
+    clampView(); buildLayers(); viewChanged();
   }
   function isDark() {
     const t = document.documentElement.getAttribute("data-theme");
@@ -891,16 +990,86 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
 
   function cellAt(ev) {
     const r = canvas.getBoundingClientRect();
-    const mx = ev.clientX - r.left, my = ev.clientY - r.top;
-    const lon = (mx / S + XMIN) / K + LONC, lat = YMAX - my / S;
+    const lon = lonAt(ev.clientX - r.left), lat = latAt(ev.clientY - r.top);
     const row = Math.floor((lat - BB[1]) / G.dlat), col = Math.floor((lon - BB[0]) / G.dlon);
     if (row < 0 || row >= H || col < 0 || col >= W) return -1;
     const i = RIDX[row * W + col];
     return i >= 0 && cur && cur.dens[i] ? i : -1;
   }
-  canvas.addEventListener("pointermove", (ev) => { const i = cellAt(ev); if (i !== state.hover) { state.hover = i; schedule(); } });
-  canvas.addEventListener("pointerdown", (ev) => { state.hover = cellAt(ev); schedule(); });
-  canvas.addEventListener("pointerleave", (ev) => { if (ev.pointerType === "mouse") { state.hover = -1; schedule(); } });
+  // ---- zoom and pan: wheel, drag, pinch, double-click, buttons, keyboard
+  const ptrs = new Map();
+  let drag = null, pinch = null;
+  const local = (ev) => { const r = canvas.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; };
+  canvas.addEventListener("wheel", (ev) => {
+    ev.preventDefault();
+    const [x, y] = local(ev), unit = ev.deltaMode === 1 ? 16 : ev.deltaMode === 2 ? 400 : 1;
+    zoomAt(x, y, Math.exp(-ev.deltaY * unit * 0.0016));
+  }, { passive: false });
+  canvas.addEventListener("pointerdown", (ev) => {
+    canvas.setPointerCapture(ev.pointerId);
+    ptrs.set(ev.pointerId, local(ev));
+    if (ptrs.size === 1) {
+      const [x, y] = local(ev);
+      drag = { x, y, ox: OX, oy: OY, moved: false };
+    } else if (ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()];
+      pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), z: Z, mx: (a[0] + b[0]) / 2, my: (a[1] + b[1]) / 2 };
+      drag = null;
+    }
+  });
+  canvas.addEventListener("pointermove", (ev) => {
+    if (!ptrs.has(ev.pointerId)) {
+      const i = cellAt(ev);
+      if (i !== state.hover) { state.hover = i; schedule(); }
+      return;
+    }
+    ptrs.set(ev.pointerId, local(ev));
+    if (pinch && ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()];
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]), mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+      OX += mx - pinch.mx; OY += my - pinch.my; pinch.mx = mx; pinch.my = my;
+      zoomAt(mx, my, pinch.z * d / Math.max(pinch.d, 1) / Z);
+      clampView(); viewChanged();
+    } else if (drag) {
+      const [x, y] = local(ev);
+      if (Math.abs(x - drag.x) + Math.abs(y - drag.y) > 4) drag.moved = true;
+      if (drag.moved && Z > 1) {
+        canvas.style.cursor = "grabbing";
+        OX = drag.ox + x - drag.x; OY = drag.oy + y - drag.y;
+        clampView(); viewChanged();
+      }
+    }
+  });
+  const endPtr = (ev) => {
+    if (!ptrs.has(ev.pointerId)) return;
+    ptrs.delete(ev.pointerId);
+    if (drag && !drag.moved) { state.hover = cellAt(ev); schedule(); }      // a tap reads the cell
+    if (ptrs.size < 2) pinch = null;
+    if (!ptrs.size) drag = null;
+    canvas.style.cursor = "";
+  };
+  canvas.addEventListener("pointerup", endPtr);
+  canvas.addEventListener("pointercancel", endPtr);
+  canvas.addEventListener("pointerleave", (ev) => {
+    if (ev.pointerType === "mouse" && !ptrs.size) { state.hover = -1; schedule(); }
+  });
+  canvas.addEventListener("dblclick", (ev) => { const [x, y] = local(ev); zoomAt(x, y, ev.shiftKey ? 0.5 : 2); });
+  const zoomCentre = (f) => zoomAt(CW / 2, CH / 2, f);
+  $("zoom-in").addEventListener("click", () => zoomCentre(2));
+  $("zoom-out").addEventListener("click", () => zoomCentre(0.5));
+  $("zoom-reset").addEventListener("click", () => { Z = 1; clampView(); viewChanged(); });
+  canvas.addEventListener("keydown", (ev) => {
+    const k = ev.key, step = 60;
+    if (k === "+" || k === "=") zoomCentre(1.5);
+    else if (k === "-" || k === "_") zoomCentre(1 / 1.5);
+    else if (k === "0") { Z = 1; clampView(); viewChanged(); }
+    else if (k.startsWith("Arrow")) {
+      OX += k === "ArrowLeft" ? step : k === "ArrowRight" ? -step : 0;
+      OY += k === "ArrowUp" ? step : k === "ArrowDown" ? -step : 0;
+      clampView(); viewChanged();
+    } else return;
+    ev.preventDefault();
+  });
 
   let last = 0;
   const SPEED = 6;  // years per second

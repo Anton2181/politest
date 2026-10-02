@@ -1,4 +1,4 @@
-"""Spatial downscaling of the regional projection to a ~7 km grid (maps).
+"""Spatial downscaling of the regional projection to a ~3.5 km grid (maps).
 
 The cohort-component model works with 23 regions x rural/urban.  For maps,
 each region's population and languages are placed on grid cells and towns
@@ -82,13 +82,17 @@ def _indicator(key: np.ndarray, n_keys: int) -> sparse.csr_matrix:
 
 
 def ipf(seed: np.ndarray, row_tot: np.ndarray, A: sparse.csr_matrix, key: np.ndarray, col_tot: np.ndarray,
-        n_iter: int = 40) -> np.ndarray:
+        n_iter: int = 40, tol: float = 1e-6) -> np.ndarray:
     """Iterative proportional fitting of ``seed`` (units x languages) to unit
-    totals and to stratum x language totals (``A`` aggregates units to strata)."""
+    totals and to stratum x language totals (``A`` aggregates units to strata).
+    Stops once every stratum x language total is within ``tol`` (relative)."""
     X = seed.copy()
     for _ in range(n_iter):
         cs = A @ X
         f = np.where(cs > 0, col_tot / np.maximum(cs, 1e-30), 0.0)
+        live = cs > 1e-9
+        if live.any() and np.abs(f[live] - 1.0).max() < tol:
+            break
         X *= f[key]
         rs = X.sum(axis=1)
         X *= np.where(rs > 0, row_tot / np.maximum(rs, 1e-30), 0.0)[:, None]
@@ -182,7 +186,14 @@ class Downscaler:
                                (np.concatenate([pairs[:, 0], pairs[:, 1], np.arange(Nc)]),
                                 np.concatenate([pairs[:, 1], pairs[:, 0], np.arange(Nc)]))), shape=(Nc, Nc))
         self.W = W.tocsr()
-        self.D_ct = np.sqrt(((self.cell_xy[:, None, :] - self.town_xy[None, :, :]) ** 2).sum(axis=2))   # (Nc,Nt)
+        D_ct = np.sqrt(((self.cell_xy[:, None, :] - self.town_xy[None, :, :]) ** 2).sum(axis=2))   # (Nc,Nt)
+        self.E_pull = np.exp(-D_ct / self.p["pull_km"])                                       # town potential
+        # cell-town pairs within the largest town-influence radius any town reaches
+        tp_max = np.array([res.town_pop0] + list(res.town_pop), float)[:, self.town_idx].max(axis=0) * 1000.0
+        s_max = self.p["town_sigma_km"] * np.maximum(1.0, tp_max / 20000.0) ** self.p["town_sigma_exp"]
+        ci, ti = np.nonzero(D_ct <= self.p["cutoff_sigmas"] * s_max[None, :])
+        self._ct = (ci, ti, D_ct[ci, ti])
+        del D_ct
         self.WT = None
         # yearly regional targets
         self.years = [res.params["start_year"]] + list(res.years)
@@ -192,11 +203,11 @@ class Downscaler:
         self.town_pop = np.array([res.town_pop0] + list(res.town_pop), float)[:, self.town_idx] * 1000.0
 
     # ------------------------------------------------------------------ helpers
-    def _town_kernel(self, town_pop: np.ndarray) -> np.ndarray:
+    def _town_kernel(self, town_pop: np.ndarray) -> sparse.csr_matrix:
         s = self.p["town_sigma_km"] * np.maximum(1.0, town_pop / 20000.0) ** self.p["town_sigma_exp"]
-        k = np.exp(-self.D_ct ** 2 / (2 * s[None, :] ** 2))
-        k[self.D_ct > self.p["cutoff_sigmas"] * s[None, :]] = 0.0
-        return k * self.p["town_weight"]
+        ci, ti, d = self._ct
+        k = np.exp(-d ** 2 / (2 * s[ti] ** 2)) * (d <= self.p["cutoff_sigmas"] * s[ti]) * self.p["town_weight"]
+        return sparse.csr_matrix((k, (ci, ti)), shape=(self.Nc, self.Nt))
 
     def neighbourhood(self, C: np.ndarray) -> np.ndarray:
         """Kernel-smoothed language shares around every unit: (N, NL)."""
@@ -209,7 +220,7 @@ class Downscaler:
         return K[self.unit_cell]
 
     def _pull(self, town_pop: np.ndarray) -> np.ndarray:
-        return np.exp(-self.D_ct / self.p["pull_km"]) @ town_pop + 1.0
+        return self.E_pull @ town_pop + 1.0
 
     def _targets(self, t: int):
         """Unit totals for year index t (rural cells need the previous state)."""

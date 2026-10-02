@@ -1,0 +1,10 @@
+# Same baseline, but started from the censuses as printed: the 1931 Polish
+# census (declared mother tongue) and the 1923 Lithuanian census. The
+# baseline itself starts from the scholarly corrections (Tomaszewski 1985 for
+# Poland, ~150 k Poles in Lithuania); see docs/DATA_SOURCES.md.
+extends: baseline
+meta:
+  name: census_official
+  description: "Baseline started from the 1931 Polish and 1923 Lithuanian censuses as printed"
+census_variant: official
+lt_variant: census_1923

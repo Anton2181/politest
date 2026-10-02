@@ -52,7 +52,7 @@ import numpy as np
 from .data import subregions
 from .data.counties import BY_CODE as COUNTY_BY_CODE
 from .data.census1931 import build_initial_composition
-from .data.geography import build_grid
+from .data.geography import MODEL_DLAT, MODEL_DLON, build_grid
 from .data.languages import GROUPS, LANG_INDEX, NL
 from .data.network import NODES
 from .economy import piecewise
@@ -62,7 +62,7 @@ from .spatial import Downscaler, lang_totals
 def _initial_units(regions, comp: np.ndarray, params: dict):
     codes = [r.code for r in regions]
     reg_idx = {c: i for i, c in enumerate(codes)}
-    grid = build_grid(codes)
+    grid = build_grid(codes, MODEL_DLAT, MODEL_DLON)       # model grid: results independent of the map grid
     ns = SimpleNamespace(
         region_codes=codes, params=params,
         node_region=[reg_idx.get(n.region, -1) for n in NODES],

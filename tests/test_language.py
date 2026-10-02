@@ -8,6 +8,7 @@ from plsim.params import load_scenario
 
 def _sim():
     p = load_scenario("baseline")
+    p["partition"] = []
     p["end_year"] = 1933
     return Simulation(p)
 

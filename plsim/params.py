@@ -19,13 +19,32 @@ DEFAULTS: dict[str, Any] = {
     "seed": 1931,
     "include_lithuania": True,
     "federation": True,          # Lithuania joined in a federal union (reopened Vilnius-Kaunas links etc.)
-    "census_variant": "official",        # official | religion_corrected | vernacular
-    "lt_variant": "census_1923",         # census_1923 | polish_claim_1923 | imperial_1897
+    # 1931 starting point (see plsim/data/census1931.py and docs/DATA_SOURCES.md):
+    # religion_corrected = Tomaszewski (1985), the mainstream scholarly correction
+    # of the census; official = the census as printed; vernacular = upper bound
+    # (Kubijovyč 1983, 1897-anchored Catholic Belarusian speech).
+    "census_variant": "religion_corrected",
+    # Lithuania: research = ~150 k Poles (historians' middle estimate);
+    # census_1923 = the census (65.6 k Poles); polish_claim_1923 = ~202 k;
+    # imperial_1897 = 1897 Kovno-governorate language shares.
+    "lt_variant": "research",
+    # Contact language of each region: the language bilinguals are competent
+    # in, and the default target of shift. "auto:pl,be" picks, per region, the
+    # listed language with the most speakers in 1931.
     "dominant_language": {"default": "pl", "LT_*": "lt"},
+    # Official languages of each region (status floor, schooling, admissible
+    # shift target); "all" makes every language official. Defaults to the
+    # dominant language alone.
+    "official_languages": {},
     # Federal member state of each region (migration friction between members).
     "members": {"default": "PL", "LT_*": "LT"},
-    # Voivodeships to split into sub-regions (see plsim/data/subregions.py).
-    "partition": [],
+    # Spatial units: "counties" runs every voivodeship as its 1931 powiaty
+    # (see plsim/data/counties.py); [] runs the 23 voivodeships; a list of
+    # voivodeship codes uses the named splits of plsim/data/subregions.py.
+    "partition": "counties",
+    # Regions or counties left out of the state (codes, parent codes, wildcards
+    # or region_groups names): their people, towns and land are foreign.
+    "exclude": [],
     "snapshot_years": [1932, 1939, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020, 2032],
 
     # ------------------------------------------------------------------ demography
@@ -168,6 +187,8 @@ DEFAULTS: dict[str, Any] = {
         "concentration": {"wym": 300.0, "kdr": 60.0, "rue": 20.0, "cs": 15.0, "de": 5.0, "RC:de": 1.5,
                           "csb": 2.5, "lt": 4.0, "lv": 5.0, "rom": 4.0, "yi": 1.3, "pls": 1.1, "be": 1.4,
                           "uk": 1.25, "ru": 2.5, "pl": 3.0, "oth": 3.0},
+        "official_status": 1.0,         # status floor of an official language (number or schedule)
+        "official_schooling": 0.9,      # own-language schooling for speakers of an official language (number or schedule)
         "school_weight": 0.5,
         "completeness_share": 0.25,     # local own-language share at which institutions are complete
         "own_school_blocks": 0.7,
@@ -285,7 +306,7 @@ def deep_merge(base: dict, over: dict) -> dict:
     return out
 
 
-REGION_KEYED = [("dominant_language",), ("members",), ("language", "status_regions"),
+REGION_KEYED = [("dominant_language",), ("official_languages",), ("members",), ("language", "status_regions"),
                 ("language", "own_schooling_regions"), ("language", "pressure"),
                 ("economy", "regional_programmes"), ("migration", "settlement", "origins"),
                 ("migration", "settlement", "destinations")]
@@ -311,6 +332,8 @@ def expand_region_groups(params: dict) -> dict:
                 val = d.pop(g)
                 for m in members:
                     d.setdefault(m, copy.deepcopy(val))
+    excl = params.get("exclude") or []
+    params["exclude"] = [m for e in excl for m in (groups.get(e, [e]))]
     return params
 
 

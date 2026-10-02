@@ -11,9 +11,14 @@ from __future__ import annotations
 
 import argparse
 import glob
+import hashlib
+import json
+import multiprocessing as mp_ctx
 import os
+import pickle
 import sys
 import time
+from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 
@@ -43,14 +48,57 @@ def all_scenarios() -> list[str]:
     return sorted(os.path.basename(p)[:-5] for p in glob.glob(os.path.join(SCEN_DIR, "*.yaml")))
 
 
-def run_one(name: str, outroot: str, seed: int | None = None):
+def _code_fingerprint() -> str:
+    h = hashlib.sha1()
+    here = os.path.dirname(os.path.abspath(__file__))
+    for path in sorted(glob.glob(os.path.join(here, "**", "*.py"), recursive=True)
+                       + glob.glob(os.path.join(here, "data", "*.json"))):
+        with open(path, "rb") as fh:
+            h.update(fh.read())
+    return h.hexdigest()
+
+
+def _run_cached(name: str, p: dict, cache_dir: str | None):
+    """Run a scenario, or load the run from ``cache_dir`` when the same
+    parameters were run by the same code (``maps`` and ``report`` share runs)."""
+    key = hashlib.sha1((json.dumps(p, sort_keys=True, default=str) + _code_fingerprint()).encode()).hexdigest()
+    path = os.path.join(cache_dir, f"{name}.pkl") if cache_dir else None
+    if path and os.path.exists(path):
+        with open(path, "rb") as fh:
+            k, res = pickle.load(fh)
+        if k == key:
+            return res, True
+    res = Simulation(p).run()
+    if path:
+        os.makedirs(cache_dir, exist_ok=True)
+        with open(path, "wb") as fh:
+            pickle.dump((key, res), fh, protocol=pickle.HIGHEST_PROTOCOL)
+    return res, False
+
+
+def _pool(workers: int | None, n: int):
+    """Process pool for scenario-level parallelism; one BLAS thread per worker."""
+    w = max(1, min(workers or os.cpu_count() or 1, n))
+    for v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+        os.environ[v] = "1"
+    return ProcessPoolExecutor(max_workers=w, mp_context=mp_ctx.get_context("spawn"))
+
+
+def _report_job(args):
+    name, outroot, seed = args
     p = load_scenario(name)
     if seed is not None:
         p["seed"] = seed
+    p["snapshot_years"] = sorted(set(p["snapshot_years"]) | set(webmap.FRAMES))    # same runs as the maps
     t = time.time()
-    res = Simulation(p).run()
+    res, cached = _run_cached(name, p, os.path.join(outroot, ".runcache"))
     export_run(res, os.path.join(outroot, "runs", name))
-    print(f"  {name}: {time.time() - t:.1f}s")
+    return res, f"  {name}: {time.time() - t:.1f}s" + (" (cached run)" if cached else "")
+
+
+def run_one(name: str, outroot: str, seed: int | None = None):
+    res, msg = _report_job((name, outroot, seed))
+    print(msg)
     return res
 
 
@@ -61,48 +109,71 @@ SCENARIO_TITLES = {
     "polonizing_union": "Polonising unitary union",
     "forced_lithuanization": "Forced Lithuanisation",
     "wilno_lithuanian": "Wilno as Lithuanian capital",
-    "lt_polish_claim": "Polish 1923 estimate for Lithuania",
-    "census_religion_corrected": "Religion-corrected 1931 start",
-    "census_vernacular": "Vernacular 1931 start",
+    "lt_polish_claim": "Polish 1923 claim for Lithuania (202 k)",
+    "census_official": "1931 census as printed",
+    "census_vernacular": "Upper-bound minority speech in 1931",
     "finnish_path": "Fast convergence",
     "stagnation": "Stagnation",
     "ii_rp_only": "Poland alone, no union",
     "ukraine_autonomy_tricantonal": "Ukrainian autonomy + tri-cantonal Lithuania",
-    "baseline_counties": "Baseline, county level",
-    "ukraine_autonomy_tricantonal_counties": "Ukrainian autonomy + cantons, county level",
+    "autonomy_grand_duchy_coofficial": "Ukrainian autonomy + trilingual Grand Duchy",
+    "poland_west_pl_be": "Poland without the south-east and Wilno; Polish + Belarusian",
+    "no_official_language": "No official language",
 }
 
 
-def build_maps(outroot: str, scenarios: list[str] | None = None, gifs: bool = True) -> None:
-    """Run each scenario, downscale it to the 7 km grid and write the static
-    maps, the GIF animations (baseline) and the data of the interactive atlas."""
-    names = scenarios or [n for n in SCENARIO_TITLES if n in all_scenarios()]
-    mapdir = os.path.join(outroot, "maps")
-    atlasdir = os.path.join(outroot, "atlas")
-    os.makedirs(mapdir, exist_ok=True)
+def _map_job(args):
+    """Run one scenario, downscale it and write its maps and atlas data."""
+    name, outroot, gifs = args
+    t = time.time()
+    mapdir, atlasdir = os.path.join(outroot, "maps"), os.path.join(outroot, "atlas")
+    p = load_scenario(name)
+    p["snapshot_years"] = sorted(set(p["snapshot_years"]) | set(webmap.FRAMES))   # network frames
+    res, cached = _run_cached(name, p, os.path.join(outroot, ".runcache"))
+    # the baseline animations need every year; the others only the atlas frames
+    sr = downscale(res, frame_years=None if name == "baseline" else webmap.FRAMES)
     full = webmap.full_grid()
-    entries, last = [], {}
-    for name in names:
-        t = time.time()
-        p = load_scenario(name)
-        p["snapshot_years"] = sorted(set(p["snapshot_years"]) | set(webmap.FRAMES))   # network frames
-        res = Simulation(p).run()
-        sr = downscale(res)
-        title = SCENARIO_TITLES.get(name, name)
-        if name == "baseline":
-            mp.write_maps(sr, mapdir, gifs=gifs)
-        else:
-            mp.fig_plurality(sr, os.path.join(mapdir, f"{name}_map_plurality.png"), title=title)
-        last[name] = (sr.grid, mp.display_shares(sr.display(sr.frame(sr.years[-1]))))
-        webmap.write_data(atlasdir, name, webmap.encode_frames(sr, full))
-        entries.append({"name": name, "title": title, "description": p["meta"]["description"],
-                        "series": webmap.national_series(res), "towns": webmap.town_series(sr),
-                        "net": webmap.network_payload(res), "geo": webmap.geometry_payload(res, sr, full)})
-        print(f"  {name}: {time.time() - t:.1f}s")
-        del sr, res
-    mp.fig_scenarios_plurality(last, os.path.join(mapdir, "scenarios_plurality_2032.png"),
-                               labels={n: SCENARIO_TITLES.get(n, n) for n in last})
-    with open(os.path.join(atlasdir, "scenarios.json"), "w", encoding="utf-8") as fh:
+    title = SCENARIO_TITLES.get(name, name)
+    if name == "baseline":
+        mp.write_maps(sr, mapdir, gifs=gifs)
+    else:
+        mp.fig_plurality(sr, os.path.join(mapdir, f"{name}_map_plurality.png"), title=title)
+    last = (sr.grid, mp.display_shares(sr.display(sr.frame(sr.years[-1]))))
+    webmap.write_data(atlasdir, name, webmap.encode_frames(sr, full))
+    entry = {"name": name, "title": title, "description": p["meta"]["description"],
+             "series": webmap.national_series(res), "towns": webmap.town_series(sr),
+             "net": webmap.network_payload(res), "geo": webmap.geometry_payload(res, sr, full)}
+    return name, entry, last, f"  {name}: {time.time() - t:.1f}s" + (" (cached run)" if cached else "")
+
+
+def build_maps(outroot: str, scenarios: list[str] | None = None, gifs: bool = True,
+               workers: int | None = None) -> None:
+    """Run each scenario, downscale it to the map grid and write the static
+    maps, the GIF animations (baseline) and the data of the interactive atlas.
+    Scenarios run in parallel; the runs are cached for ``report``."""
+    names = scenarios or [n for n in SCENARIO_TITLES if n in all_scenarios()]
+    names += [n for n in all_scenarios() if n not in names and not scenarios]
+    os.makedirs(os.path.join(outroot, "maps"), exist_ok=True)
+    os.makedirs(os.path.join(outroot, "atlas"), exist_ok=True)
+    done = {}
+    with _pool(workers, len(names)) as ex:
+        for name, entry, last, msg in ex.map(_map_job, [(n, outroot, gifs) for n in names]):
+            done[name] = (entry, last)
+            print(msg, flush=True)
+    entries = [done[n][0] for n in names]
+    last = {n: done[n][1] for n in names}
+    atlasdir = os.path.join(outroot, "atlas")
+    path = os.path.join(atlasdir, "scenarios.json")
+    if scenarios and os.path.exists(path):
+        # some scenarios only: update their atlas entries, keep the others
+        with open(path, encoding="utf-8") as fh:
+            old = json.load(fh)
+        new = {e["name"]: e for e in entries}
+        entries = [new.pop(e["name"], e) for e in old] + list(new.values())
+    else:
+        mp.fig_scenarios_plurality(last, os.path.join(outroot, "maps", "scenarios_plurality_2032.png"),
+                                   labels={n: SCENARIO_TITLES.get(n, n) for n in last})
+    with open(path, "w", encoding="utf-8") as fh:
         fh.write(webmap.dumps(entries))
     webmap.build_atlas(atlasdir)
 
@@ -115,6 +186,7 @@ def census_consistency() -> list[list]:
         p = load_scenario("baseline")
         p["census_variant"] = variant
         p["include_lithuania"] = False
+        p["partition"] = []
         sim = Simulation(p)
         rugb = sim.P.sum(axis=(4, 5))
         for regime in ["latent", "polish_1931"]:
@@ -135,8 +207,12 @@ def build_report(outroot: str, n_ens: int, scenarios: list[str] | None = None, w
     figdir = os.path.join(outroot, "figures")
     os.makedirs(figdir, exist_ok=True)
     scenarios = scenarios or all_scenarios()
-    print("single seeded runs:")
-    results = {n: run_one(n, outroot) for n in scenarios}
+    print("single seeded runs:", flush=True)
+    results = {}
+    with _pool(workers, len(scenarios)) as ex:
+        for n, (res, msg) in zip(scenarios, ex.map(_report_job, [(n, outroot, None) for n in scenarios])):
+            results[n] = res
+            print(msg, flush=True)
     base = results["baseline"]
     print(f"ensemble (n={n_ens}) for baseline ...")
     t = time.time()
@@ -253,6 +329,7 @@ def main(argv=None):
     m.add_argument("--out", default=os.path.join(ROOT, "outputs"))
     m.add_argument("--scenarios", nargs="*")
     m.add_argument("--no-gifs", action="store_true")
+    m.add_argument("--workers", type=int)
     sub.add_parser("list")
     args = ap.parse_args(argv)
     if args.cmd == "run":
@@ -275,7 +352,7 @@ def main(argv=None):
     elif args.cmd == "report":
         build_report(args.out, args.n, args.scenarios, args.workers)
     elif args.cmd == "maps":
-        build_maps(args.out, args.scenarios, gifs=not args.no_gifs)
+        build_maps(args.out, args.scenarios, gifs=not args.no_gifs, workers=args.workers)
     elif args.cmd == "list":
         for n in all_scenarios():
             print(n, "-", load_scenario(n)["meta"]["description"])

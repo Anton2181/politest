@@ -6,3 +6,4 @@ __pycache__/
 outputs/*.npz
 outputs/runs/*
 !outputs/runs/baseline/
+outputs/.runcache/

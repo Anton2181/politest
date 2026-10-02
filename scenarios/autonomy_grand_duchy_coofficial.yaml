@@ -1,0 +1,97 @@
+# Two autonomies inside a federal Poland, from 1938.
+#
+# 1. The Ukrainian autonomy of ukraine_autonomy_tricantonal: lwowskie,
+#    tarnopolskie, stanisławowskie and Volhynia, on the 1922 statute, with
+#    Ukrainian administration east of the San and Polish west of it.
+#
+# 2. An autonomous Grand Duchy of Lithuania with three co-official
+#    languages: Lithuanian, Polish and Belarusian. It covers the Lithuanian
+#    Republic and all lands east of the later Curzon line and north of
+#    Volhynia (wileńskie, nowogródzkie, poleskie, and the Grodno and
+#    Wołkowysk counties of białostockie). There are no cantons.
+#    * All three languages are official throughout the Duchy: equal status,
+#      schools in each for its speakers, and each is open to shift.
+#    * Each county's working language (the contact language bilinguals learn)
+#      is whichever of the three had the most speakers there in 1931
+#      (West Polesian speakers count with Belarusian).
+#    * Other minorities keep their own schools as in the cantonal scenario.
+#      Ukrainian is taught in Polesie.
+extends: ukraine_autonomy_tricantonal
+meta:
+  name: autonomy_grand_duchy_coofficial
+  description: "Ukrainian autonomy and an autonomous Grand Duchy of Lithuania with Lithuanian, Polish and Belarusian co-official"
+members:
+  _replace: true
+  default: PL
+  "LT_*": GD
+  WIL: GD
+  NOW: GD
+  POL: GD
+  BIA.E: GD
+  LWO: UA
+  TAR: UA
+  STA: UA
+  WOL: UA
+dominant_language:
+  _replace: true
+  default: pl
+  "LT_*": auto:lt,pl,be+pls
+  WIL: auto:lt,pl,be+pls
+  NOW: auto:lt,pl,be+pls
+  POL: auto:lt,pl,be+pls
+  BIA.E: auto:lt,pl,be+pls
+  LWO.W: pl
+  LWO.E: uk
+  TAR: uk
+  STA: uk
+  WOL: uk
+official_languages:
+  _replace: true
+  "LT_*": [lt, pl, be]
+  WIL: [lt, pl, be]
+  NOW: [lt, pl, be]
+  POL: [lt, pl, be]
+  BIA.E: [lt, pl, be]
+migration:
+  member_friction:
+    _replace: true
+    "PL|UA": 0.5
+    "PL|GD": 0.3
+    "UA|GD": 0.2
+language:
+  # official status and schools for the three languages from 1938
+  official_status: [[1931, 0.0], [1937, 0.0], [1938, 1.0]]
+  official_schooling: [[1931, 0.0], [1937, 0.0], [1938, 0.9]]
+  status_regions:
+    _replace: true
+    "LT_*": {lt: 1.0, pl: 0.70, be: 0.30, de: 0.40, ru: 0.20}
+    LT_KLA: {lt: 1.0, de: 0.90}
+    WIL: {lt: [[1931, 0.40], [1938, 0.65]], be: [[1931, 0.2], [1938, 0.45]], ru: 0.20}
+    NOW: {be: [[1931, 0.2], [1938, 0.45]], lt: 0.5, ru: 0.20}
+    BIA.E: {be: [[1931, 0.2], [1938, 0.45]], lt: 0.5}
+    POL: {uk: [[1931, 0.30], [1938, 0.55]], ru: 0.20}
+    LWO.W: {uk: [[1931, 0.40], [1938, 0.70], [1960, 0.75]]}
+    LWO.E: {pl: 0.85}
+    TAR: {pl: 0.85}
+    STA: {pl: 0.80}
+    WOL: {pl: 0.80, cs: 0.30}
+  own_schooling_regions:
+    _replace: true
+    "LT_*": {pl: [[1931, 0.30], [1938, 0.65]], RC:pl: [[1931, 0.30], [1938, 0.65]], de: 0.50, ru: 0.30}
+    POL: {uk: 0.60}
+    LWO.E: {pl: 0.75, RC:pl: 0.75}
+    TAR: {pl: 0.75, RC:pl: 0.75}
+    STA: {pl: 0.70, RC:pl: 0.70}
+    WOL: {pl: 0.65, RC:pl: 0.65}
+  pressure:
+    _replace: true
+    default: [[1931, 1.0], [1938, 0.75], [1990, 0.65]]
+    "LT_*": [[1931, 0.8], [1938, 0.55]]
+    WIL: [[1931, 1.0], [1938, 0.55]]
+    NOW: [[1931, 1.0], [1938, 0.55]]
+    POL: [[1931, 1.0], [1938, 0.55]]
+    BIA.E: [[1931, 1.0], [1938, 0.55]]
+    LWO: [[1931, 1.0], [1938, 0.5]]
+    TAR: [[1931, 1.0], [1938, 0.5]]
+    STA: [[1931, 1.0], [1938, 0.5]]
+    WOL: [[1931, 1.0], [1938, 0.5]]

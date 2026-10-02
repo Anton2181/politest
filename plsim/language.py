@@ -69,12 +69,17 @@ def _lang_sched_value(spec, year: float) -> float:
 
 
 class LanguageModel:
-    def __init__(self, params: dict, regions, dominant: list[str]):
+    def __init__(self, params: dict, regions, dominant: list[str], official: list[list[str]] | None = None):
         self.p = params
         self.regions = regions
         self.codes = [r.code for r in regions]
         self.R = len(regions)
         self.dom = np.array([LANG_INDEX[d] for d in dominant])
+        # official languages (R, NL): status floor, schooling, admissible shift targets
+        self.official = np.zeros((self.R, NL), dtype=bool)
+        for r, langs in enumerate(official or [[d] for d in dominant]):
+            self.official[r, [LANG_INDEX[l] for l in langs]] = True
+        self.official[np.arange(self.R), self.dom] = True
         self.group_lang = np.array([LANG_INDEX[l] for _, l in GROUPS])
         self.group_comm = np.array([[c.code for c in COMMUNITIES].index(c) for c, _ in GROUPS])
         # Target matrix: for every group g and every region r, which child groups
@@ -84,9 +89,7 @@ class LanguageModel:
             base = set(SHIFT_TARGETS.get((c, l), ()))
             for r in range(self.R):
                 ts = set(base)
-                d = LANGUAGES[self.dom[r]].code
-                if d != l:
-                    ts.add(d)
+                ts.update(LANGUAGES[k].code for k in np.where(self.official[r])[0])
                 for t in ts:
                     if t == l:
                         continue
@@ -140,8 +143,10 @@ class LanguageModel:
             for pattern in matching_patterns(sr, code):
                 for lc, spec in sr[pattern].items():
                     s[r, LANG_INDEX[lc]] = _lang_sched_value(spec, year)
-        # The dominant language of a region always has at least the reference status.
+        # The dominant language of a region always has at least the reference
+        # status; co-official languages at least the official status.
         s[np.arange(self.R), self.dom] = np.maximum(s[np.arange(self.R), self.dom], 1.0)
+        s = np.where(self.official, np.maximum(s, _lang_sched_value(p.get("official_status", 1.0), year)), s)
         return s
 
     def own_schooling(self, year: float) -> np.ndarray:
@@ -157,6 +162,9 @@ class LanguageModel:
                     for g, (c, l) in enumerate(GROUPS):
                         if key == l or key == f"{c}:{l}":
                             o[r, g] = _lang_sched_value(spec, year)
+        # speakers of a co-official language are schooled in it
+        off_g = self.official[:, self.group_lang]                          # (R,G)
+        o = np.where(off_g, np.maximum(o, _lang_sched_value(p.get("official_schooling", 0.9), year)), o)
         # own-language schooling is meaningless for the dominant language
         o[self.group_lang[None, :] == self.dom[:, None]] = 0.0
         return np.clip(o, 0, 1)
@@ -319,15 +327,15 @@ def census_mapping(regime: str, c: str, l: str, b: int, u: int, region_code: str
         if l == "be":
             if c == "RC":
                 return _dist(pl=.90, be=.10) if b else _dist(pl=.70, be=.30)
-            return _dist(be=.68, pl=.27, ru=.05) if b else _dist(be=.88, pl=.10, ru=.02)
+            return _dist(be=.63, pl=.32, ru=.05) if b else _dist(be=.86, pl=.12, ru=.02)
         if l == "pls":
-            return _dist(tut=.86, be=.04, uk=.04, pl=.06)
+            return _dist(tut=.97, be=.01, pl=.02)
         if l == "uk":
             if c == "RC":
                 return _dist(pl=.90, uk=.10)
             if c == "GC":
-                return _dist(uk=.54, ruth=.36, pl=.10) if b else _dist(uk=.58, ruth=.39, pl=.03)
-            return _dist(uk=.92, ruth=.01, pl=.07)
+                return _dist(uk=.50, ruth=.34, pl=.16) if b else _dist(uk=.56, ruth=.38, pl=.06)
+            return _dist(uk=.89, ruth=.01, pl=.10)
         if l == "rue":
             return _dist(ruth=.85, uk=.10, pl=.05)
         if l == "yi":

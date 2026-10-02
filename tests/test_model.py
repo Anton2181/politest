@@ -40,3 +40,15 @@ def test_snapshots_and_census_views(short_run):
         tot = tab.sum()
         pop = short_run.arrays()["pop"][short_run.years.index(year)].sum() if year in short_run.years else tot
         assert abs(tot - pop) / pop < 1e-6
+
+
+def test_county_run_accounts_and_back_validates(county_run):
+    """The default (county-level) baseline adds up and passes the 1932-39 checks."""
+    A = county_run.arrays()
+    assert len(county_run.region_codes) == 270
+    tot = A["pop"].sum(axis=(1, 2, 3))
+    for i in range(1, len(tot)):
+        expected = tot[i - 1] + A["births"][i].sum() - A["deaths"][i].sum() - A["emig"][i].sum() + A["immig"][i].sum()
+        assert abs(tot[i] - expected) / tot[i] < 1e-6
+    failed = [c.row() for c in historical_checks(county_run) if not c.ok]
+    assert not failed, "\n".join(failed)

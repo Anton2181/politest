@@ -1,10 +1,12 @@
-# Upper bound for minority vernaculars: religion-corrected census plus
-# Catholic Belarusian and Lithuanian vernaculars in the north-east and
-# Latin-rite Ukrainian speakers in Galicia/Lublin, anchored on 1897 imperial
-# census language proportions; Lithuania uses the 1897-based Polish share.
+# Upper bound for minority speech at the start: the Tomaszewski correction
+# plus Catholic Belarusian and Lithuanian vernaculars in the north-east
+# (anchored on the 1897 imperial census) and Latin-rite Ukrainian speakers in
+# Galicia and the Lublin region, calibrated to Kubijovyč (1983): ~5.85 M
+# Ukrainians in Poland, 515 k latynnyky in Galicia in 1939. Lithuania uses
+# the 1897-based Polish share.
 extends: baseline
 meta:
   name: census_vernacular
-  description: "Baseline with a vernacular (1897-anchored) 1931 starting point"
+  description: "Baseline with an upper-bound (Kubijovyč, 1897-anchored) 1931 starting point"
 census_variant: vernacular
 lt_variant: imperial_1897

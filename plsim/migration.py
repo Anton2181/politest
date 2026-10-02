@@ -118,11 +118,14 @@ class MigrationModel:
             self._unit = np.array([order.index(k) for k in keys])
         return self._unit
 
-    def _route_dom(self, out_fg: np.ndarray, prob: np.ndarray) -> np.ndarray:
+    def _route_dom(self, out_fg: np.ndarray, prob: np.ndarray, dom: np.ndarray | None = None) -> np.ndarray:
         """Route movers; competence refers to the destination's dominant
         language, so movers crossing a language border arrive monolingual
         (unless native in it)."""
-        same_dom = (self.dom[:, None] == self.dom[None, :])[:, :, None]
+        dom = self.dom if dom is None else dom
+        if (dom == dom[0]).all():
+            return _route(out_fg, prob)
+        same_dom = (dom[:, None] == dom[None, :])[:, :, None]
         inflow = _route(out_fg, prob * same_dom)
         cross_in = _route(out_fg, prob * ~same_dom)
         inflow[:, :, 0] += cross_in.sum(axis=2)
@@ -171,12 +174,17 @@ class MigrationModel:
             P[:, 1] += flow
         else:
             # rural migrants go to the towns of their unit, by urban mass and travel time
-            w = (unit[:, None] == unit[None, :]) * tot[None, :, 1]
-            if t_reg is not None:
-                w = w * np.exp(-p["beta_time"] * t_reg)
-            w = np.where(w.sum(axis=1, keepdims=True) > 0, w, np.eye(self.R))    # a unit without towns
-            prob = w / w.sum(axis=1, keepdims=True)
-            P[:, 1] += self._route_dom(flow, prob[:, :, None])
+            for k in range(K):
+                idx = np.where(unit == k)[0]
+                if len(idx) == 1:
+                    P[idx, 1] += flow[idx]
+                    continue
+                w = np.broadcast_to(tot[idx, 1][None, :], (len(idx), len(idx))).copy()
+                if t_reg is not None:
+                    w = w * np.exp(-p["beta_time"] * t_reg[np.ix_(idx, idx)])
+                w = np.where(w.sum(axis=1, keepdims=True) > 0, w, np.eye(len(idx)))    # a unit without towns
+                prob = w / w.sum(axis=1, keepdims=True)
+                P[idx, 1] += self._route_dom(flow[idx], prob[:, :, None], self.dom[idx])
         return {"rural_urban": flow.sum(axis=(1, 2, 3, 4))}
 
     # ---------------------------------------------------------------- inter-regional
