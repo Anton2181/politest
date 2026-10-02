@@ -1,6 +1,6 @@
 # Poland with no official language, or equivalently with every language
 # official: the Polish state favours none of its languages. Lithuania, its
-# federal partner as in the baseline, keeps Lithuanian.
+# federal partner as in the baseline, keeps Lithuanian with Polish co-official.
 #
 # * Every written standard language (Polish, Ukrainian, Belarusian, Yiddish,
 #   German, Russian, Lithuanian, Kashubian, Lemko, Czech, Latvian) has the
@@ -26,7 +26,7 @@ official_languages:
   # every written standard language; West Polesian ("tutejszy") speech has no
   # standard, so its speakers are schooled in Belarusian or Ukrainian
   default: [pl, uk, be, yi, de, ru, lt, csb, rue, cs, lv]
-  "LT_*": [lt]
+  "LT_*": [lt, pl]
 language:
   pressure:
     _replace: true

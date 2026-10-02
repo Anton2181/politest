@@ -101,18 +101,22 @@ def test_atlas_cell_regions_survive_county_runs():
 
 
 def test_state_borders_1932():
-    """Territory comes from the CShapes 1932 borders (``data/borders_1932.json``)."""
+    """Territory comes from the CShapes 1932 borders (``data/borders_1932.json``),
+    with Soviet Belarus (the BSSR of 1926) as an optional third state."""
     from plsim.data.geography import state_of
+    from plsim.data.regions import state_of_code
     places = {"Wilno": (54.68, 25.28, "PL"), "Kaunas": (54.90, 23.90, "LT"), "Klaipėda": (55.71, 21.13, "LT"),
               "Gdańsk (Free City)": (54.35, 18.65, ""), "Hel": (54.61, 18.80, "PL"), "Stołpce": (53.48, 26.73, "PL"),
-              "Minsk": (53.90, 27.56, ""), "Daugavpils": (55.87, 26.53, ""), "Królewiec": (54.71, 20.51, ""),
+              "Mińsk": (53.90, 27.56, "BY"), "Homel": (52.44, 30.98, "BY"), "Smolensk": (54.78, 32.05, ""),
+              "Daugavpils": (55.87, 26.53, ""), "Królewiec": (54.71, 20.51, ""),
               "Zbaraż": (49.66, 25.78, "PL"), "Kamieniec Podolski": (48.68, 26.58, ""), "Cieszyn": (49.75, 18.63, "PL")}
     got = state_of([v[0] for v in places.values()], [v[1] for v in places.values()])
     assert {k: g for k, g in zip(places, got)} == {k: v[2] for k, v in places.items()}
     g = build_grid([r.code for r in REGIONS])
-    lt = np.array([g.region_codes[k].startswith("LT") for k in g.region])
-    assert (state_of(g.lat, g.lon)[lt] == "LT").all() and (state_of(g.lat, g.lon)[~lt] == "PL").all()
-    area = {s: g.cell_km2[m].sum() for s, m in (("PL", ~lt), ("LT", lt))}
-    official = {s: sum(r.area_km2 for r in REGIONS if r.code.startswith("LT") == (s == "LT")) for s in ("PL", "LT")}
-    for s in area:
-        assert area[s] == pytest.approx(official[s], rel=0.03), s
+    st = np.array([state_of_code(g.region_codes[k]) for k in g.region])
+    assert (state_of(g.lat, g.lon) == st).all()
+    for s, official in (("PL", 388_600), ("LT", 55_750), ("BY", 126_792)):     # 1931 areas; BSSR 1926
+        assert g.cell_km2[st == s].sum() == pytest.approx(official, rel=0.03), s
+    # the map grid of Poland and Lithuania does not change when Soviet Belarus is available
+    pl_lt = build_grid([r.code for r in REGIONS if r.country != "BY"])
+    assert len(pl_lt.lat) == 37532 and (st != "BY").sum() == 37532

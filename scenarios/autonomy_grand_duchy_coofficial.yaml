@@ -52,6 +52,10 @@ official_languages:
   NOW: [lt, pl, be]
   POL: [lt, pl, be]
   BIA.E: [lt, pl, be]
+  LWO.E: [uk, pl]          # Polish is co-official in the Ukrainian autonomy too
+  TAR: [uk, pl]
+  STA: [uk, pl]
+  WOL: [uk, pl]
 migration:
   member_friction:
     _replace: true

@@ -18,20 +18,17 @@ SCENARIO_NOTES = {
     "ii_rp_only": "The Second Republic alone in its 1938 borders",
     "federal_autonomy": "Ukrainian autonomy in Stanisławów, Tarnopol and Volhynia; Belarusian schools",
     "integral_nationalism": "Coercive Polonisation, emigrationist policy towards Jews, heavy eastern settlement",
-    "forced_lithuanization": "Federation, but the Lithuanian unit keeps closing Polish schools in Lauda and Kaunas",
     "polonizing_union": "Unitary union with Polish dominant in the Lithuanian lands too",
-    "wilno_lithuanian": "Vilnius as the Lithuanian federal capital",
     "census_official": "Baseline from the 1931 and 1923 censuses as printed",
     "census_vernacular": "Baseline from an upper-bound start (Kubijovyč; Catholic Belarusian speech as in 1897)",
-    "lt_polish_claim": "Baseline with the 1923 Polish claim of ~202 k Poles in Lithuania",
-    "finnish_path": "Fast convergence, bigger infrastructure budgets",
-    "stagnation": "Low convergence, 1939 plans shelved, heavy emigration",
     "ukraine_autonomy_tricantonal": "Ukrainian autonomy (Lwów, Tarnopol, Stanisławów, Volhynia) and a Grand Duchy of "
                                     "Lithuanian, Polish and Belarusian cantons east of the Curzon line",
     "autonomy_grand_duchy_coofficial": "Ukrainian autonomy and an autonomous Grand Duchy with Lithuanian, Polish "
                                        "and Belarusian co-official",
-    "poland_west_pl_be": "Poland without Volhynia, Stanisławów, Tarnopol and the Lithuanian-claimed Wilno lands; "
-                         "Polish and Belarusian co-official",
+    "wakar_poland": "Wakar's Poland: without Volhynia, Stanisławów, Tarnopol and the Lithuanian-claimed Wilno "
+                    "lands; Polish and Belarusian co-official",
+    "wakar_poland_belarus": "Wakar's Poland-Belarus: Wakar's Poland together with all of Soviet Belarus; Polish and "
+                            "Belarusian co-official",
     "no_official_language": "Poland with no official language (all languages equal); Lithuania as in the baseline",
 }
 

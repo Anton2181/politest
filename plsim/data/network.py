@@ -27,6 +27,19 @@ Historical facts encoded as dated projects
 * Nestorowicz's March 1939 plan for ~5,000 km of category I/II trunk roads.
 * Vilnius-Kaunas line (cut at the demarcation line 1920-1938) - reopens
   immediately under the federation scenario.
+
+Soviet Belarus
+--------------
+Towns and lines of the BSSR (1926 borders) are ``optional``: they exist only
+in scenarios that include Soviet Belarus, together with the gateways beyond
+it (Smolensk, Nevel, Unecha, Bakhmach, Ovruch). Elsewhere they are left out
+of the network entirely, and Mińsk stays the foreign gateway it was. Town
+populations are the 1926 census grown to 1931 (thousands); the lines are
+the main railways of c. 1931: Moscow-Brest (Stołpce-Mińsk-Orsza),
+Libau-Romny (Mołodeczno-Mińsk-Bobrujsk-Homel), Riga-Orel (Dryssa-Połock-
+Witebsk), the Vitebsk railway (Witebsk-Orsza-Mohylew-Żłobin-Kalinkowicze),
+the Polesie railway (Łuniniec-Kalinkowicze-Homel), Bologoye-Siedlce
+(Głębokie-Połock) and Orsza-Krzyczew.
 """
 from __future__ import annotations
 
@@ -42,6 +55,7 @@ class Node:
     pop_1931: float   # thousands (urban population of the town)
     terrain: str = "flat"
     capital: bool = False
+    optional: bool = False   # only in scenarios with Soviet Belarus
 
 
 # fmt: off
@@ -189,12 +203,28 @@ NODES: list[Node] = [
     Node("Gdańsk (Free City)", "EXT", 54.35, 18.65, 256), Node("Berlin via Frankfurt/O.", "EXT", 52.35, 14.55, 1500),
     Node("Breslau", "EXT", 51.11, 17.03, 620), Node("Gleiwitz-Beuthen", "EXT", 50.30, 18.67, 300),
     Node("Königsberg", "EXT", 54.71, 20.51, 370), Node("Riga via Daugavpils", "EXT", 55.87, 26.54, 400),
-    Node("Minsk", "EXT", 53.90, 27.56, 240), Node("Kyiv via Shepetivka", "EXT", 50.18, 27.06, 500),
+    Node("Mińsk", "BY_MIN", 53.90, 27.56, 240), Node("Kyiv via Shepetivka", "EXT", 50.18, 27.06, 500),
     Node("Proskurov", "EXT", 49.42, 26.98, 100), Node("Chernivtsi", "EXT", 48.29, 25.94, 110),
     Node("Žilina", "EXT", 49.22, 18.74, 100), Node("Ostrava", "EXT", 49.84, 18.29, 200),
     Node("Mukachevo", "EXT", 48.44, 22.72, 60), Node("Tilsit", "EXT", 55.08, 21.88, 60),
     Node("Insterburg", "EXT", 54.63, 21.81, 50), Node("Liepāja", "EXT", 56.51, 21.01, 60),
     Node("Jelgava-Riga", "EXT", 56.65, 23.72, 400), Node("Stettin", "EXT", 53.43, 14.55, 270),
+    # --- Soviet Belarus (optional; 1926 census grown to 1931, thousands)
+    Node("Witebsk", "BY_WIT", 55.19, 30.20, 106, optional=True), Node("Połock", "BY_WIT", 55.49, 28.79, 28, optional=True),
+    Node("Orsza", "BY_WIT", 54.51, 30.42, 24, optional=True), Node("Lepel", "BY_WIT", 54.88, 28.70, 7, optional=True),
+    Node("Horki", "BY_WIT", 54.29, 30.99, 7, optional=True), Node("Dryssa", "BY_WIT", 55.78, 27.96, 4, optional=True),
+    Node("Borysów", "BY_MIN", 54.23, 28.50, 26, optional=True), Node("Słuck", "BY_MIN", 53.02, 27.55, 18, optional=True),
+    Node("Mohylew", "BY_MOH", 53.90, 30.33, 54, optional=True), Node("Bobrujsk", "BY_MOH", 53.14, 29.22, 55, optional=True),
+    Node("Klimowicze", "BY_MOH", 53.61, 31.96, 7, optional=True), Node("Krzyczew", "BY_MOH", 53.71, 31.71, 9, optional=True),
+    Node("Mścisław", "BY_MOH", 54.02, 31.73, 8, optional=True), Node("Szkłów", "BY_MOH", 54.21, 30.29, 8, optional=True),
+    Node("Bychów", "BY_MOH", 53.52, 30.25, 8, optional=True), Node("Rohaczów", "BY_MOH", 53.09, 30.05, 12, optional=True),
+    Node("Osipowicze", "BY_MOH", 53.30, 28.64, 6, optional=True),
+    Node("Homel", "BY_HOM", 52.44, 30.98, 93, optional=True), Node("Rzeczyca", "BY_HOM", 52.36, 30.39, 17, optional=True),
+    Node("Mozyrz", "BY_HOM", 52.05, 29.25, 15, optional=True), Node("Kalinkowicze", "BY_HOM", 52.13, 29.33, 8, optional=True),
+    Node("Żłobin", "BY_HOM", 52.89, 30.03, 12, optional=True), Node("Żytkowicze", "BY_HOM", 52.24, 27.86, 3, "marsh", optional=True),
+    Node("Smolensk", "EXT", 54.78, 32.05, 150, optional=True), Node("Nevel-Velikiye Luki", "EXT", 56.02, 29.92, 60, optional=True),
+    Node("Unecha-Bryansk", "EXT", 52.85, 32.69, 100, optional=True), Node("Bakhmach-Chernihiv", "EXT", 51.50, 31.30, 80, optional=True),
+    Node("Kyiv via Ovruch", "EXT", 51.32, 28.80, 300, optional=True),
 ]
 # fmt: on
 
@@ -215,7 +245,7 @@ RAIL_1931: list[tuple[str, str, str]] = [
     ("Sosnowiec", "Katowice", _M), ("Będzin", "Sosnowiec", _S), ("Będzin", "Dąbrowa Górnicza", _S),
     ("Warszawa", "Mińsk Mazowiecki", _M), ("Mińsk Mazowiecki", "Siedlce", _M), ("Siedlce", "Łuków", _M),
     ("Łuków", "Biała Podlaska", _M), ("Biała Podlaska", "Brześć", _M), ("Brześć", "Baranowicze", _M),
-    ("Baranowicze", "Stołpce", _M), ("Stołpce", "Minsk", _M),
+    ("Baranowicze", "Stołpce", _M), ("Stołpce", "Mińsk", _M),
     ("Warszawa", "Tłuszcz", _M), ("Tłuszcz", "Ostrów Mazowiecka", _M), ("Ostrów Mazowiecka", "Łapy", _M),
     ("Łapy", "Białystok", _M), ("Białystok", "Sokółka", _M), ("Sokółka", "Grodno", _M),
     ("Grodno", "Landwarów", _M), ("Landwarów", "Wilno", _M), ("Wilno", "Święciany", _M),
@@ -322,6 +352,22 @@ RAIL_1931: list[tuple[str, str, str]] = [
     ("Kaunas", "Marijampolė", _S), ("Marijampolė", "Alytus", _S), ("Panevėžys", "Biržai", _N),
     ("Panevėžys", "Utena", _N), ("Ukmergė", "Jonava", _N), ("Šakiai", "Kaunas", _N),
     ("Tauragė", "Raseiniai", _N),
+]
+
+# Soviet Belarus: lines of c. 1931, only in scenarios that include it (the
+# Mołodeczno-Mińsk line was cut at the Polish-Soviet border otherwise)
+RAIL_1931_BY: list[tuple[str, str, str]] = [
+    ("Mińsk", "Borysów", _M), ("Borysów", "Orsza", _M), ("Orsza", "Smolensk", _M),
+    ("Mołodeczno", "Mińsk", _M), ("Mińsk", "Osipowicze", _M), ("Osipowicze", "Bobrujsk", _M),
+    ("Bobrujsk", "Żłobin", _M), ("Żłobin", "Homel", _M), ("Homel", "Bakhmach-Chernihiv", _M),
+    ("Riga via Daugavpils", "Dryssa", _M), ("Dryssa", "Połock", _M), ("Połock", "Witebsk", _M),
+    ("Witebsk", "Smolensk", _M), ("Witebsk", "Nevel-Velikiye Luki", _S), ("Połock", "Nevel-Velikiye Luki", _S),
+    ("Witebsk", "Orsza", _M), ("Orsza", "Szkłów", _S), ("Szkłów", "Mohylew", _S), ("Mohylew", "Bychów", _S),
+    ("Bychów", "Rohaczów", _S), ("Rohaczów", "Żłobin", _S), ("Żłobin", "Kalinkowicze", _S),
+    ("Kalinkowicze", "Kyiv via Ovruch", _S), ("Kalinkowicze", "Mozyrz", _S),
+    ("Łuniniec", "Żytkowicze", _S), ("Żytkowicze", "Kalinkowicze", _S), ("Kalinkowicze", "Rzeczyca", _S),
+    ("Rzeczyca", "Homel", _S), ("Homel", "Unecha-Bryansk", _M), ("Głębokie", "Połock", _S),
+    ("Orsza", "Krzyczew", _S), ("Krzyczew", "Unecha-Bryansk", _S), ("Osipowicze", "Słuck", _S),
 ]
 
 # ---------------------------------------------------------------------------------

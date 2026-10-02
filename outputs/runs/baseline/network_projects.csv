@@ -126,7 +126,7 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 1938,1939,upgrade,road,Troki,Ukmergė,gravel,83.8,9.6,5.78,appraisal
 1938,1939,upgrade,road,Pińsk,Łuniniec,gravel,61.2,8.9,5.68,appraisal
 1938,1939,upgrade,road,Radomsko,Jędrzejów,paved,93.3,18.7,5.65,appraisal
-1938,1939,upgrade,road,Mołodeczno,Minsk,gravel,79.8,8.0,5.64,appraisal
+1938,1939,upgrade,road,Mołodeczno,Mińsk,gravel,79.8,8.0,5.64,appraisal
 1938,1939,upgrade,road,Zawiercie,Jędrzejów,paved,78.5,15.7,5.56,appraisal
 1938,1940,upgrade,road,Kamień Koszyrski,Sarny,gravel,143.7,20.8,5.46,appraisal
 1938,1939,upgrade,road,Końskie,Jędrzejów,paved,75.2,15.0,5.44,appraisal
@@ -181,7 +181,7 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 1940,1941,upgrade,road,Równe,Dubno,paved,51.7,10.3,4.85,appraisal
 1940,1941,upgrade,road,Siedlce,Bielsk Podlaski,paved,110.3,22.1,4.79,appraisal
 1940,1941,upgrade,road,Siedlce,Czeremcha,paved,99.9,20.0,4.77,appraisal
-1940,1941,upgrade,road,Wilejka,Minsk,gravel,94.8,9.5,4.75,appraisal
+1940,1941,upgrade,road,Wilejka,Mińsk,gravel,94.8,9.5,4.75,appraisal
 1940,1941,upgrade,road,Łuck,Kostopol,paved,97.6,19.5,4.71,appraisal
 1940,1941,upgrade,road,Siedlce,Ostrów Mazowiecka,paved,91.6,18.3,4.69,appraisal
 1940,1941,upgrade,road,Złoczów,Brzeżany,paved,48.9,9.8,4.65,appraisal
@@ -219,7 +219,7 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 1942,1943,upgrade,rail,Końskie,Skarżysko-Kamienna,main,38.0,22.8,1.05,appraisal
 1942,1943,upgrade,road,Radom,Garwolin,paved,78.1,15.6,4.59,appraisal
 1942,1943,upgrade,road,Lwów,Rohatyn,paved,77.5,17.8,4.58,appraisal
-1942,1943,upgrade,road,Nieśwież,Minsk,gravel,116.8,11.7,4.53,appraisal
+1942,1943,upgrade,road,Nieśwież,Mińsk,gravel,116.8,11.7,4.53,appraisal
 1942,1943,upgrade,road,Mielec,Rzeszów,paved,60.7,12.1,4.47,appraisal
 1942,1943,upgrade,road,Kielce,Ostrowiec,paved,65.5,13.1,4.45,appraisal
 1942,1943,upgrade,road,Radom,Dęblin,paved,63.0,12.6,4.42,appraisal
@@ -257,7 +257,7 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 1942,1943,upgrade,road,Włocławek,Brodnica,paved,87.0,17.4,3.84,appraisal
 1942,1943,upgrade,road,Białystok,Wołkowysk,paved,105.0,21.0,3.84,appraisal
 1942,1943,upgrade,road,Miechów,Chrzanów,paved,62.3,12.5,3.84,appraisal
-1942,1943,upgrade,road,Stołpce,Minsk,gravel,87.7,8.8,3.84,appraisal
+1942,1943,upgrade,road,Stołpce,Mińsk,gravel,87.7,8.8,3.84,appraisal
 1942,1943,upgrade,road,Łowicz,Skierniewice,paved,26.9,5.4,3.82,appraisal
 1942,1943,upgrade,road,Płock,Nasielsk,paved,91.7,18.3,3.81,appraisal
 1942,1943,upgrade,road,Płock,Włocławek,paved,53.7,10.7,3.79,appraisal
@@ -728,7 +728,7 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 1952,1953,upgrade,road,Mysłowice,Pszczyna,paved,39.0,7.8,2.7,appraisal
 1952,1953,upgrade,road,Tarnopol,Zbaraż,paved,22.4,4.5,2.68,appraisal
 1952,1953,upgrade,road,Żywiec,Wadowice,paved,36.8,12.9,2.65,appraisal
-1952,1953,upgrade,road,Mołodeczno,Minsk,paved,79.8,16.0,2.64,appraisal
+1952,1953,upgrade,road,Mołodeczno,Mińsk,paved,79.8,16.0,2.64,appraisal
 1952,1953,upgrade,road,Kaišiadorys,Ukmergė,paved,58.1,11.6,2.64,appraisal
 1952,1953,upgrade,road,Grajewo,Sokółka,paved,90.7,18.1,2.64,appraisal
 1952,1953,upgrade,road,Panevėžys,Rokiškis,paved,98.7,19.7,2.63,appraisal
@@ -843,16 +843,16 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 1954,1955,upgrade,road,Rokiškis,Zarasai,paved,59.2,13.6,1.76,appraisal
 1954,1955,upgrade,road,Dawidgródek,Stolin,paved,37.9,11.0,1.76,appraisal
 1954,1955,upgrade,road,Mysłowice,Oświęcim,paved,28.2,5.6,1.75,appraisal
-1954,1955,upgrade,road,Klaipėda,Šilutė,paved,55.7,11.1,1.72,appraisal
+1954,1955,upgrade,road,Klaipėda,Šilutė,paved,55.7,11.1,1.73,appraisal
 1954,1955,upgrade,road,Pilzno,Jasło,paved,34.9,9.1,1.72,appraisal
 1954,1955,upgrade,road,Dąbrowa Górnicza,Mysłowice,paved,11.7,2.3,1.66,appraisal
 1954,1955,upgrade,road,Skole,Dolina,paved,42.0,14.7,1.64,appraisal
 1954,1955,upgrade,road,Ostrów Wielkopolski,Krotoszyn,paved,31.9,6.4,1.63,appraisal
 1954,1955,upgrade,road,Nadwórna,Worochta,paved,46.2,20.3,1.63,appraisal
 1954,1955,upgrade,road,Dębica,Pilzno,paved,14.1,3.2,1.63,appraisal
-1954,1955,upgrade,road,Wilejka,Minsk,paved,94.8,19.0,1.62,appraisal
+1954,1955,upgrade,road,Wilejka,Mińsk,paved,94.8,19.0,1.62,appraisal
 1954,1955,upgrade,road,Gdynia,Kartuzy,paved,36.6,7.3,1.6,appraisal
-1954,1955,upgrade,road,Nieśwież,Minsk,paved,116.8,23.4,1.55,appraisal
+1954,1955,upgrade,road,Nieśwież,Mińsk,paved,116.8,23.4,1.55,appraisal
 1954,1955,upgrade,road,Śniatyn,Worochta,paved,93.3,29.8,1.53,appraisal
 1954,1955,upgrade,road,Biržai,Jelgava-Riga,paved,99.1,19.8,1.51,appraisal
 1954,1956,upgrade,road,Biržai,Riga via Daugavpils,paved,142.1,28.4,1.51,appraisal
@@ -863,7 +863,7 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 1954,1955,upgrade,road,Leszno,Breslau,paved,106.4,21.3,1.45,appraisal
 1954,1955,upgrade,road,Kartuzy,Wejherowo,paved,36.8,7.4,1.35,appraisal
 1954,1955,upgrade,road,Żywiec,Žilina,paved,75.1,24.0,1.3,appraisal
-1954,1955,upgrade,road,Stołpce,Minsk,paved,87.7,17.5,1.29,appraisal
+1954,1955,upgrade,road,Stołpce,Mińsk,paved,87.7,17.5,1.29,appraisal
 1954,1955,upgrade,road,Suwałki,Insterburg,paved,114.0,22.8,1.26,appraisal
 1954,1955,upgrade,road,Katowice,Gleiwitz-Beuthen,paved,30.8,6.2,1.22,appraisal
 1954,1956,upgrade,road,Dolina,Mukachevo,paved,133.0,30.6,1.19,appraisal
@@ -891,8 +891,8 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 1956,1957,upgrade,rail,Laskowice,Grudziądz,main,24.4,14.6,1.1,appraisal
 1956,1957,new,rail,Otwock,Grójec,sec,42.5,36.1,1.08,appraisal
 1956,1957,upgrade,rail,Inowrocław,Toruń,main_el,37.5,18.8,1.03,appraisal
-1956,1957,upgrade,road,Lubliniec,Gleiwitz-Beuthen,paved,50.2,10.0,1.37,appraisal
 1956,1958,upgrade,road,Lubliniec,Breslau,paved,154.1,30.8,1.37,appraisal
+1956,1957,upgrade,road,Lubliniec,Gleiwitz-Beuthen,paved,50.2,10.0,1.37,appraisal
 1956,1957,upgrade,road,Starogard,Gdańsk (Free City),paved,52.4,10.5,1.29,appraisal
 1956,1957,upgrade,road,Cieszyn,Žilina,paved,72.5,16.7,1.24,appraisal
 1956,1957,upgrade,road,Cieszyn,Ostrava,paved,32.2,7.4,1.24,appraisal
@@ -989,7 +989,7 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 1966,1967,upgrade,rail,Czeremcha,Brześć,main_el,59.9,30.0,1.32,appraisal
 1966,1968,new,rail,Tauragė,Kybartai,sec,85.3,72.5,1.27,appraisal
 1966,1967,upgrade,rail,Bielsk Podlaski,Czeremcha,main_el,34.3,17.1,1.25,appraisal
-1966,1967,upgrade,rail,Kaunas,Marijampolė,main_el,59.5,29.7,1.24,appraisal
+1966,1967,upgrade,rail,Kaunas,Marijampolė,main_el,59.5,29.7,1.23,appraisal
 1966,1967,upgrade,rail,Toruń,Brodnica,main,69.2,41.5,1.22,appraisal
 1966,1967,upgrade,rail,Łuck,Dubno,main,53.7,32.2,1.14,appraisal
 1966,1967,upgrade,rail,Dubno,Zdołbunów,main,43.1,25.8,1.09,appraisal
@@ -1001,7 +1001,7 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 1966,1967,upgrade,rail,Tczew,Gdańsk (Free City),main_el,34.6,17.3,1.03,appraisal
 1966,1967,upgrade,rail,Katowice,Rybnik,main_el,44.3,22.2,1.02,appraisal
 1966,1967,upgrade,rail,Drohobycz,Borysław,main,10.2,10.7,1.0,appraisal
-1968,1969,upgrade,rail,Kaunas,Kėdainiai,main,50.1,30.1,2.23,appraisal
+1968,1969,upgrade,rail,Kaunas,Kėdainiai,main,50.1,30.1,2.22,appraisal
 1968,1969,upgrade,rail,Marijampolė,Vilkaviškis,main,26.3,15.8,1.74,appraisal
 1968,1969,upgrade,rail,Brześć,Kobryń,main_el,54.4,33.3,1.34,appraisal
 1968,1970,upgrade,rail,Rawa Ruska,Jarosław,main_el,81.6,40.8,1.27,appraisal
@@ -1362,7 +1362,7 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 1996,1998,upgrade,road,Tczew,Brodnica,express,123.1,197.0,1.0,appraisal
 1997,1997,closure,rail,Rohatyn,Halicz,sec,38.2,,,rationalisation
 1998,1999,upgrade,rail,Trembowla,Czortków,main_el,36.6,18.3,1.35,appraisal
-1998,2001,upgrade,rail,Biała Podlaska,Brześć,hsr,44.9,628.9,1.23,appraisal
+1998,2001,upgrade,rail,Biała Podlaska,Brześć,hsr,44.9,628.9,1.24,appraisal
 1998,2001,upgrade,rail,Warszawa,Nasielsk,hsr,48.6,680.5,1.04,appraisal
 1998,1999,upgrade,rail,Chrzanów,Oświęcim,main_el,18.9,9.5,1.02,appraisal
 1998,2001,upgrade,rail,Lwów,Żółkiew,hsr,28.6,459.9,1.01,appraisal
@@ -1455,8 +1455,8 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 2006,2007,upgrade,road,Inowrocław,Toruń,express,39.8,63.7,1.02,appraisal
 2006,2009,upgrade,road,Łuck,Horochów,motorway,59.6,143.1,1.01,appraisal
 2006,2007,upgrade,road,Sieradz,Koło,express,81.7,130.8,1.0,appraisal
-2006,2007,upgrade,road,Tarnów,Pilzno,express,26.5,48.7,1.0,appraisal
 2006,2007,upgrade,road,Zduńska Wola,Radomsko,express,83.9,134.2,1.0,appraisal
+2006,2007,upgrade,road,Tarnów,Pilzno,express,26.5,48.7,1.0,appraisal
 2006,2007,upgrade,road,Grodno,Lazdijai,express,78.6,125.8,1.0,appraisal
 2007,2007,closure,rail,Poznań,Wągrowiec,sec,55.3,,,rationalisation
 2008,2010,upgrade,rail,Kowel,Sarny,main_el,152.1,93.2,1.65,appraisal
@@ -1485,7 +1485,7 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 2010,2013,upgrade,rail,Włocławek,Toruń,hsr,58.6,820.8,1.18,appraisal
 2010,2011,upgrade,rail,Dębica,Pilzno,main_el,13.3,7.7,1.12,appraisal
 2010,2011,upgrade,rail,Poznań,Szamotuły,main_el,37.4,18.7,1.1,appraisal
-2010,2013,upgrade,rail,Czeremcha,Brześć,hsr,59.9,839.0,1.08,appraisal
+2010,2013,upgrade,rail,Czeremcha,Brześć,hsr,59.9,839.0,1.07,appraisal
 2010,2013,upgrade,rail,Września,Poznań,hsr,51.0,714.1,1.06,appraisal
 2010,2011,upgrade,rail,Ukmergė,Jonava,main,41.3,24.8,1.05,appraisal
 2010,2013,upgrade,rail,Łuck,Równe,hsr,76.4,1069.2,1.02,appraisal
@@ -1592,9 +1592,9 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 2024,2025,upgrade,road,Kielce,Tarnobrzeg,express,98.9,158.3,1.02,appraisal
 2024,2025,upgrade,road,Panevėžys,Biržai,express,70.6,113.0,1.02,appraisal
 2024,2027,upgrade,road,Kielce,Końskie,motorway,47.3,113.5,1.01,appraisal
-2024,2025,upgrade,road,Kaunas,Alytus,express,68.8,110.1,1.01,appraisal
 2024,2025,upgrade,road,Halicz,Brzeżany,express,48.5,77.6,1.01,appraisal
 2024,2025,upgrade,road,Kalisz,Sieradz,express,58.0,92.9,1.01,appraisal
+2024,2025,upgrade,road,Kaunas,Alytus,express,68.8,110.1,1.01,appraisal
 2024,2025,upgrade,road,Dawidgródek,Sarny,express,110.3,255.9,1.0,appraisal
 2024,2025,upgrade,road,Nakło,Chojnice,express,76.0,121.7,1.0,appraisal
 2026,2027,upgrade,rail,Jasło,Krosno,main_el,26.0,16.9,1.36,appraisal
@@ -1602,8 +1602,8 @@ year,open,kind,mode,from,to,class,km,cost_M,bcr,source
 2026,2029,upgrade,rail,Włodawa,Brześć,hsr,71.2,996.7,1.05,appraisal
 2026,2029,upgrade,road,Sierpc,Brodnica,motorway,58.6,140.5,2.45,appraisal
 2026,2027,upgrade,road,Pabianice,Zduńska Wola,express,35.5,56.8,1.03,appraisal
-2026,2027,upgrade,road,Zarasai,Riga via Daugavpils,paved,29.1,6.7,1.03,appraisal
 2026,2027,upgrade,road,Tomaszów Lubelski,Rawa Ruska,express,34.5,55.2,1.02,appraisal
+2026,2027,upgrade,road,Zarasai,Riga via Daugavpils,paved,29.1,6.7,1.02,appraisal
 2026,2027,upgrade,road,Krasnystaw,Kraśnik,express,81.6,130.6,1.02,appraisal
 2026,2027,upgrade,road,Pszczyna,Oświęcim,express,25.7,41.2,1.02,appraisal
 2026,2027,upgrade,road,Utena,Rokiškis,express,62.4,99.9,1.02,appraisal

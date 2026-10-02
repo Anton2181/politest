@@ -1,0 +1,24 @@
+# Wakar's Poland-Belarus: Wakar's Poland (wakar_poland.yaml) together with
+# all of Soviet Belarus, the BSSR in its borders of December 1926. Polish and
+# Belarusian are co-official throughout.
+#
+# * Premise: Poland obtains the whole of Soviet Belarus in 1920-21, keeps the
+#   Belarusian lands it held anyway (Polesie, eastern Nowogródek, Głębokie-
+#   Mołodeczno-Wilejka, Wołkowysk, Bielsk), and still leaves Volhynia,
+#   Stanisławów, Tarnopol and the Lithuanian-claimed Wilno lands to its
+#   neighbours. The state is therefore Polish and Belarusian, with a Ukrainian
+#   minority in lwowskie and Lublin and a large Jewish and Russian-speaking
+#   town population in the east.
+# * Soviet Belarus starts from the 1926 Soviet census grown to 1931, as four
+#   voivodeships (witebskie, mińskie, mohylewskie, homelskie) whose counties
+#   are the 1926 okrugs (plsim/data/bssr.py). Its towns and railways join the
+#   network.
+# * Languages, pressure and settlement as in Wakar's Poland: each county works
+#   in whichever of Polish and Belarusian (with West Polesian) had more
+#   speakers in 1931, both are official everywhere, and there is no military
+#   settlement.
+extends: wakar_poland
+meta:
+  name: wakar_poland_belarus
+  description: "Wakar's Poland-Belarus: Wakar's Poland together with all of Soviet Belarus; Polish and Belarusian co-official"
+include_belarus: true

@@ -15,6 +15,8 @@ Each names the part of the code it touches.
 | 3 | County data — **projection done, data partial** | Every scenario now runs on the powiats (270 regions; `data/counties.py`, METHODOLOGY §12.6). The 1931 county tables are in for the eight eastern voivodeships (grade A); Lublin has county populations only, and the centre, the west and Lithuania have seats only. Still to do: the central and western county tables (Kashubian, German and Jewish districts), the 1923 Lithuanian apskritis tables (Lauda), county religion for all voivodeships, and digitised powiat boundaries. | small (data entry) |
 | 4 | Calibration by history matching | Fit shift propensities, status and institutional parameters to observed changes rather than by hand. Targets: 1897→1931 county language change, 1921 vs 1931 censuses, interwar Lithuanian censuses, and analogues (Carinthia, Bukovina, Finland Swedes). | medium |
 | 5 | Probability maps from ensembles | Downscale every ensemble member and map, for example, the probability that Belarusian still leads a cell in 2032. Shows which fronts are robust and which are noise. | small |
+| 6 | Calibrate the road programme | By 2032 the baseline builds ~16,700 km of expressways and ~5,700 km of motorways, about 50 km per 1,000 km²: 1.5 times Spain's density and three times today's Poland. Appraisal has no traffic threshold, no maintenance cost and no congestion, so every busy town-to-town link qualifies. Fit budgets and thresholds to the Spanish, Portuguese and Greek build-outs of 1960-2010, and add upkeep. | small |
+| 7 | Second-generation assimilation of migrants | Migrants keep their language at their destination unless the regional shift rates move them. In the baseline, Warsaw city ends up 13 % Ukrainian-speaking and Silesia 8 %. Interwar and post-war evidence (Poles in the Ruhr and in France, Ukrainians in interwar Warsaw, internal migrants in post-war Poland) points to faster loss in the second generation. A separate urban-migrant shift rate would fix this. | small |
 
 ## Spatial resolution and geography
 
@@ -106,6 +108,28 @@ Each names the part of the code it touches.
 * **Out-of-sample checks** against settings the model was not tuned on:
   Lithuanian Poles 1959-2011, Carinthian Slovenes 1880-2001, Bukovina
   1880-1930.
+
+## Belarus and the Curzon line
+
+* **Soviet Belarus at raion level.** The 1926 census also has raion
+  tables. With them the 12 okrugs could become ~100 counties, and the
+  religion split (Catholic Belarusians in the west) could rest on data
+  rather than assumption.
+* **Counterfactual 1921-31.** Soviet Belarus now starts from the Soviet 1926
+  census, grown under Polish-like vital rates. A Polish 1921-31 (no
+  Belarusisation, no early collectivisation, Polish schools in the towns)
+  would change the start, mostly in the towns.
+* **Curzon line.** The line is free to wind cell by cell; the search is a
+  heuristic. An exact or better bound (integer programming on a coarser
+  grid, or simulated annealing) would show how far from the optimum it is.
+  Variants: a length penalty for a smoother line, a minimum corridor width,
+  identity instead of home language, a line fixed in 1932 with the
+  minorities on each side followed over time, or Poland alone in the union
+  scenarios. A digitised historical Curzon line (A and B) would allow a
+  direct comparison.
+* **Population exchange.** Use the line as the border of a hypothetical
+  exchange in a given year and simulate the transfer and its demographic
+  aftermath, against the real 1944-46 exchanges.
 
 ## Political structure
 

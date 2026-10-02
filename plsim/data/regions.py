@@ -32,17 +32,26 @@ Figures
 * ``partition``: pre-1914 sovereign (RU = Russian Empire, AT = Austria,
   DE = Prussia/Germany), used for historical-institutional effects
   (schooling, literacy, network density).
+
+Soviet Belarus (``country`` BY) enters only scenarios that set
+``include_belarus``: the 1926 BSSR as four voivodeships of a Polish state,
+from the 1926 Soviet census grown to 1931 (``data.bssr``). Their areas are
+estimates (okrug centres on the 1932 territory); urban shares, incomes,
+vital rates and literacy are set like those of the neighbouring Polish
+north-east (Wilno, Nowogródek, Polesie).
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
+
+from .bssr import region_population as _by_pop
 
 
 @dataclass(frozen=True)
 class Region:
     code: str
     name: str
-    country: str          # 'PL' or 'LT'
+    country: str          # 'PL', 'LT' or 'BY' (Soviet Belarus, optional)
     partition: str        # 'RU', 'AT', 'DE'
     area_km2: float
     pop_1931: float
@@ -88,6 +97,15 @@ REGIONS: list[Region] = [
            notes="Biržai, Rokiškis, Zarasai, Utena, Lithuanian part of Trakai"),
     Region("LT_KLA", "Klaipėda Territory", "LT", "DE", 2_848, 150_000, 0.30, 1.30, 3.00, 2.10, 59.5, 0.95, 55.55, 21.35,
            notes="1925 census 141,645"),
+    # --- Soviet Belarus (BSSR of 1926), only with include_belarus ------------------
+    Region("BY_WIT", "witebskie", "BY", "RU", 29_140, _by_pop("BY_WIT"), 0.15, 0.62, 4.60, 2.70, 50.5, 0.60, 55.05, 29.60,
+           notes="okrugs of Witebsk, Połock, Orsza (1926 census)"),
+    Region("BY_MIN", "mińskie", "BY", "RU", 30_160, _by_pop("BY_MIN"), 0.17, 0.66, 4.55, 2.70, 50.5, 0.60, 53.70, 27.90,
+           notes="okrugs of Mińsk, Borysów, Słuck (1926 census)"),
+    Region("BY_MOH", "mohylewskie", "BY", "RU", 33_030, _by_pop("BY_MOH"), 0.14, 0.56, 4.70, 2.80, 50.0, 0.56, 53.40, 30.30,
+           notes="okrugs of Mohylew, Kalinin (Klimowicze), Bobrujsk (1926 census)"),
+    Region("BY_HOM", "homelskie", "BY", "RU", 33_480, _by_pop("BY_HOM"), 0.17, 0.58, 4.90, 2.90, 49.0, 0.55, 52.25, 29.70,
+           notes="okrugs of Homel, Rzeczyca, Mozyrz (1926 census)"),
 ]
 
 REGION_INDEX: dict[str, int] = {r.code: i for i, r in enumerate(REGIONS)}
@@ -97,8 +115,14 @@ POLAND_A = ["WAW", "LOD", "POZ", "POM", "SLA", "KRA"]
 POLAND_B_EAST = ["WIL", "NOW", "POL", "WOL", "LWO", "STA", "TAR", "BIA", "LUB"]
 KRESY = ["WIL", "NOW", "POL", "WOL", "LWO", "STA", "TAR"]
 LITHUANIA = [r.code for r in REGIONS if r.country == "LT"]
+BELARUS = [r.code for r in REGIONS if r.country == "BY"]
 CARPATHIAN = ["KRA", "LWO", "STA"]
 
 
-def select_regions(include_lithuania: bool = True) -> list[Region]:
-    return [r for r in REGIONS if include_lithuania or r.country != "LT"]
+def state_of_code(code: str) -> str:
+    """1932 state of a region, county or sub-region code: 'PL', 'LT' or 'BY'."""
+    return "LT" if code.startswith("LT") else ("BY" if code.startswith("BY_") else "PL")
+
+
+def select_regions(include_lithuania: bool = True, include_belarus: bool = False) -> list[Region]:
+    return [r for r in REGIONS if (include_lithuania or r.country != "LT") and (include_belarus or r.country != "BY")]

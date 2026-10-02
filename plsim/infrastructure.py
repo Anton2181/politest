@@ -42,7 +42,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import shortest_path
 from scipy.spatial import Delaunay
 
-from .data.network import NODES, PAVED_ROADS_1931, PROJECTS, RAIL_1931
+from .data.network import NODES, PAVED_ROADS_1931, PROJECTS, RAIL_1931, RAIL_1931_BY
 from .economy import piecewise
 
 RAIL_CLASSES = ["nar", "sec", "main", "main_el", "hsr"]
@@ -115,7 +115,10 @@ class Network:
         override = params.get("node_region", {})          # towns of split voivodeships
         self.region = np.array([reg_idx.get(override.get(n.name, n.region), -1) for n in NODES])
         self.foreign = self.region < 0
-        self.pop = np.array([n.pop_1931 for n in NODES], dtype=float)  # thousands (urban)
+        # towns and gateways of Soviet Belarus exist only when it is part of the state
+        self.with_by = any(c.startswith("BY_") for c in region_codes)
+        self.dormant = np.array([n.optional and not self.with_by for n in NODES])
+        self.pop = np.array([0.0 if d else n.pop_1931 for n, d in zip(NODES, self.dormant)])  # thousands (urban)
         self.base_pop = self.pop.copy()
         self.terrain = np.array([TERRAIN_COST.get(n.terrain, 1.0) for n in NODES])
         self.federation = federation
@@ -154,7 +157,7 @@ class Network:
     def _edge_open(self, a: int, b: int) -> bool:
         """Links between two sovereign-foreign nodes are dropped; links across the
         Polish-Lithuanian demarcation line are closed outside the federation."""
-        if self.foreign[a] and self.foreign[b]:
+        if (self.foreign[a] and self.foreign[b]) or self.dormant[a] or self.dormant[b]:
             return False
         ra, rb = NODES[a].region, NODES[b].region
         la, lb = ra.startswith("LT"), rb.startswith("LT")
@@ -163,17 +166,18 @@ class Network:
         return True
 
     def _build_initial(self):
-        for a, b, cls in RAIL_1931:
+        for a, b, cls in RAIL_1931 + (RAIL_1931_BY if self.with_by else []):
             ia, ib = self.name_idx[a], self.name_idx[b]
             if self._edge_open(ia, ib):
                 self._add_edge(ia, ib, "rail", cls)
-        # Road skeleton: Delaunay triangulation, pruned by length.
-        xy = np.column_stack([self.lon * np.cos(np.radians(52)), self.lat]) * 111.0
+        # Road skeleton: Delaunay triangulation (of the towns that exist), pruned by length.
+        live = np.where(~self.dormant)[0]
+        xy = np.column_stack([self.lon[live] * np.cos(np.radians(52)), self.lat[live]]) * 111.0
         tri = Delaunay(xy)
         pairs = set()
         for s in tri.simplices:
             for i in range(3):
-                a, b = int(s[i]), int(s[(i + 1) % 3])
+                a, b = int(live[s[i]]), int(live[s[(i + 1) % 3]])
                 pairs.add((min(a, b), max(a, b)))
         paved = {tuple(sorted((self.name_idx[a], self.name_idx[b]))) for a, b in PAVED_ROADS_1931
                  if a in self.name_idx and b in self.name_idx}
@@ -190,7 +194,7 @@ class Network:
                 cls = "paved"
             else:
                 regs = {NODES[a].region, NODES[b].region}
-                poor = regs & {"POL", "NOW", "WOL", "LT_NEA", "WIL"}
+                poor = regs & {"POL", "NOW", "WOL", "LT_NEA", "WIL", "BY_WIT", "BY_MIN", "BY_MOH", "BY_HOM"}
                 cls = "dirt" if poor and min(self.pop[a], self.pop[b]) < 20 else "gravel"
             self._add_edge(a, b, "road", cls)
 
@@ -485,7 +489,9 @@ class Network:
             lma = np.log(self.ma / self.ma0)
         else:
             lma = np.zeros(self.N)
-        noise = self.rng.normal(0, self.p["town_noise"], self.N)
+        # one draw per town that exists (dormant towns of Soviet Belarus take none)
+        noise = np.zeros(self.N)
+        noise[~self.dormant] = self.rng.normal(0, self.p["town_noise"], int((~self.dormant).sum()))
         bonus = np.zeros(self.N)
         for name, sched in self.p.get("town_bonus", {}).items():
             if name in self.name_idx:

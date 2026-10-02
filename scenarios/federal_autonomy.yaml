@@ -10,6 +10,8 @@ meta:
   name: federal_autonomy
   description: "Ukrainian territorial autonomy (Stanisławów, Tarnopol, Volhynia), Belarusian schooling, equal Lithuanian"
 dominant_language: {default: pl, "LT_*": lt, STA: uk, TAR: uk, WOL: uk}
+# Polish stays co-official in the autonomy (and in Lithuania, as in the baseline)
+official_languages: {STA: [uk, pl], TAR: [uk, pl], WOL: [uk, pl]}
 language:
   status:
     uk: [[1931, 0.35], [1938, 0.60], [1960, 0.75]]

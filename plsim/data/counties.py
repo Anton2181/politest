@@ -20,6 +20,8 @@ Coverage: grade A for the eight eastern voivodeships (Tarnopol, Stanisławów,
 Lwów, Volhynia, Wilno, Nowogródek, Białystok; Polesie in part). Grade B for
 Lublin. Grade C for the central and western voivodeships and Lithuania;
 their county language tables were not reachable from this environment.
+Soviet Belarus, when included, has its 12 okrugs of 1926 as grade-A
+counties (``data.bssr``).
 
 Conventions
 -----------
@@ -37,6 +39,8 @@ Conventions
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+
+from . import bssr as _bssr
 
 _TR = str.maketrans("ąćęłńóśźżĄĆĘŁŃÓŚŹŻėęįšųūžčĖĮŠŲŪŽČ", "acelnoszzACELNOSZZeeisuuzcEISUUZC")
 
@@ -291,6 +295,11 @@ COUNTIES: list[County] = [
     _c("LT_KLA", "Pagėgių apskritis", "Pagėgiai", 55.14, 21.91),
 ]
 # fmt: on
+
+# Soviet Belarus (only with include_belarus): the 12 okrugs of the 1926 census
+# as counties, at their okrug centres, grown to 1931 (grade A; see data.bssr).
+COUNTIES += [_a(par, name, seat, lat, lon, round(pop * _bssr.GROWTH_1926_1931), _bssr.okrug_languages(seat))
+             for name, seat, par, lat, lon, pop, _ in _bssr.OKRUGS]
 
 BY_PARENT: dict[str, list[County]] = {}
 for _cty in COUNTIES:

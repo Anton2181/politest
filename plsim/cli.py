@@ -27,7 +27,7 @@ from .ensemble import run_ensemble, save
 from .export import export_ensemble, export_run
 from .language import CENSUS_CATEGORIES, census_view
 from .model import Simulation
-from . import maps as mp
+from . import curzon, maps as mp
 from . import webmap
 from .spatial import downscale
 from .params import load_scenario
@@ -48,11 +48,18 @@ def all_scenarios() -> list[str]:
     return sorted(os.path.basename(p)[:-5] for p in glob.glob(os.path.join(SCEN_DIR, "*.yaml")))
 
 
+# modules whose code does not change a run's results (presentation, reporting)
+_NOT_IN_FINGERPRINT = {"cli.py", "maps.py", "webmap.py", "report.py", "publish.py", "export.py", "validate.py",
+                       "ensemble.py", "curzon.py", "__main__.py"}
+
+
 def _code_fingerprint() -> str:
     h = hashlib.sha1()
     here = os.path.dirname(os.path.abspath(__file__))
     for path in sorted(glob.glob(os.path.join(here, "**", "*.py"), recursive=True)
                        + glob.glob(os.path.join(here, "data", "*.json"))):
+        if os.path.basename(path) in _NOT_IN_FINGERPRINT and os.path.dirname(path) == here:
+            continue
         with open(path, "rb") as fh:
             h.update(fh.read())
     return h.hexdigest()
@@ -107,17 +114,13 @@ SCENARIO_TITLES = {
     "federal_autonomy": "Ukrainian autonomy",
     "integral_nationalism": "Integral nationalism",
     "polonizing_union": "Polonising unitary union",
-    "forced_lithuanization": "Forced Lithuanisation",
-    "wilno_lithuanian": "Wilno as Lithuanian capital",
-    "lt_polish_claim": "Polish 1923 claim for Lithuania (202 k)",
     "census_official": "1931 census as printed",
     "census_vernacular": "Upper-bound minority speech in 1931",
-    "finnish_path": "Fast convergence",
-    "stagnation": "Stagnation",
     "ii_rp_only": "Poland alone, no union",
     "ukraine_autonomy_tricantonal": "Ukrainian autonomy + tri-cantonal Lithuania",
     "autonomy_grand_duchy_coofficial": "Ukrainian autonomy + trilingual Grand Duchy",
-    "poland_west_pl_be": "Poland without the south-east and Wilno; Polish + Belarusian",
+    "wakar_poland": "Wakar's Poland",
+    "wakar_poland_belarus": "Wakar's Poland-Belarus",
     "no_official_language": "No official language",
 }
 
@@ -139,10 +142,15 @@ def _map_job(args):
     else:
         mp.fig_plurality(sr, os.path.join(mapdir, f"{name}_map_plurality.png"), title=title)
     last = (sr.grid, mp.display_shares(sr.display(sr.frame(sr.years[-1]))))
+    lines = curzon.lines_for(sr, res, webmap.FRAMES)
+    curzon.write_csv(lines, os.path.join(mapdir, f"{name}_curzon.csv"))
+    if name == "baseline":
+        mp.fig_curzon(sr, lines, os.path.join(mapdir, "map_curzon.png"), title="Equal-exchange Curzon line, baseline")
     webmap.write_data(atlasdir, name, webmap.encode_frames(sr, full))
     entry = {"name": name, "title": title, "description": p["meta"]["description"],
              "series": webmap.national_series(res), "towns": webmap.town_series(sr),
-             "net": webmap.network_payload(res), "geo": webmap.geometry_payload(res, sr, full)}
+             "net": webmap.network_payload(res), "geo": webmap.geometry_payload(res, sr, full),
+             "curzon": webmap.curzon_payload(lines)}
     return name, entry, last, f"  {name}: {time.time() - t:.1f}s" + (" (cached run)" if cached else "")
 
 
@@ -240,8 +248,8 @@ def build_report(outroot: str, n_ens: int, scenarios: list[str] | None = None, w
     rp.fig_towns(base, F("towns.png"))
     rp.fig_scenario_population(results, F("scenario_population.png"))
     rp.fig_language_scenarios(results, F("scenario_languages.png"), base.years[-1])
-    lt_sc = {k: results[k] for k in ["baseline", "forced_lithuanization", "polonizing_union", "lt_polish_claim",
-                                      "census_vernacular", "wilno_lithuanian"] if k in results}
+    lt_sc = {k: results[k] for k in ["baseline", "polonizing_union", "census_official", "census_vernacular",
+                                      "ukraine_autonomy_tricantonal", "autonomy_grand_duchy_coofficial"] if k in results}
     rp.fig_lithuania_poles(lt_sc, F("lithuania_poles.png"))
     for k in ["federal_autonomy", "integral_nationalism"]:
         if k in results:

@@ -111,7 +111,8 @@ def geo_payload(ndigits: int = 2) -> dict:
     def r3(lines):
         return [[[round(x, 3), round(y, 3)] for x, y in ln] for ln in lines]
     states = {"PL": r3([p[0] for p in b["PL"]]), "LT": r3([p[0] for p in b["LT"]]),
-              "outline": r3(b["outline"]), "plLt": r3(b["PL_LT"])}
+              "BY": r3([p[0] for p in b["BY"]]), "outline": r3(b["outline"]), "plLt": r3(b["PL_LT"]),
+              "plBy": r3(b["PL_BY"]), "outlines": {k: r3(v) for k, v in b["outlines"].items()}}
     return {"land": rnd(geo["land"], 3), "lakes": rnd(geo["lakes"], 3), "rivers": rnd(geo["rivers"]), "states": states}
 
 
@@ -218,7 +219,9 @@ def geometry_payload(res, sr, full) -> dict:
     labels = []
     for code, name in zip(res.region_codes, res.region_names):
         par = code.split(".")[0]
-        if code in BY_CODE and not par.startswith("LT"):
+        if code in BY_CODE and par.startswith("BY_"):          # Soviet Belarus: the 1926 okrugs
+            labels.append(f"{name} · woj. {parent_name.get(par, par)}")
+        elif code in BY_CODE and not par.startswith("LT"):
             labels.append(f"pow. {name} · woj. {parent_name.get(par, par)}")
         elif code in BY_CODE:
             labels.append(f"{name} · {parent_name.get(par, par)}")
@@ -241,6 +244,15 @@ def geometry_payload(res, sr, full) -> dict:
             "dominant": list(getattr(res, "dominant", []) or []),
             "official": [list(o) for o in (getattr(res, "official", None) or [[d] for d in res.dominant])],
             "cellreg": base64.b64encode(cellreg.tobytes()).decode()}
+
+
+def curzon_payload(lines: list[dict]) -> dict:
+    """Equal-exchange Curzon line of each frame (``plsim.curzon``): the line and,
+    in thousands, [Poles, counted, Polish side, its Poles, its others, other side's Poles,
+    its others, not counted]."""
+    keys = ["poles", "people", "west", "west_poles", "west_others", "east_poles", "east_others", "excluded"]
+    return {"lines": [[[[round(float(x), 3), round(float(y), 3)] for x, y in ln] for ln in s["lines"]] for s in lines],
+            "stats": [[round(s[k] / 1e3) for k in keys] for s in lines]}
 
 
 def nodes_payload(res) -> list:

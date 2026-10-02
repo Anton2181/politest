@@ -9,7 +9,10 @@ coastline from basemap-data, lakes removed) and inside the borders of
 Poland or Lithuania on 1 January 1932, as given by CShapes 2.0
 (``borders_1932.json``; Schvitz et al. 2022). Land cells within 2.5 km of
 the Polish or Lithuanian coastline are also kept: the two coastlines differ
-by a few km on the Hel peninsula and the Curonian Spit.
+by a few km on the Hel peninsula and the Curonian Spit. Soviet Belarus (the
+BSSR of 1926-39: modern Belarus, Natural Earth, minus 1932 Poland and
+Lithuania; ``tools/build_geodata.py``) is a third state, used only by
+scenarios that include it.
 
 Cells are assigned to a voivodeship or Lithuanian unit by a multiplicatively
 weighted Voronoi diagram of the domestic towns of their state, with one
@@ -45,7 +48,7 @@ import numpy as np
 from matplotlib.path import Path
 
 from .network import NODES
-from .regions import REGIONS
+from .regions import REGIONS, state_of_code
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -206,7 +209,7 @@ CELL_DLAT = 0.03125
 CELL_DLON = 0.05
 MODEL_DLAT = 0.0625
 MODEL_DLON = 0.10
-BBOX = (13.5, 47.3, 30.5, 57.2)
+BBOX = (13.5, 47.3, 33.0, 57.2)
 
 
 def load_base_geography() -> dict:
@@ -219,7 +222,9 @@ _BORDERS = None
 
 def load_borders() -> dict:
     """State borders on 1 January 1932 (CShapes 2.0): rings of Poland and
-    Lithuania, their coastlines, and the Polish-Lithuanian border."""
+    Lithuania, their coastlines, and the Polish-Lithuanian border; Soviet
+    Belarus (BY), its border with Poland (PL_BY) and the outline of Poland
+    with Soviet Belarus (outlines["PL+BY"])."""
     global _BORDERS
     if _BORDERS is None:
         with open(os.path.join(HERE, "borders_1932.json"), encoding="utf-8") as fh:
@@ -255,11 +260,11 @@ def _dist_to_lines(lon, lat, lines) -> np.ndarray:
 
 
 def state_of(lat, lon, coast_km: float = 2.5) -> np.ndarray:
-    """'PL', 'LT' or '' for each point (1932 borders; see module docstring)."""
+    """'PL', 'LT', 'BY' or '' for each point (1932 borders; see module docstring)."""
     lat, lon = np.atleast_1d(np.asarray(lat, float)), np.atleast_1d(np.asarray(lon, float))
     b = load_borders()
     out = np.full(len(lat), "", dtype="<U2")
-    for st in ("PL", "LT"):
+    for st in ("PL", "LT", "BY"):
         out[(out == "") & _inside(b[st], lon, lat)] = st
     for st in ("PL", "LT"):
         free = np.where(out == "")[0]
@@ -303,6 +308,11 @@ def _terrain_factor(lat, lon) -> np.ndarray:
     return f
 
 
+def _terrain_factor_by(lat, lon) -> np.ndarray:
+    """Soviet Belarus: the eastern Polesie marshes (Pripyat basin, Mozyrz)."""
+    return 1 - 0.40 * _soft_box(lat, lon, 51.3, 52.5, 27.0, 30.4, 0.25)
+
+
 def build_grid(region_codes: list[str], dlat: float = CELL_DLAT, dlon: float = CELL_DLON) -> Grid:
     """Grid of the regions in ``region_codes``.
 
@@ -315,8 +325,8 @@ def build_grid(region_codes: list[str], dlat: float = CELL_DLAT, dlon: float = C
     from dataclasses import replace
 
     codes = list(region_codes)
-    states = {"LT" if c.startswith("LT") else "PL" for c in codes}
-    full = tuple(r.code for r in REGIONS if ("LT" if r.code.startswith("LT") else "PL") in states)
+    states = {state_of_code(c) for c in codes}
+    full = tuple(r.code for r in REGIONS if state_of_code(r.code) in states)
     base = _base_grid(full, dlat, dlon)
     if codes == list(full):
         return base
@@ -364,7 +374,7 @@ def _build_base_grid(region_codes: list[str], dlat: float, dlon: float) -> Grid:
     for poly in geo["lakes"]:
         land &= ~Path(np.array(poly)).contains_points(pts)
     reg_idx = {c: i for i, c in enumerate(region_codes)}
-    reg_state = np.array(["LT" if c.startswith("LT") else "PL" for c in region_codes])
+    reg_state = np.array([state_of_code(c) for c in region_codes])
     state = np.full(len(la), "", dtype="<U2")
     state[land] = state_of(la[land], lo[land])
     idx = np.where(np.isin(state, np.unique(reg_state)))[0]
@@ -386,5 +396,6 @@ def _build_base_grid(region_codes: list[str], dlat: float, dlon: float) -> Grid:
         region = dreg[(Dk / w[dreg][None, :]).argmin(axis=1)]
         area = np.bincount(region, weights=km2, minlength=len(region_codes))
         w *= np.clip(target / np.maximum(area, 1.0), 0.5, 2.0) ** 0.25
-    return Grid(lat=la, lon=lo, region=region, terrain=_terrain_factor(la, lo), region_codes=list(region_codes),
+    terrain = np.where(cell_state == "BY", _terrain_factor_by(la, lo), _terrain_factor(la, lo))
+    return Grid(lat=la, lon=lo, region=region, terrain=terrain, region_codes=list(region_codes),
                 cell_km2=km2, dlat=dlat, dlon=dlon)

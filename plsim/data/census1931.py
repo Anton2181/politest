@@ -61,6 +61,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from . import bssr
 from .languages import COMMUNITIES, GROUP_INDEX, GROUPS, NG
 from .regions import REGIONS, Region
 
@@ -284,6 +285,8 @@ def _carve(shares: dict, src: tuple[str, str], dst: tuple[str, str], persons: fl
 
 def build_region_shares(code: str, variant: str, lt_variant: str) -> dict[tuple[str, str], float]:
     region = next(r for r in REGIONS if r.code == code)
+    if region.country == "BY":
+        return bssr.region_groups(code)          # 1926 Soviet census (see data.bssr)
     if region.country == "LT":
         shares = dict(LT_GROUPS_1923[code])
         if lt_variant in LT_EXTRA_POLISH:
@@ -398,7 +401,7 @@ def build_initial_composition(regions: list[Region], variant: str = "official",
     k = (NATIONAL_URBAN_PL_1931 * tot_pl - waw) / non_waw if non_waw > 0 else 1.0
     for i, reg in enumerate(regions):
         shares = build_region_shares(reg.code, variant, lt_variant)
-        u_target = reg.urban_1931 if (reg.code == "WAW" or reg.country == "LT") else min(reg.urban_1931 * k, 0.95)
+        u_target = reg.urban_1931 if (reg.code == "WAW" or reg.country != "PL") else min(reg.urban_1931 * k, 0.95)
         split = _urban_split(reg.code, shares, u_target)
         total = reg.pop_1931 * (scale_overrides or {}).get(reg.code, 1.0)
         for grp, (rur, urb) in split.items():

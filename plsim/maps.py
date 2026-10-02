@@ -21,14 +21,16 @@ from matplotlib.patches import Patch, PathPatch, Polygon  # noqa: E402
 from matplotlib.path import Path  # noqa: E402
 
 from .data.geography import BBOX, build_grid, load_base_geography, load_borders  # noqa: E402
-from .data.regions import REGIONS  # noqa: E402
+from .data.regions import REGIONS, state_of_code  # noqa: E402
 from .data.languages import LANG_INDEX  # noqa: E402
 from .report import INK, INK2, MUTED, OTHER, SLOTS, SURFACE, _save  # noqa: E402
 
 CATS = ["pl", "uk", "yi", "be", "lt", "de", "pls", "reg", "oth"]
 CAT_LABEL = {"pl": "Polish", "uk": "Ukrainian", "yi": "Yiddish", "be": "Belarusian", "lt": "Lithuanian",
-             "de": "German", "pls": "West Polesian", "reg": "Kashubian, Lemko, Wymysorys", "oth": "Other"}
+             "de": "German", "pls": "West Polesian", "reg": "Kashubian, Lemko, Wymysorys",
+             "oth": "Other (incl. Russian)"}
 CAT_COLOR = dict(zip(CATS, SLOTS[:8] + [OTHER]))
+CURZON = "#c4007f"          # the Curzon line: magenta, apart from borders and language colours
 REGIONAL = ["csb", "rue", "wym"]
 SEA = "#eef3f6"
 FOREIGN = "#efeee9"
@@ -36,8 +38,10 @@ WATER = "#a9c8dc"
 BORDER = "#5d5c58"
 LAT0 = 52.0
 XLIM = (15.35, 29.0)        # fixed map extent, so scenarios with and without Lithuania align
+XLIM_BY = (15.35, 33.0)     # ... widened for scenarios with Soviet Belarus
 YLIM = (47.85, 56.85)
-LABEL_TOWNS = ["Warszawa", "Łódź", "Kraków", "Lwów", "Poznań", "Wilno", "Kaunas", "Lublin", "Białystok",
+LABEL_TOWNS = ["Warszawa", "Łódź", "Kraków", "Lwów", "Poznań", "Wilno", "Kaunas", "Lublin", "Białystok", "Mińsk",
+               "Witebsk", "Homel", "Mohylew",
                "Katowice", "Gdynia", "Brześć", "Pińsk", "Równe", "Stanisławów", "Grodno", "Klaipėda", "Šiauliai"]
 
 
@@ -67,24 +71,29 @@ class Canvas:
         self.W = int(np.round((BBOX[2] - BBOX[0]) / grid.dlon))
         self.extent = [BBOX[0], BBOX[0] + self.W * grid.dlon, BBOX[1], BBOX[1] + self.H * grid.dlat]
         self.geo = load_base_geography()
-        self.xlim = XLIM
-        self.ylim = YLIM
-        # state borders (CShapes, 1932): Poland, plus Lithuania when the grid has it
+        # state borders (CShapes, 1932): Poland, plus Lithuania and Soviet Belarus when the grid has them
         b = load_borders()
-        self.with_lt = any(c.startswith("LT") for c in grid.region_codes)
-        states = ["PL", "LT"] if self.with_lt else ["PL"]
+        present = {state_of_code(c) for c in grid.region_codes} | {"PL"}
+        states = [s for s in ("PL", "LT", "BY") if s in present]
+        self.with_lt, self.with_by = "LT" in states, "BY" in states
+        self.xlim = XLIM_BY if self.with_by else XLIM
+        self.ylim = YLIM
         rings = [r[0] for st in states for r in b[st]]
         self.clip = Path.make_compound_path(*[Path(np.array(r), closed=True) for r in rings])
+        # the Polish state alone (the Curzon line leaves Lithuania out)
+        self.clip_pl = Path.make_compound_path(*[Path(np.array(r[0]), closed=True)
+                                                 for st in states if st != "LT" for r in b[st]])
         # land of the whole state(s); cells missing from this grid were left out (``exclude``)
-        whole = build_grid([r.code for r in REGIONS if ("LT" if r.code.startswith("LT") else "PL") in states],
-                           grid.dlat, grid.dlon)
+        whole = build_grid([r.code for r in REGIONS if state_of_code(r.code) in states], grid.dlat, grid.dlon)
         self.terr = np.zeros((self.H, self.W), dtype=bool)
         self.terr[self._rc(whole)] = True
         self.kept = np.zeros((self.H, self.W), dtype=bool)
         self.kept[self.row, self.col] = True
-        lines = b["outline"] if self.with_lt else rings
+        key = "+".join(states)
+        lines = b["outline"] if key == "PL+LT" else b.get("outlines", {}).get(key, rings)
         self.outline = self._split_lines(lines, inner=False) + self._excluded_edges()
-        self.borders = self._borders() + (self._split_lines(b["PL_LT"], inner=True) if self.with_lt else [])
+        self.borders = (self._borders() + (self._split_lines(b["PL_LT"], inner=True) if self.with_lt else [])
+                        + (self._split_lines(b["PL_BY"], inner=True) if self.with_by else []))
 
     def _rc(self, g):
         return (np.round((g.lat - (BBOX[1] + g.dlat / 2)) / g.dlat).astype(int),
@@ -168,7 +177,7 @@ class Canvas:
         if "WAW" in parents and "WAR" in parents:      # the city region is drawn as part of its voivodeship
             region[region == parents.index("WAW")] = parents.index("WAR")
         reg = self.raster(region.astype(float), fill=-1, dilate=False)
-        lt = np.array([p.startswith("LT") for p in parents])
+        lt = np.array([state_of_code(p) for p in parents])
         dl, dt = self.g.dlon, self.g.dlat
         x0, y0 = BBOX[0], BBOX[1]
         inner = []
@@ -274,6 +283,36 @@ def fig_plurality(sr, path: str, years=(1932, 1950, 1970, 1990, 2010, 2032), tit
     _legend_cats(fig, present, y=0.025)
     fig.text(0.01, 0.005, "Colour: most widely spoken home language in each 3.5 km cell; pale = plurality below "
              "about 50 %. Towns are drawn as areas at urban density.", fontsize=8, color=INK2)
+    _save(fig, path)
+
+
+def fig_curzon(sr, lines: list[dict], path: str, years=(1932, 1982, 2032), title: str = ""):
+    """Plurality map with the equal-exchange Curzon line (``plsim.curzon``) of each year."""
+    cv = Canvas(sr.grid)
+    by_year = {s["year"]: s for s in lines}
+    years = [y for y in years if y in by_year]
+    fig, axs = plt.subplots(1, len(years), figsize=(4.6 * len(years), 5.6))
+    present = set()
+    for ax, y in zip(np.atleast_1d(axs), years):
+        sh = display_shares(sr.display(sr.frame(y)))
+        present |= {CATS[i] for i in np.unique(sh.argmax(axis=1))}
+        cv.base(ax, str(y))
+        cv.show(ax, plurality_rgba(sh, cv))
+        cv.overlay(ax, rivers=False)
+        s = by_year[y]
+        for lw, col in ((3.2, "white"), (1.6, CURZON)):
+            ax.add_collection(LineCollection([np.asarray(ln) for ln in s["lines"]], colors=col, linewidths=lw,
+                                             zorder=7, capstyle="round", joinstyle="round"))
+        ax.text(0.02, 0.02, f"Polish side: {s['west'] / 1e6:.1f} M counted, {s['west_others'] / 1e6:.1f} M not Polish\n"
+                f"Other side: {s['east_poles'] / 1e6:.1f} M Poles, {s['east_others'] / 1e6:.1f} M others",
+                transform=ax.transAxes, fontsize=7.5, color=INK, path_effects=_halo(), zorder=8)
+    if title:
+        fig.suptitle(title, x=0.01, ha="left", fontsize=13, fontweight="bold", color=INK)
+    fig.tight_layout(rect=(0, 0.09, 1, 0.95 if title else 1))
+    _legend_cats(fig, present, y=0.035)
+    fig.text(0.01, 0.005, "Magenta line: the continuous line across the state that leaves as many non-Poles on its Polish "
+             "side as Poles on the other, with the most Poles on the Polish side. Kashubians, Wymysorys, Germans "
+             "and Jews are not counted.", fontsize=8, color=INK2)
     _save(fig, path)
 
 

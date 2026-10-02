@@ -100,9 +100,9 @@ def test_coofficial_languages():
 
 
 def test_excluded_territory():
-    """poland_west_pl_be: Volhynia, Stanisławów, Tarnopol and the Lithuanian-claimed counties are foreign."""
+    """wakar_poland: Volhynia, Stanisławów, Tarnopol and the Lithuanian-claimed counties are foreign."""
     from plsim.data.geography import build_grid
-    sim = Simulation(load_scenario("poland_west_pl_be"))
+    sim = Simulation(load_scenario("wakar_poland"))
     gone = [c for c in sim.codes if c.split(".")[0] in ("WOL", "STA", "TAR") or c.startswith("LT")]
     assert not gone and "WIL.wilno" not in sim.codes and "NOW.lida" not in sim.codes
     assert "WIL.glebokie" in sim.codes and "LWO.lwow" in sim.codes
@@ -161,10 +161,10 @@ def test_county_table_integrity():
     for c in COUNTIES:
         if c.lang:
             assert sum(c.lang.values()) <= c.pop * 1.01, c.code      # summaries carry small slips
-        assert 47.5 < c.lat < 56.6 and 15.5 < c.lon < 28.5, c.code
+        assert 47.5 < c.lat < 56.6 and 15.5 < c.lon < (33.0 if c.parent.startswith("BY_") else 28.5), c.code
 
 
-@pytest.mark.parametrize("parent", ["TAR", "STA", "LWO", "WIL", "NOW", "BIA", "WOL"])
+@pytest.mark.parametrize("parent", ["TAR", "STA", "LWO", "WIL", "NOW", "BIA", "WOL", "BY_WIT", "BY_MIN", "BY_MOH", "BY_HOM"])
 def test_grade_a_counties_add_up_to_the_voivodeship(parent):
     """The county tables reproduce the 1931 voivodeship populations."""
     tot = sum(c.pop for c in BY_PARENT[parent])

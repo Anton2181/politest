@@ -300,7 +300,7 @@ def fig_census_regimes(res, path: str, year: int):
     _save(fig, path)
 
 
-def _draw_network(ax, snap, mode: int, ramp, classes, lat, lon, town_pop=None, title=""):
+def _draw_network(ax, snap, mode: int, ramp, classes, lat, lon, town_pop=None, title="", dom=None):
     for u, v, m, cls in snap:
         if m != mode:
             continue
@@ -308,7 +308,7 @@ def _draw_network(ax, snap, mode: int, ramp, classes, lat, lon, town_pop=None, t
         ax.plot([lon[u], lon[v]], [lat[u], lat[v]], color=ramp[k], lw=0.6 + 0.6 * k, solid_capstyle="round",
                 zorder=1 + k)
     if town_pop is not None:
-        dom = np.array([n.region != "EXT" for n in NODES])
+        dom = np.array([n.region != "EXT" for n in NODES]) if dom is None else np.asarray(dom, bool)
         s = np.sqrt(np.maximum(town_pop, 1)) * 1.6
         ax.scatter(np.array(lon)[dom], np.array(lat)[dom], s=s[dom], color=INK2, alpha=0.55, lw=0, zorder=10)
     ax.set_title(title)
@@ -343,8 +343,9 @@ def fig_networks(res, path: str, years=(1932, 1970, 2032)):
             continue
         ti = res.years.index(y) - 1 if y in res.years else 0
         tp = np.array(res.town_pop[max(ti, 0)]) if res.town_pop else None
-        _draw_network(axes[0, j], snap, 0, BLUE_RAMP, rail_cls, lat, lon, tp, f"Railways {y}")
-        _draw_network(axes[1, j], snap, 1, ORANGE_RAMP, road_cls, lat, lon, tp, f"Roads {y}")
+        dom = np.array(res.node_region) >= 0
+        _draw_network(axes[0, j], snap, 0, BLUE_RAMP, rail_cls, lat, lon, tp, f"Railways {y}", dom)
+        _draw_network(axes[1, j], snap, 1, ORANGE_RAMP, road_cls, lat, lon, tp, f"Roads {y}", dom)
         if j == 0:
             _label_towns(axes[0, j], lat, lon)
             _label_towns(axes[1, j], lat, lon)
@@ -515,7 +516,7 @@ def fig_migration(res, path: str):
 def fig_towns(res, path: str, n: int = 20):
     first = np.array(res.town_pop[0])
     last = np.array(res.town_pop[-1])
-    dom = np.array([nd.region != "EXT" for nd in NODES])
+    dom = np.array(res.node_region) >= 0          # towns of the state in this scenario
     order = np.argsort(-np.where(dom, last, -1))[:n]
     names = [NODES[i].name for i in order]
     y = np.arange(n)

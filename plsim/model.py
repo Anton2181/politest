@@ -143,7 +143,7 @@ class Simulation:
         self.rng = np.random.default_rng(demo_ss)
         self.econ_rng = np.random.default_rng(econ_ss)
         self.net_rng = np.random.default_rng(net_ss)
-        self.regions = select_regions(p["include_lithuania"])
+        self.regions = select_regions(p["include_lithuania"], p.get("include_belarus", False))
         self._comp = None
         node_region = {}
         if p.get("partition"):

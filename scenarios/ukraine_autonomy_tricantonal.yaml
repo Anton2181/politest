@@ -7,7 +7,8 @@
 #    Ukrainian university in Lwów and a Ukrainian school system. Administration
 #    speaks the language of the district majority: Ukrainian east of the San,
 #    Polish in the western districts of lwowskie. Polish stays the federal
-#    language, with Polish schools for the Polish minority.
+#    language and is co-official in the autonomy, with Polish schools for
+#    the Polish minority.
 #
 # 2. A tri-cantonal Lithuania (a Grand Duchy) covering the Lithuanian
 #    Republic plus all lands east of the later Curzon line and north of
@@ -18,9 +19,10 @@
 #        Grodno, Wołkowysk (Polish official, Wilno the ducal capital);
 #      Belarusian canton: eastern wileńskie, eastern nowogródzkie, Polesie
 #        (Belarusian official).
-#    Each canton schools its minorities in their own language. In
-#    particular the Lauda Poles keep Polish schools: there is no forced
-#    Lithuanisation. Polish military settlement in the east stops in 1938.
+#    Each canton schools its minorities in their own language, and Polish is
+#    co-official in all three. In particular the Lauda Poles keep Polish
+#    schools: there is no forced Lithuanisation. Polish military settlement
+#    in the east stops in 1938.
 extends: baseline
 meta:
   name: ukraine_autonomy_tricantonal
@@ -67,6 +69,18 @@ dominant_language:
   TAR: uk
   STA: uk
   WOL: uk
+# Polish is co-official in every autonomy: the Ukrainian districts and the
+# Lithuanian and Belarusian cantons (the Polish canton and western lwowskie
+# are Polish-speaking already).
+official_languages:
+  "LT_*": [lt, pl]
+  WIL.E: [be, pl]
+  NOW.E: [be, pl]
+  POL: [be, pl]
+  LWO.E: [uk, pl]
+  TAR: [uk, pl]
+  STA: [uk, pl]
+  WOL: [uk, pl]
 economy:
   regional_programmes:
     LWO.E: [[1931, 0.0]]          # the Central Industrial District lies west of the San

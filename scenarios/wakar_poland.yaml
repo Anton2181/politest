@@ -1,6 +1,10 @@
-# Poland alone, without Volhynia, Stanisławów and Tarnopol, and without the
-# lands interwar Lithuania claimed under the 1920 Soviet-Lithuanian treaty
-# (Wilno and its environs). Polish and Belarusian are co-official throughout.
+# Wakar's Poland: Poland alone, without Volhynia, Stanisławów and Tarnopol,
+# and without the lands interwar Lithuania claimed under the 1920
+# Soviet-Lithuanian treaty (Wilno and its environs). Polish and Belarusian are
+# co-official throughout. The name refers to Włodzimierz Wakar (1885-1933),
+# whose ethnographic studies of the Polish lands (Rozwój terytorialny
+# narodowości polskiej, 1917-18) argued for a state drawn on where Poles lived
+# rather than on the historic borders of 1772.
 #
 # * Territory: the Second Republic minus the wołyńskie, stanisławowskie and
 #   tarnopolskie voivodeships and the counties of Wilno-Troki, Święciany,
@@ -17,8 +21,8 @@
 # * Assimilation pressure is lighter, and there is no military settlement in
 #   the east.
 meta:
-  name: poland_west_pl_be
-  description: "Poland without Volhynia, Stanisławów, Tarnopol and the Lithuanian-claimed Wilno lands; Polish and Belarusian co-official"
+  name: wakar_poland
+  description: "Wakar's Poland: without Volhynia, Stanisławów, Tarnopol and the Lithuanian-claimed Wilno lands; Polish and Belarusian co-official"
 include_lithuania: false
 federation: false
 region_groups:

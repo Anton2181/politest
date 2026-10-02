@@ -519,9 +519,13 @@ each region's languages are all scenario inputs. Examples:
 
 * Ukrainian autonomy makes Ukrainian the regional state language in
   Stanisławów, Tarnopol and Volhynia (`federal_autonomy`).
-* The Lithuanian unit closes Polish schools (`forced_lithuanization`).
 * Polish becomes dominant in the Lithuanian lands too (`polonizing_union`).
-* Vilnius becomes the Lithuanian federal capital (`wilno_lithuanian`).
+* Polish and Belarusian are co-official across a smaller or larger Poland
+  (`wakar_poland`, `wakar_poland_belarus`), or no language is privileged
+  (`no_official_language`).
+* Polish is co-official in every autonomy: in the Lithuanian member of the
+  federation (all scenarios with the union), in the Ukrainian autonomy and
+  in each canton of the Grand Duchy.
 
 **Contact and official languages.** Each county has one *contact* language
 (`dominant_language`) and a set of *official* languages
@@ -553,8 +557,16 @@ still draws speakers, now only through its local share.
 
 About 190 nodes: 170 towns in the union with 1931 populations and
 coordinates, plus foreign gateways (Danzig, Berlin, Breslau, Upper Silesia,
-Königsberg, Riga, Minsk, Kyiv, Chernivtsi, Žilina, Ostrava, Mukachevo, Tilsit,
+Königsberg, Riga, Mińsk, Kyiv, Chernivtsi, Žilina, Ostrava, Mukachevo, Tilsit,
 Liepāja).
+
+With Soviet Belarus in the state (`include_belarus`), 23 Belarusian towns,
+five gateways beyond it (Smolensk, Nevel, Unecha, Bakhmach, Ovruch) and its
+c. 1931 main lines are added, and Mińsk becomes a domestic town. Otherwise
+these towns do not exist in the model at all: they take no part in the road
+triangulation, the gravity flows or the random draws, so the other scenarios
+are unchanged (checked bit for bit against a run made before Soviet
+Belarus was added).
 
 * **Rail**: the c. 1931 trunk and secondary network (~15 k route-km of the
   ~20 k km operated by PKP in 1938; local branches and sidings omitted).
@@ -651,7 +663,9 @@ savings and market access follows Fogel (1964) and Donaldson & Hornbeck
 * The frontier grows 2.5 % (1930s recovery), 1.8 % (1939-49), 2.7 %
   (1950-73), 1.9 % (1974-2007) and 0.9 % thereafter.
 * `kappa` is the main growth lever: ~0.6-0.7 in the baseline (southern
-  Europe), 0.8-0.88 in `finnish_path`, 0.45-0.5 in `stagnation`.
+  Europe). The ensembles sample the speed of convergence and the shocks,
+  not `kappa` itself; set it in a scenario for a faster (Finnish, ~0.85)
+  or slower (Argentine, ~0.45) path.
 * Regional relative incomes start from the Poland A/B gradient (Silesia 1.9x,
   Warsaw 2.2x, Polesie 0.48x the average). They converge slowly (1.5 %/yr) to
   partially persistent targets and respond to:
@@ -1047,7 +1061,108 @@ grew its own towns. Ukrainian came out 200 k higher. Different random
 numbers and double-counted clustering both contributed: the concentration
 rescaling alone removes about 30 k Belarusian speakers.
 
-### 12.7 What the maps cannot show
+### 12.7 Soviet Belarus (optional)
+
+`include_belarus: true` adds the Byelorussian SSR in its borders of December
+1926 to the Polish state (scenario `wakar_poland_belarus`).
+
+* **Territory.** Modern Belarus (Natural Earth 1:10m) minus Poland and
+  Lithuania of 1932 (CShapes 2.0): 125,900 km² against the 126,800 km² of
+  the 1926 census. Belarus's borders with Russia, Ukraine and Latvia are
+  those the BSSR had from 1926 (`tools/build_geodata.py`).
+* **Units.** Four voivodeships close to the oblasts of 1938: witebskie,
+  mińskie, mohylewskie and homelskie. Their counties are the 12 okrugs of
+  the 1926 census (grade A, with their own populations and languages).
+* **Population.** The 1926 Soviet census by okrug and nationality, grown
+  to the end of 1931 by 7.5 % (`data/bssr.py`): 5.36 M people, 15.6 %
+  urban.
+* **From nationality to home language.**
+  * Belarusians speak Belarusian (91 %; in 1926, 94 % of rural and 54 % of
+    urban Belarusians named it their native language), the rest Russian.
+  * Jews speak Yiddish (90.7 %, as in 1926) or Russian.
+  * Poles: 40 % Polish, 55 % Belarusian, 5 % Russian. In 1926 only a third
+    to a half named Polish.
+  * In the Homel and Rzeczyca okrugs, two thirds of the recorded Russians
+    (37 % and 26 % of the population, recorded a week after the transfer
+    from the RSFSR) are taken as Belarusian speakers, a correction of the
+    same kind as Tomaszewski's.
+  * The result: 77 % Belarusian, 13 % Russian, 7.6 % Yiddish, 0.8 % Polish
+    at home.
+* **Other inputs** (incomes, vital rates, literacy, urban shares) are set
+  like those of the neighbouring Polish north-east, as befits a premise in
+  which these lands were Polish from 1921.
+
+### 12.8 The equal-exchange Curzon line
+
+For each atlas frame (1932, every 5 years, 2032), `plsim.curzon` draws a
+continuous line across the whole state of the scenario (Poland, with
+Lithuania in the union scenarios and Soviet Belarus where it is part of the
+state), from one point of its outer border to another. The line may wind
+freely, cell by cell on the 3.5 km grid, through counties. It divides the
+state into a Polish side and an other side, each in one piece, and leaves:
+
+* as many **non-Poles on the Polish side** as **Poles on the other side**;
+* among all such lines, the most Poles on the Polish side.
+
+**Who is counted.**
+
+* Poles are speakers of Polish at home.
+* Kashubians, Wymysorys speakers, Germans and Jews (by community, whatever
+  their home language) are left out of the count altogether: they are
+  neither Poles nor non-Poles. For a language other than Yiddish, the share
+  of its speakers who are Jewish comes from the region's
+  community-by-language table in the model run, applied to every cell of
+  the region.
+* Everyone else (Ukrainians, Belarusians, West Polesians, Lithuanians,
+  Russians, Lemkos ...) is a non-Pole.
+
+**Reformulation.** Non-Poles on the Polish side plus Poles on the Polish
+side are the people counted there, and the Poles on both sides are all
+Poles. The condition is therefore that the Polish side holds exactly as many
+counted people as there are Poles. The task is to find the most Polish
+connected set of cells of that size whose complement is connected too; the
+line is their common boundary. If both sides are in one piece and touch the
+border, that boundary is a single line from border to border.
+
+**Search** (a heuristic: the exact problem is a hard graph-partitioning
+problem).
+
+1. *Growth.* The Polish side grows from its most Polish large cell, always
+   taking the most Polish cell on its edge, until it holds the target number
+   of people.
+2. *One piece.* Pieces of the other side cut off by the growth join the
+   Polish side.
+3. *Exchange.* While the Polish side is too large, it gives away its least
+   Polish edge cell; while too small, it takes the most Polish cell on the
+   other side's edge. A cell moves only if neither side is split by it (a
+   test on its eight neighbours, using edge-to-edge contact). The exchange
+   stops when 60 crossings of the target in a row bring no more Poles; the
+   best state seen is kept.
+4. *Balance.* The balance is made exact inside the last cell moved, whose
+   people are split pro rata.
+5. A test checks on a synthetic grid that both sides are in one piece, the
+   line is one curve, the balance is exact, and the result beats every
+   straight line.
+
+**Properties of the optimum.**
+
+* The line is jagged at the scale of a cell: nothing in the rules prefers a
+  smooth line.
+* It uses corridors. In the union scenarios of 1932 a strip one cell wide
+  along Lithuania's frontier joins the Polish-speaking Wilno lands to the
+  rest of the Polish side. It costs 0.1 M non-Poles, against a corridor
+  through the Belarusian-speaking Grodno and Lida lands.
+* Polish towns deep in the other side (Lwów, Tarnopol) are taken in when a
+  corridor to them pays its way.
+
+**Outputs.**
+
+* The atlas overlay ("Curzon line", magenta), with the counts on each side.
+* `outputs/maps/<scenario>_curzon.csv`: the counts, the people not counted
+  and the line, by frame.
+* `outputs/maps/map_curzon.png` for the baseline.
+
+### 12.9 What the maps cannot show
 
 * Towns use their region's urban mix, tilted by the hinterland. Strongly
   Jewish shtetls (Pińsk, Brody) therefore appear more mixed than they were.

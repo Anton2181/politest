@@ -19,6 +19,7 @@ DEFAULTS: dict[str, Any] = {
     "seed": 1931,
     "include_lithuania": True,
     "federation": True,          # Lithuania joined in a federal union (reopened Vilnius-Kaunas links etc.)
+    "include_belarus": False,    # Soviet Belarus (BSSR of 1926) as part of Poland (data/bssr.py)
     # 1931 starting point (see plsim/data/census1931.py and docs/DATA_SOURCES.md):
     # religion_corrected = Tomaszewski (1985), the mainstream scholarly correction
     # of the census; official = the census as printed; vernacular = upper bound
@@ -33,9 +34,10 @@ DEFAULTS: dict[str, Any] = {
     # listed language with the most speakers in 1931.
     "dominant_language": {"default": "pl", "LT_*": "lt"},
     # Official languages of each region (status floor, schooling, admissible
-    # shift target); "all" makes every language official. Defaults to the
-    # dominant language alone.
-    "official_languages": {},
+    # shift target); "all" makes every language official. Regions not listed
+    # have the dominant language alone. Polish is co-official in every
+    # autonomy, here the Lithuanian member of the federation.
+    "official_languages": {"LT_*": ["lt", "pl"]},
     # Federal member state of each region (migration friction between members).
     "members": {"default": "PL", "LT_*": "LT"},
     # Spatial units: "counties" runs every voivodeship as its 1931 powiaty

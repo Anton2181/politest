@@ -25,7 +25,7 @@
   --halo: rgba(250, 250, 247, 0.92);
   --d0: #f3f2ed; --d1: #c9dcf2; --d2: #86b6ef; --d3: #2a78d6; --d4: #1c5cab; --d5: #0d366b; --d6: #05172f;
   --neg2: #a8431c; --neg1: #f2a07f; --mid: #f0efea; --pos1: #86b6ef; --pos2: #1c5cab;
-  --rail: #1b1a18; --road-case: #5a5750; --road-fill: #fbfbf9; --member: #1b1a18;
+  --rail: #1b1a18; --road-case: #5a5750; --road-fill: #fbfbf9; --member: #1b1a18; --curzon: #c4007f;
   --font-display: "Spectral", "Iowan Old Style", Georgia, serif;
   --font-body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -40,7 +40,7 @@
     --rline: rgba(17, 18, 17, 0.8); --label: #ebeae5; --halo: rgba(17, 18, 17, 0.88);
     --d0: #1b1c1b; --d1: #10263f; --d2: #0d3e78; --d3: #1c5cab; --d4: #2a78d6; --d5: #86b6ef; --d6: #e4eefb;
     --neg2: #f2a07f; --neg1: #a8431c; --mid: #2a2b29; --pos1: #1c5cab; --pos2: #86b6ef;
-    --rail: #f0efe9; --road-case: #b5b3ab; --road-fill: #1a1b1a; --member: #f0efe9;
+    --rail: #f0efe9; --road-case: #b5b3ab; --road-fill: #1a1b1a; --member: #f0efe9; --curzon: #ff5ec4;
     color-scheme: dark;
   }
 }
@@ -51,7 +51,7 @@
   --rline: rgba(17, 18, 17, 0.8); --label: #ebeae5; --halo: rgba(17, 18, 17, 0.88);
   --d0: #1b1c1b; --d1: #10263f; --d2: #0d3e78; --d3: #1c5cab; --d4: #2a78d6; --d5: #86b6ef; --d6: #e4eefb;
   --neg2: #f2a07f; --neg1: #a8431c; --mid: #2a2b29; --pos1: #1c5cab; --pos2: #86b6ef;
-  --rail: #f0efe9; --road-case: #b5b3ab; --road-fill: #1a1b1a; --member: #f0efe9;
+  --rail: #f0efe9; --road-case: #b5b3ab; --road-fill: #1a1b1a; --member: #f0efe9; --curzon: #ff5ec4;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -99,6 +99,8 @@ button:focus-visible, select:focus-visible, input:focus-visible, .chip:focus-vis
 .legend { display: grid; gap: 4px; }
 .overlays { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
 .overlays .panel-h { margin-right: 4px; }
+.curzon-note { margin: -4px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--ink2); }
+.curzon-note .hint { color: var(--muted); }
 .netbox { display: grid; gap: 10px; border-top: 1px solid var(--rule); padding-top: 14px; }
 .netkey { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; font-size: var(--step--1); color: var(--ink2); }
 .netkey span { display: flex; align-items: center; gap: 8px; }
@@ -122,6 +124,15 @@ button.legend-row:hover { background: var(--ctl); }
 .probe .meta { font-size: var(--step--1); color: var(--muted); font-family: var(--font-data); }
 .probe .hint { color: var(--muted); font-size: var(--step--1); margin: 0; }
 .bars { display: grid; gap: 4px; }
+.selbox { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 8px; }
+.selbox .seg { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.selbox h3 { margin: 0; font-size: var(--step-0); font-weight: 600; }
+.selbox .meta { font-size: var(--step--1); color: var(--muted); font-family: var(--font-data); }
+.selbox .hint { color: var(--muted); font-size: var(--step--1); margin: 0; }
+.selbox .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.selbox .clear { font: inherit; font-size: var(--step--1); border: 1px solid var(--rule); background: transparent; color: var(--ink2); border-radius: 4px; padding: 3px 8px; cursor: pointer; }
+.bar .d { font-family: var(--font-data); text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bars.wide .bar { grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr) 3.2rem 3.6rem; }
 .bar { display: grid; grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr) 3.2rem; gap: 8px; align-items: center; font-size: var(--step--1); }
 .bar .track { height: 8px; background: var(--ctl); border-radius: 2px; overflow: hidden; }
 .bar .fill { height: 100%; }
@@ -194,7 +205,9 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
         <span class="panel-h">Overlay</span>
         <label class="check" for="show-rail"><input type="checkbox" id="show-rail"> Railways</label>
         <label class="check" for="show-road"><input type="checkbox" id="show-road"> Main roads</label>
+        <label class="check" for="show-curzon"><input type="checkbox" id="show-curzon"> Curzon line <svg viewBox="0 0 22 8" width="22" height="8" aria-hidden="true" style="vertical-align:middle"><line x1="1" y1="4" x2="21" y2="4" stroke="var(--curzon)" stroke-width="2.4" stroke-linecap="round"/></svg></label>
       </div>
+      <p class="curzon-note" id="curzon-note" hidden></p>
       <div class="share-opts" id="share-opts" hidden>
         <div class="chips" id="chips" aria-label="Language"></div>
         <label class="check" for="change"><input type="checkbox" id="change"> Show change since 1932 (percentage points)</label>
@@ -204,13 +217,22 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
         <div class="legend" id="legend"></div>
       </div>
       <div class="probe" id="probe" aria-live="polite"></div>
+      <div class="selbox">
+        <div class="row"><span class="panel-h">Select a whole area</span><button type="button" class="clear" id="sel-clear" hidden>Clear</button></div>
+        <div class="seg" role="radiogroup" aria-label="Select by" id="sel-levels">
+          <button type="button" role="radio" data-level="county" aria-checked="true">County</button>
+          <button type="button" role="radio" data-level="voiv" aria-checked="false">Voivodeship</button>
+          <button type="button" role="radio" data-level="member" aria-checked="false">Canton / member</button>
+        </div>
+        <div id="sel-body" aria-live="polite"></div>
+      </div>
       <dl class="kpis">
         <div><dt>Population</dt><dd id="k-pop">–</dd></div>
         <div><dt>Urban</dt><dd id="k-urb">–</dd></div>
         <div><dt>Polish at home</dt><dd id="k-pl">–</dd></div>
       </dl>
       <figure>
-        <figcaption>Home languages of the whole population, 1932–2032 (share of residents)</figcaption>
+        <figcaption id="chart-cap">Home languages of the whole population, 1932–2032 (share of residents)</figcaption>
         <svg id="chart" viewBox="0 0 360 170" role="img" aria-label="Stacked area chart of national home-language shares"></svg>
       </figure>
       <div class="netbox">
@@ -227,14 +249,16 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     <div>
       <h2>How the maps are made</h2>
       <ul>
-        <li>Each scenario is a cohort-component projection for about 270 counties: the 1931 powiaty and the Lithuanian apskritys, split rural/urban, with 43 community–language groups. The eight eastern voivodeships start from the 1931 county tables of mother tongue; the other counties are downscaled from their voivodeship. The maps place those county numbers on about 37,500 cells of 3.5 × 3.4 km, so every county always adds up to the model.</li>
+        <li>Each scenario is a cohort-component projection for about 270 counties: the 1931 powiaty and the Lithuanian apskritys, split rural/urban, with 43 community–language groups. The eight eastern voivodeships start from the 1931 county tables of mother tongue; the other counties are downscaled from their voivodeship. In Wakar's Poland-Belarus, Soviet Belarus adds four voivodeships made of the 12 okrugs of the 1926 Soviet census. The maps place those county numbers on cells of 3.5 × 3.4 km (about 37,500 for Poland and Lithuania), so every county always adds up to the model.</li>
         <li><strong>1932.</strong> County language shares from the 1931 Polish census (and estimates where the census was silent, such as Kashubian, Lemko and the Lauda gentry) are interpolated inside each voivodeship and fitted to its totals by iterative proportional fitting.</li>
         <li><strong>Each year.</strong> The region's net language shift is placed where speakers of the gaining language live nearby. Following Prochazka &amp; Vogl, the chance to shift grows with the gaining language's share in a Gaussian neighbourhood (10 km), plus a constant part for school, church and state. Towns reach further into their hinterland as they grow.</li>
         <li><strong>Population.</strong> Towns follow the transport-network model. Rural cells near growing towns gain a little each year; remote ones lose, which produces suburban rings and rural exodus.</li>
-        <li><strong>Transport.</strong> The network grows by cost–benefit appraisal under rail and road budgets, plus the dated 1930s projects and the 1939 plans. Lines are drawn straight between the 230 modelled towns, so they show connections, not alignments. The map shows the network as of the latest 5-year frame.</li>
+        <li><strong>Transport.</strong> The network grows by cost–benefit appraisal under rail and road budgets, plus the dated 1930s projects and the 1939 plans. Lines are drawn straight between the modelled towns (about 200, with gateways abroad), so they show connections, not alignments. The map shows the network as of the latest 5-year frame.</li>
         <li><strong>Zoom.</strong> Scroll, pinch or use the buttons to zoom; drag to pan. Faint lines mark county borders, stronger ones voivodeships. County names and more towns appear as you zoom in.</li>
         <li><strong>Federal members and official languages.</strong> Dashed lines mark the borders between federal members, such as Poland and Lithuania, or the autonomies and cantons. Pointing at a cell shows its county's official language(s). Where several are co-official, the first is the county's working language.</li>
-        <li><strong>Left-out land.</strong> In the scenario without the south-east and Wilno, the land outside the state is shown in the neutral colour.</li>
+        <li><strong>Whole areas.</strong> Click or tap the map to select the county, voivodeship or federal member (canton, autonomy, Poland, Lithuania) under the pointer. The panel then shows its residents, growth since 1932, area, density and home languages for the year shown, and the chart follows the selection. The totals add up the map cells, so they match the model to rounding.</li>
+        <li><strong>Curzon line.</strong> The overlay draws, for each 5-year frame, a continuous line across the state, between two points of its outer border (Lithuania and Soviet Belarus included where they are part of the state), that leaves as many non-Poles on its Polish side as Poles on its other side, and among such lines keeps the most Poles on the Polish side. The line may wind cell by cell on the 3.5 km grid, through counties; each side is in one piece. Equivalently, the Polish side holds exactly as many counted people as there are Poles. It is found by growing the Polish side from its most Polish cells and then exchanging cells along the line. Poles are speakers of Polish at home; Kashubians, Wymysorys speakers, Germans and Jews are not counted at all.</li>
+        <li><strong>Left-out land.</strong> In the two Wakar scenarios (without the south-east and Wilno), the land outside the state is shown in the neutral colour. Soviet Belarus is foreign land except in Wakar's Poland-Belarus.</li>
       </ul>
     </div>
     <div>
@@ -297,8 +321,10 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     COL[i] = cb[2 * N + 2 * i] | (cb[2 * N + 2 * i + 1] << 8);
     REG[i] = cb[4 * N + i];
   }
-  const CELL_LT = new Uint8Array(N);       // cell of the Lithuanian state (full grid)
-  for (let i = 0; i < N; i++) CELL_LT[i] = G.regions[REG[i]].code.startsWith("LT") ? 1 : 0;
+  // 1932 state of a region code and of each cell of the full grid: 0 Poland, 1 Lithuania, 2 Soviet Belarus
+  const stateOf = (code) => (code.startsWith("LT") ? 1 : code.startsWith("BY_") ? 2 : 0);
+  const CELL_ST = new Uint8Array(N);
+  for (let i = 0; i < N; i++) CELL_ST[i] = stateOf(G.regions[REG[i]].code);
   const RIDX = new Int32Array(W * H).fill(-1);
   for (let i = 0; i < N; i++) RIDX[ROW[i] * W + COL[i]] = i;
   const latOf = (i) => BB[1] + (ROW[i] + 0.5) * G.dlat;
@@ -369,6 +395,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
       div: ["--neg2", "--neg1", "--mid", "--pos1", "--pos2"].map((n) => hexRgb(g(n))),
       fontBody: g("--font-body"),
       rail: g("--rail"), roadCase: g("--road-case"), roadFill: g("--road-fill"), member: g("--member"),
+      curzon: g("--curzon"),
     };
   }
   const CAT_RGB = CATS.map((c) => hexRgb(c.color));
@@ -381,7 +408,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
 
   // ---------------------------------------------------------------- state
   const state = { scen: META.scenarios[0].name, mode: "plurality", cat: 1, change: false, year: Y0, playing: false, hover: -1,
-    rail: false, road: false };
+    rail: false, road: false, curzon: false, sel: null, selLevel: "county" };
   let cur = null;                         // unpacked data of the current scenario
   const VS = new Float32Array(N * 8), VD = new Float32Array(N);
   const scenByName = Object.fromEntries(META.scenarios.map((s) => [s.name, s]));
@@ -480,12 +507,12 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     // spread one pixel into empty neighbours; the image is clipped to the 1932 border,
     // so cells whose centre lies just outside it leave no gaps
     src.set(d);
-    const hasLT = !!scen()._hasLT;
+    const stOn = scen()._stOn || [true, false, false];
     for (let r = 0; r < H; r++) {
       for (let c = 0; c < W; c++) {
         const p = (r * W + c) * 4;
         const q = RIDX[(H - 1 - r) * W + c];
-        if (src[p + 3] || (q >= 0 && (hasLT || !CELL_LT[q]))) continue;    // only past the state border
+        if (src[p + 3] || (q >= 0 && stOn[CELL_ST[q]])) continue;    // only past the state border
         for (let k = 0; k < 16; k += 2) {
           const rr = r + NB[k], cc = c + NB[k + 1];
           if (rr < 0 || cc < 0 || rr >= H || cc >= W) continue;
@@ -498,19 +525,21 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   }
 
   // ---------------------------------------------------------------- vector layers
-  let baseLayer = null, topLayer = null, clipPath = null, segInner = [], segMember = [], segCounty = [], segOuter = [];
+  let baseLayer = null, topLayer = null, clipPath = null, clipPL = null, segInner = [], segMember = [], segCounty = [], segOuter = [];
   function computeBorders() {
     // region, member and state borders for this scenario's coverage
     const sc = scen(), codes = sc.geo.codes;
     const waw = codes.indexOf("WAW"), war = codes.indexOf("WAR");
-    const isLT = codes.map((c) => c.startsWith("LT"));
-    sc._hasLT = isLT.some(Boolean);
+    const stc = codes.map(stateOf);
+    sc._hasLT = stc.includes(1);
+    sc._hasBY = stc.includes(2);
+    sc._stOn = [true, sc._hasLT, sc._hasBY];
     // reg: region of each pixel; -2 = land of the state left out of this scenario; -1 = abroad
     const reg = new Int16Array(W * H).fill(-1);
     for (let i = 0; i < N; i++) {
       const k = sc._cellreg[i], p = ROW[i] * W + COL[i];
       if (k !== 65535) reg[p] = k === waw && war >= 0 ? war : k;
-      else if (sc._hasLT || !CELL_LT[i]) reg[p] = -2;
+      else if (sc._stOn[CELL_ST[i]]) reg[p] = -2;
     }
     sc._reg = reg;
     const mem = (k) => sc._member[k];
@@ -522,7 +551,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     const push = (a, b, seg) => {
       if (a === b || Math.max(a, b) < 0) return;
       if (Math.min(a, b) === -2) { segOuter.push(seg); return; }
-      if (Math.min(a, b) < 0 || isLT[a] !== isLT[b]) return;
+      if (Math.min(a, b) < 0 || stc[a] !== stc[b]) return;
       if (mem(a) !== mem(b)) segMember.push(seg);
       else if (par[a] === par[b] && (codes[a].includes(".") || codes[b].includes("."))) segCounty.push(seg);
       else segInner.push(seg);
@@ -563,15 +592,18 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     });
     // 1932 state border: kept where the land inside is still part of the state
     const st = META.geo.states;
-    eachSeg(sc._hasLT ? st.outline : st.PL, (seg, a, b) => {
+    const outer = sc._hasBY ? st.outlines["PL+BY"] : sc._hasLT ? st.outline : st.PL;
+    eachSeg(outer, (seg, a, b) => {
       if (Math.max(a, b) >= 0 || (a === -1 && b === -1)) segOuter.push(seg);
     });
-    if (!sc._hasLT) return;
-    // Polish-Lithuanian border: dashed where the regions on either side are in different members
-    eachSeg(st.plLt, (seg, a, b) => {
+    // Polish-Lithuanian and Polish-Soviet Belarusian (1921) borders: dashed where the regions
+    // on either side are in different members
+    const inter = (lines) => eachSeg(lines, (seg, a, b) => {
       if (a >= 0 && b >= 0) (mem(a) !== mem(b) ? segMember : segInner).push(seg);
       else if (Math.max(a, b) >= 0) segOuter.push(seg);
     });
+    if (sc._hasLT) inter(st.plLt);
+    if (sc._hasBY) inter(st.plBy);
   }
   function layer() {
     const c = document.createElement("canvas");
@@ -608,14 +640,19 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     segInner.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
     x.stroke();
     // state border: 1 January 1932 (CShapes 2.0), and the edge of land left out of the state
-    const st = META.geo.states, hasLT = !!scen()._hasLT;
+    const st = META.geo.states, sc0 = scen();
     x.strokeStyle = T.line; x.lineWidth = 1.1; x.lineJoin = "round"; x.beginPath();
     segOuter.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
     x.stroke();
     clipPath = new Path2D();
-    (hasLT ? st.PL.concat(st.LT) : st.PL).forEach((p) => {
+    st.PL.concat(sc0._hasLT ? st.LT : [], sc0._hasBY ? st.BY : []).forEach((p) => {
       p.forEach((q, k) => (k ? clipPath.lineTo(px(q[0]), py(q[1])) : clipPath.moveTo(px(q[0]), py(q[1]))));
       clipPath.closePath();
+    });
+    clipPL = new Path2D();                // the Polish state without Lithuania (Curzon line)
+    st.PL.concat(sc0._hasBY ? st.BY : []).forEach((p) => {
+      p.forEach((q, k) => (k ? clipPL.lineTo(px(q[0]), py(q[1])) : clipPL.moveTo(px(q[0]), py(q[1]))));
+      clipPL.closePath();
     });
     x.strokeStyle = T.halo; x.lineWidth = 3.2; x.beginPath();
     segMember.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
@@ -732,11 +769,35 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   }
   function drawHover() {
     const i = state.hover;
-    if (i < 0) return;
+    if (i < 0 || !VD[i]) return;
     const lo = BB[0] + COL[i] * G.dlon, la = BB[1] + ROW[i] * G.dlat;
     const x0 = px(lo), x1 = px(lo + G.dlon), y0 = py(la + G.dlat), y1 = py(la);
     ctx.lineWidth = 2; ctx.strokeStyle = T.halo; ctx.strokeRect(x0 - 1, y0 - 1, x1 - x0 + 2, y1 - y0 + 2);
     ctx.lineWidth = 1.2; ctx.strokeStyle = T.ink; ctx.strokeRect(x0 - 1, y0 - 1, x1 - x0 + 2, y1 - y0 + 2);
+  }
+  // equal-exchange Curzon line of the latest frame: as many non-Poles west of it as Poles east of it
+  function drawCurzon() {
+    const cz = scen().curzon;
+    if (!state.curzon || !cz) return;
+    const lines = cz.lines[frameFloor(state.year)];
+    ctx.save();
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    for (const [w, col] of [[4.6, T.halo], [2.2, T.curzon]]) {
+      ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath();
+      lines.forEach((ln) => ln.forEach((p, k) => (k ? ctx.lineTo(px(p[0]), py(p[1])) : ctx.moveTo(px(p[0]), py(p[1])))));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function updateCurzonNote() {
+    const cz = scen().curzon, box = $("curzon-note");
+    box.hidden = !state.curzon || !cz;
+    if (box.hidden) return;
+    const f = frameFloor(state.year), [poles, , west, , wo, ep, eo, ex] = cz.stats[f];
+    const M = (v) => (v / 1000).toFixed(1) + " M";
+    box.innerHTML = `<b>${FR[f]}:</b> the line leaves ${M(wo)} non-Poles on the Polish side and ${M(ep)} Poles on the other side. ` +
+      `Polish side: ${M(west)} counted, ${Math.round((west - wo) / west * 100)}% Polish. Other side: ${M(ep + eo)} counted, ${Math.round(ep / Math.max(ep + eo, 1) * 100)}% Polish. ` +
+      `<span class="hint">Poles = Polish at home (${M(poles)}). Not counted: Kashubians, Wymysorys, Germans and Jews (${M(ex)}).</span>`;
   }
   function render() {
     if (!cur || !baseLayer) return;
@@ -756,7 +817,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     ctx.restore();
     ctx.drawImage(topLayer, 0, 0);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    drawNetwork(); drawRegionLabels(drawTowns()); drawHover(); drawScale();
+    drawNetwork(); drawCurzon(); drawSelection(); drawRegionLabels(drawTowns()); drawHover(); drawScale();
     updateReadouts();
   }
   let pending = false;
@@ -801,6 +862,8 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     }
     updateProbe();
     updateNet();
+    updateCurzonNote();
+    updateSelection();
     moveCursor();
   }
   const KIND = { new: "New", dated: "Opened", closure: "Closed", upgrade: "Upgraded to" };
@@ -906,13 +969,134 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     buildLegend(); schedule();
   }
 
+  // ---------------------------------------------------------------- selection of whole areas
+  // a county (region of the run), its 1931 voivodeship, or its federal member (canton, autonomy)
+  const REGION_NAME = Object.fromEntries(G.regions.map((r) => [r.code, r.name]));
+  function selKeyOf(k, level) {
+    const sc = scen(), code = sc.geo.codes[k];
+    if (level === "county") return "c:" + code;
+    if (level === "voiv") return "v:" + code.split(".")[0];
+    return "m:" + sc.geo.members[k];
+  }
+  function selTitle(key) {
+    const sc = scen(), [kind, v] = [key.slice(0, 1), key.slice(2)];
+    if (kind === "c") { const k = sc.geo.codes.indexOf(v); return k < 0 ? v : sc.geo.labels[k]; }
+    if (kind === "v") {
+      const n = REGION_NAME[v] || v;
+      return v.startsWith("LT_") || v === "WAW" ? n : "woj. " + n;
+    }
+    return v;
+  }
+  let selCache = null;
+  function selection() {
+    if (!state.sel || !cur) return null;
+    if (selCache && selCache.key === state.sel && selCache.scen === state.scen) return selCache;
+    const sc = scen(), level = state.sel[0] === "c" ? "county" : state.sel[0] === "v" ? "voiv" : "member";
+    const keys = sc.geo.codes.map((_, k) => selKeyOf(k, level));
+    const regs = new Set(keys.map((x, k) => (x === state.sel ? k : -1)).filter((k) => k >= 0));
+    if (!regs.size) return null;
+    const cells = [];
+    for (let i = 0; i < N; i++) if (regs.has(sc._cellreg[i])) cells.push(i);
+    const inSel = new Uint8Array(N);
+    cells.forEach((i) => { inSel[i] = 1; });
+    // outline: cell edges between the selection and anything else
+    const segs = [];
+    const nb = (r, c) => (r < 0 || c < 0 || r >= H || c >= W ? -1 : RIDX[r * W + c]);
+    for (const i of cells) {
+      const r = ROW[i], c = COL[i], lo = BB[0] + c * G.dlon, la = BB[1] + r * G.dlat;
+      const out = (j) => j < 0 || !inSel[j];
+      if (out(nb(r, c - 1))) segs.push([lo, la, lo, la + G.dlat]);
+      if (out(nb(r, c + 1))) segs.push([lo + G.dlon, la, lo + G.dlon, la + G.dlat]);
+      if (out(nb(r - 1, c))) segs.push([lo, la, lo + G.dlon, la]);
+      if (out(nb(r + 1, c))) segs.push([lo, la + G.dlat, lo + G.dlon, la + G.dlat]);
+    }
+    // persons by category in each frame (for the chart and the 1932 comparison)
+    const area = cells.map((i) => (G.dlat * 111.2) * (G.dlon * 111.2 * Math.cos(latOf(i) * Math.PI / 180)));
+    const frames = FR.map((_, f) => {
+      const tot = new Array(CATS.length).fill(0);
+      cells.forEach((i, n) => {
+        const q = cur.dens[f * N + i];
+        if (!q) return;
+        const pop = Math.pow(10, logDens(q)) * area[n];
+        for (let k = 0; k < CATS.length; k++) tot[k] += pop * shareOf(i, k, cur.shares, f * N * 8);
+      });
+      return tot;
+    });
+    const nRegs = regs.size;
+    selCache = { key: state.sel, scen: state.scen, cells, area, segs, nRegs, title: selTitle(state.sel),
+      level, series: { years: FR, cats: frames }, kmsq: area.reduce((a, b) => a + b, 0) };
+    return selCache;
+  }
+  function select(i) {
+    if (i < 0) return;
+    const sc = scen(), k = sc._cellreg[i];
+    if (k === 65535) return;
+    const key = selKeyOf(k, state.selLevel);
+    state.sel = state.sel === key ? null : key;
+    selCache = null;
+    buildChart();
+  }
+  function setSelLevel(level) {
+    state.selLevel = level;
+    $("sel-levels").querySelectorAll("button").forEach((b) => b.setAttribute("aria-checked", b.dataset.level === level));
+    if (state.sel) {
+      const sc = scen(), sel = selection();
+      if (sel) {
+        const k = sc._cellreg[sel.cells[0]];
+        state.sel = selKeyOf(k, level);
+        selCache = null;
+        buildChart();
+      }
+    }
+    schedule();
+  }
+  function drawSelection() {
+    const sel = selection();
+    if (!sel) return;
+    for (const [w, col] of [[4.2, T.halo], [2.0, T.ink]]) {
+      ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = "round"; ctx.beginPath();
+      sel.segs.forEach((s) => { ctx.moveTo(px(s[0]), py(s[1])); ctx.lineTo(px(s[2]), py(s[3])); });
+      ctx.stroke();
+    }
+  }
+  function updateSelection() {
+    const body = $("sel-body"), sel = selection();
+    $("sel-clear").hidden = !sel;
+    if (!sel) {
+      body.innerHTML = `<p class="hint">Click or tap the map to select the whole county, voivodeship or federal member (canton, autonomy, Poland, Lithuania) under the pointer, and read its totals. Click it again to clear.</p>`;
+      return;
+    }
+    let pop = 0;
+    const cat = new Array(CATS.length).fill(0);
+    sel.cells.forEach((i, n) => {
+      if (!VD[i]) return;
+      const p = Math.pow(10, logDens(VD[i])) * sel.area[n];
+      pop += p;
+      for (let k = 0; k < CATS.length; k++) cat[k] += p * shareOf(i, k);
+    });
+    const c0 = sel.series.cats[0], p0 = c0.reduce((a, b) => a + b, 0);
+    const rows = CATS.map((c, k) => ({ k, v: cat[k] / Math.max(pop, 1), v0: c0[k] / Math.max(p0, 1) }))
+      .sort((a, b) => b.v - a.v).filter((o) => o.v >= 0.003 || o.v0 >= 0.01).slice(0, 7);
+    const pp = (d) => (d >= 0 ? "+" : "−") + Math.abs(d * 100).toFixed(Math.abs(d) < 0.1 ? 1 : 0);
+    const what = sel.level === "county" ? "" : ` · ${sel.nRegs} ${sel.nRegs === 1 ? "unit" : "counties"}`;
+    const k0 = scen()._cellreg[sel.cells[0]], ri = sel.level === "county" ? regionInfo(sel.cells[0]) : null;
+    body.innerHTML = `<h3>${sel.title}</h3>
+      <div class="meta">${ri ? `${ri.member} · official: ${ri.official}` : sel.level === "voiv" ? scen().geo.members[k0] : "federal member"}${what}</div>
+      <div class="meta">${Math.floor(state.year)}: ${fmtCount(pop)} residents · ×${(pop / Math.max(p0, 1)).toFixed(2)} since 1932 · ${Math.round(sel.kmsq).toLocaleString("en-GB")} km² · ${(pop / sel.kmsq).toFixed(0)} per km²</div>
+      <div class="bars wide">${rows.map((o) => `<div class="bar"><span>${CATS[o.k].label}</span><span class="track"><span class="fill" style="display:block;width:${(o.v * 100).toFixed(1)}%;background:${CATS[o.k].color}"></span></span><span class="v">${fmtPct(o.v)}</span><span class="d" title="change since 1932, percentage points">${pp(o.v - o.v0)}</span></div>`).join("")}</div>
+      <p class="hint">Last column: change since 1932 in percentage points. Totals come from the map cells, so they match the model to rounding.</p>`;
+  }
+
   // ---------------------------------------------------------------- chart
   const CH_W = 360, CH_H = 170, PAD = { l: 34, r: 8, t: 6, b: 22 };
   let cursorLine = null;
   const cx = (y) => PAD.l + (y - Y0) / (Y1 - Y0) * (CH_W - PAD.l - PAD.r);
   const cy = (v) => PAD.t + (1 - v) * (CH_H - PAD.t - PAD.b);
   function buildChart() {
-    const s = scenByName[state.scen].series, svg = $("chart");
+    const sel = selection();
+    const s = sel ? sel.series : scenByName[state.scen].series, svg = $("chart");
+    $("chart-cap").textContent = sel ? `Home languages in ${sel.title}, 1932–2032 (share of residents)`
+      : "Home languages of the whole population, 1932–2032 (share of residents)";
     const tot = s.cats.map((r) => r.reduce((a, b) => a + b, 0));
     let acc = s.years.map(() => 0), parts = [];
     for (let k = 0; k < CATS.length; k++) {
@@ -960,6 +1144,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     netYearShown = null;
     cur = store[name];
     $("scen-desc").textContent = scenByName[name].description;
+    selCache = null;
     computeBorders(); buildLayers(); buildChart(); buildLegend(); schedule();
   }
 
@@ -1043,7 +1228,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   const endPtr = (ev) => {
     if (!ptrs.has(ev.pointerId)) return;
     ptrs.delete(ev.pointerId);
-    if (drag && !drag.moved) { state.hover = cellAt(ev); schedule(); }      // a tap reads the cell
+    if (drag && !drag.moved) { state.hover = cellAt(ev); select(state.hover); schedule(); }   // a tap reads the cell and selects its area
     if (ptrs.size < 2) pinch = null;
     if (!ptrs.size) drag = null;
     canvas.style.cursor = "";
@@ -1108,6 +1293,9 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   });
   $("change").addEventListener("change", (e) => { state.change = e.target.checked; buildLegend(); schedule(); });
   $("show-rail").addEventListener("change", (e) => { state.rail = e.target.checked; schedule(); });
+  $("show-curzon").addEventListener("change", (e) => { state.curzon = e.target.checked; schedule(); });
+  $("sel-levels").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => setSelLevel(b.dataset.level)));
+  $("sel-clear").addEventListener("click", () => { state.sel = null; selCache = null; buildChart(); schedule(); });
   $("show-road").addEventListener("change", (e) => { state.road = e.target.checked; schedule(); });
   const sel = $("scenario");
   sel.innerHTML = META.scenarios.map((s) => `<option value="${s.name}">${s.title}</option>`).join("");
