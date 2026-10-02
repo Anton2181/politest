@@ -31,7 +31,8 @@ from .demography import (FertilitySchedule, MortalityModel, alkema_decrement, ca
 from .economy import Economy, piecewise
 from .infrastructure import Network
 from .params import region_lookup, region_match
-from .language import LanguageModel, census_view
+from .identity import IDENTITY_REGIMES, IdentityModel, identity_census
+from .language import CENSUS_CATEGORIES, LANGUAGE_REGIMES, LanguageModel, census_view
 from .migration import MigrationModel
 
 _MORT_CACHE: dict = {}
@@ -122,13 +123,17 @@ class Results:
     members: list = field(default_factory=list)      # federal member state of each region
     dominant: list = field(default_factory=list)     # contact language of each region
     official: list = field(default_factory=list)     # official languages of each region
+    exchange: dict = field(default_factory=dict)     # population exchange (plsim.exchange), if any
+    identity: list = field(default_factory=list)     # (R,NI) national identity per year (plsim.identity)
+    identity0: np.ndarray | None = None              # (R,NI) at the start
+    identity_lang: dict = field(default_factory=dict)  # snapshot year -> (R,NL,NI) identity by home language
     pop0: np.ndarray | None = None                   # (R,2,G) initial state (start_year)
     town_pop0: np.ndarray | None = None              # (N,) initial town populations
 
     def arrays(self) -> dict:
         return {k: np.array(getattr(self, k)) for k in
                 ["pop", "bil", "births", "deaths", "tfr", "e0", "imr", "emig", "immig", "internal",
-                 "rural_urban", "shifts", "shift_net", "rel_income", "town_pop", "access"]}
+                 "rural_urban", "shifts", "shift_net", "rel_income", "town_pop", "access", "identity"]}
 
 
 class Simulation:
@@ -182,6 +187,7 @@ class Simulation:
         infra_p["region_seats"] = [(r.lat, r.lon) for r in self.regions]
         self.net = Network(infra_p, self.codes, federation=p["federation"] and p["include_lithuania"], rng=self.net_rng)
         self._init_population()
+        self.ident = IdentityModel(p["identity"], self.codes, self.dominant, self.P.sum(axis=(3, 4, 5)))
         if len({c.split(".")[0] for c in self.codes}) < self.R:
             self.lang.nest_concentration(self.P, self.codes)
         self._init_vital_rates()
@@ -202,6 +208,7 @@ class Simulation:
         self.res.dominant = list(self.dominant)
         self.res.official = [list(o) for o in self.official]
         self.res.pop0 = self.P.sum(axis=(3, 4, 5)).astype(np.float32)
+        self.res.identity0 = self.ident.by_region().astype(np.float32)
         self.res.town_pop0 = self.net.pop.copy()
         self._last_log_ma = None
         self._d_log_ma = np.zeros(self.R)
@@ -389,6 +396,13 @@ class Simulation:
         year = self.year
         p = self.params
         R = self.R
+        ex = p.get("population_exchange") or {}
+        if ex.get("plan") and year == ex["year"]:
+            from .exchange import apply_exchange
+            before_x = self.P.sum(axis=(3, 4, 5))
+            self.res.exchange = apply_exchange(self.P, self.codes, ex["plan"])
+            self.mig.reset_competence(self.P)
+            self.ident.reconcile(before_x, self.P.sum(axis=(3, 4, 5)))
         P = self.P
         pop_r = self.region_pop()
         self.econ.step(year, self._d_log_ma, pop_r)
@@ -430,6 +444,7 @@ class Simulation:
         child = stay.sum(axis=3)                                            # (R,2,G)
         child_from_shift = np.einsum("rugk,rug->ruk", dist, shifted.sum(axis=3))
         newborns = child + child_from_shift                                 # (R,2,G)
+        births_id = self.ident.birth_counts(child, shifted.sum(axis=3), dist)   # (R,2,G,NI)
         # record shift matrix by language
         flows = np.einsum("rugk,rug->gk", dist, shifted.sum(axis=3))
         for g in range(NG):
@@ -445,6 +460,7 @@ class Simulation:
         s_m = self.mort.survival(e0m_g, 0)
         surv = np.stack([s_m, s_f], axis=3)                                  # (R,2,G,S,101)
         before = P.sum(axis=(1, 2, 3, 4, 5))
+        before_g = P.sum(axis=(3, 4, 5))
         Pn = np.zeros_like(P)
         Pn[..., 1:100] = P[..., 0:99] * surv[:, :, :, None, :, 0:99]
         Pn[..., 100] = P[..., 99] * surv[:, :, :, None, :, 99] + P[..., 100] * surv[:, :, :, None, :, 100]
@@ -457,13 +473,16 @@ class Simulation:
         births_r = newborns.sum(axis=(1, 2))
         deaths_r = before + births_r - Pn.sum(axis=(1, 2, 3, 4, 5))
         infant_deaths = (newborns * pm * (1 - sb_m) + newborns * (1 - pm) * (1 - sb_f)).sum(axis=(1, 2))
+        self.ident.vital(Pn[..., 1:].sum(axis=(3, 4, 5)), before_g, births_id, Pn[..., 0].sum(axis=(3, 4)))
         self.P = P = Pn
         self.mig.reset_competence(P)
         # ---- horizontal language processes
         before_l = self._lang_ru(P.sum(axis=(3, 4, 5)))
-        self.lang.horizontal(year, P, self.econ.enrollment, M, ma_norm)
+        hz = self.lang.horizontal(year, P, self.econ.enrollment, M, ma_norm)
+        self.ident.switch(hz["flows"])
         shift_net += self._lang_ru(P.sum(axis=(3, 4, 5))) - before_l
         # ---- migration
+        before_m = P.sum(axis=(3, 4, 5))
         ur = self.mig.urbanisation(P, self.econ.urban_target(), year, self.t_reg)
         x_lang = self.lang.competence_shares(P)
         settle = p["migration"].get("settlement")
@@ -472,6 +491,9 @@ class Simulation:
         intl = self.mig.international(P, year, self.econ.y_nat, self.econ.y_frontier, self.econ.region_income())
         self.mig.reset_competence(P)
         np.maximum(P, 0.0, out=P)
+        self.ident.reconcile(before_m, P.sum(axis=(3, 4, 5)))
+        # ---- national identity: nation-building and the pull of the state nation
+        self.ident.drift(M, self.lang.pressure(year))
         # ---- vital-rate diagnostics
         women_tot = P[:, :, :, :, 1, 15:50].sum(axis=3)                      # (R,2,G,35)
         w_c = np.zeros((R, 2, NC, 35))
@@ -500,6 +522,7 @@ class Simulation:
         res.rural_urban.append(ur["rural_urban"])
         res.shifts.append(self._shift_acc.copy())
         res.shift_net.append(shift_net.astype(np.float32))
+        res.identity.append(self.ident.by_region().astype(np.float32))
         self._shift_acc[:] = 0
         res.econ.append({"y_nat": self.econ.y_nat, "y_frontier": self.econ.y_frontier,
                          "vehicles_per_1000": self.econ.vehicles_per_1000,
@@ -526,8 +549,11 @@ class Simulation:
         np.add.at(pyr, self.group_lang, by_g)
         self.res.pyramids[year] = pyr
         rugb = P.sum(axis=(4, 5))
-        for regime in ["latent", "polish_1931", "imperial_1897", "lithuanian_1923", "modern_selfid"]:
+        for regime in LANGUAGE_REGIMES:
             self.res.census[(regime, year)] = census_view(rugb, regime, self.codes)
+        for regime in IDENTITY_REGIMES:      # nationality censuses record identity
+            self.res.census[(regime, year)] = identity_census(self.ident.I, regime, self.codes, CENSUS_CATEGORIES)
+        self.res.identity_lang[year] = self.ident.by_language().astype(np.float32)
         self.res.network_snapshots[year] = self.net.snapshot()
 
     def run(self, verbose: bool = False) -> Results:

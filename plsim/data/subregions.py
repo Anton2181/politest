@@ -9,6 +9,13 @@ Voronoi approximation of the county borders.
 Sub-region codes are ``PARENT.CHILD``.  Settings given for the parent apply
 to the children unless overridden (``params.region_lookup``).
 
+Real county borders.  When ``data/powiaty_1931.geojson`` exists (polygon
+features with a ``plsim_code`` property naming the county, e.g. digitised
+from the MPIDR Population History GIS Collection, which holds the 1931
+powiaty), places inside a county's polygon go to that county and the
+Voronoi rule only fills the gaps.  ``tools/match_powiaty.py`` adds the
+codes to a GeoJSON by county name.
+
 Splits
 ------
 ``BIA``  west of the Curzon line (Białystok, Bielsk, Sokółka, Suwałki,
@@ -23,9 +30,37 @@ Splits
 """
 from __future__ import annotations
 
+import json
+import os
+
 import numpy as np
+from matplotlib.path import Path
 
 from .geography import ANCHORS, haversine_matrix
+
+POWIAT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "powiaty_1931.geojson")
+_POLYS: dict | None = None
+
+
+def county_polygons() -> dict:
+    """{county code: [[outer ring, hole, ...], ...]} as matplotlib Paths from
+    ``POWIAT_FILE``; {} when the file is absent."""
+    global _POLYS
+    if _POLYS is None:
+        _POLYS = {}
+        if os.path.exists(POWIAT_FILE):
+            with open(POWIAT_FILE, encoding="utf-8") as fh:
+                gj = json.load(fh)
+            for f in gj.get("features", []):
+                code = (f.get("properties") or {}).get("plsim_code")
+                geom = f.get("geometry") or {}
+                if not code:
+                    continue
+                polys = [geom["coordinates"]] if geom.get("type") == "Polygon" else \
+                    geom.get("coordinates", []) if geom.get("type") == "MultiPolygon" else []
+                for poly in polys:
+                    _POLYS.setdefault(code, []).append([Path(np.asarray(r, float)[:, :2]) for r in poly])
+    return _POLYS
 
 SPLITS: dict[str, dict] = {
     "BIA": {"default": "BIA.W", "BIA.E": ["Grodno", "Wołkowysk"]},
@@ -110,6 +145,18 @@ def assign(parent: str, lat, lon, child_codes=None) -> np.ndarray:
     """Sub-region code of each place (nearest seat; weighted by county area
     when the county table provides areas)."""
     anc = seat_table(parent, child_codes)
-    D = haversine_matrix(np.atleast_1d(np.asarray(lat, float)), np.atleast_1d(np.asarray(lon, float)),
-                         np.array([a[0] for a in anc]), np.array([a[1] for a in anc]))
-    return np.array([anc[k][2] for k in D.argmin(axis=1)])
+    lat, lon = np.atleast_1d(np.asarray(lat, float)), np.atleast_1d(np.asarray(lon, float))
+    D = haversine_matrix(lat, lon, np.array([a[0] for a in anc]), np.array([a[1] for a in anc]))
+    out = np.array([anc[k][2] for k in D.argmin(axis=1)], dtype=object)
+    polys = county_polygons()
+    if polys:
+        pts = np.column_stack([lon, lat])
+        for code in dict.fromkeys(a[2] for a in anc):
+            inside = np.zeros(len(pts), dtype=bool)
+            for rings in polys.get(code, []):
+                m = rings[0].contains_points(pts)
+                for hole in rings[1:]:
+                    m &= ~hole.contains_points(pts)
+                inside |= m
+            out[inside] = code
+    return out.astype(str)

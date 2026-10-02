@@ -354,7 +354,10 @@ class Downscaler:
         frame_years = list(frame_years) if frame_years is not None else list(self.years)
         C = self.initial_state()
         cells, towns, yrs = [], [], []
+        last = max(frame_years) if frame_years else None
         for t, year in enumerate(self.years):
+            if last is not None and year > last:
+                break
             if t > 0:
                 if self.WT is None or (year - self.years[0]) % 5 == 0:
                     self.WT = self._town_kernel(self.town_pop[t - 1])

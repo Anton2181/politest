@@ -60,6 +60,33 @@ NB4 = ((-1, 0), (0, 1), (1, 0), (0, -1))
 RING = ((-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1))   # N, NE, E ... NW
 
 
+# The historical Curzon line: the Allied declaration of 8 December 1919 and
+# Curzon's note of 11 July 1920, with "line A" in Eastern Galicia (Lwów on
+# the other side; "line B" would have given Lwów and Drohobych to Poland).
+# Digitised approximately (to about 10 km) from its description, north to
+# south: the eastern and northern boundary of the Suwałki district from the
+# East Prussian border to the Niemen, the Niemen past Grodno, the Łosośna to
+# its source, south-west past Jałówka and east of Hajnówka to the Bug at
+# Niemirów, the Bug upstream past Brest, Włodawa, Dorohusk and Uściług to
+# Kryłów, then west of Rawa Ruska and east of Przemyśl to the Carpathians.
+# (lat, lon), south to north.
+HISTORICAL_LINE = np.array([
+    (49.00, 22.86), (49.30, 22.85), (49.55, 22.92), (49.78, 22.97), (50.00, 23.15), (50.24, 23.45),
+    (50.45, 23.80), (50.68, 24.07), (50.86, 24.15), (51.02, 24.02), (51.17, 23.82), (51.40, 23.65),
+    (51.55, 23.55), (51.80, 23.60), (52.08, 23.62), (52.20, 23.38), (52.36, 23.12), (52.55, 23.45),
+    (52.74, 23.70), (53.02, 23.92), (53.35, 23.98), (53.66, 23.78), (53.85, 23.90), (54.00, 23.97),
+    (54.18, 23.50), (54.33, 23.05), (54.38, 22.78)])
+# closes the Polish (west) side around East Prussia, the Baltic and the west
+_HIST_CLOSE = np.array([(54.38, 19.6), (56.5, 19.6), (56.5, 10.0), (47.0, 10.0), (47.0, 22.86)])
+
+
+def historical_side(lat, lon) -> np.ndarray:
+    """True for points west of (on the Polish side of) the historical line."""
+    from matplotlib.path import Path
+    poly = np.vstack([HISTORICAL_LINE, _HIST_CLOSE])[:, ::-1]           # (lon, lat)
+    return Path(poly).contains_points(np.column_stack([np.asarray(lon, float), np.asarray(lat, float)]))
+
+
 def excluded_share(res, year: int) -> np.ndarray:
     """(R, NL): share of each language's speakers in each region who are left
     out of the count (all speakers of the excluded languages; Jews of any
@@ -291,6 +318,7 @@ def lines_for(sr, res, years) -> list[dict]:
     each language's speakers, region by region)."""
     g = sr.grid
     pl = LANG_INDEX["pl"]
+    w = historical_side(g.lat, g.lon)
     out = []
     for y in years:
         X = sr.display(sr.frame(y))                     # (cells, languages), persons
@@ -300,17 +328,24 @@ def lines_for(sr, res, years) -> list[dict]:
         s = split(g.lat, g.lon, poles, people, g.dlat, g.dlon)
         s["year"] = int(y)
         s["excluded"] = float(X.sum() - people.sum())
+        # the same count on either side of the historical line
+        s["hist_west_poles"] = float(poles[w].sum())
+        s["hist_west_others"] = float(people[w].sum() - poles[w].sum())
+        s["hist_east_poles"] = float(poles[~w].sum())
+        s["hist_east_others"] = float(people[~w].sum() - poles[~w].sum())
         out.append(s)
     return out
 
 
-FIELDS = ["year", "poles", "people", "excluded", "west", "west_poles", "west_others", "east_poles", "east_others"]
+FIELDS = ["year", "poles", "people", "excluded", "west", "west_poles", "west_others", "east_poles", "east_others",
+          "hist_west_poles", "hist_west_others", "hist_east_poles", "hist_east_others"]
 
 
 def write_csv(lines: list[dict], path: str) -> str:
     """One row per year: counted persons on each side of the line ("west" is
     the Polish side), the persons not counted, and the line (polylines of
-    lon,lat points separated by " | ")."""
+    lon,lat points separated by " | "). The ``hist_`` columns count the same
+    people on either side of the historical Curzon line."""
     import csv
     import os
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
@@ -321,3 +356,42 @@ def write_csv(lines: list[dict], path: str) -> str:
             w.writerow([s["year"]] + [round(s[k]) for k in FIELDS[1:]]
                        + [" | ".join(" ".join(f"{x:.3f},{y:.3f}" for x, y in ln) for ln in s["lines"])])
     return path
+
+
+def exchange_plan(sr, res, year: int) -> dict:
+    """Who moves in a population exchange along the line of ``year``
+    (``plsim.exchange``): for each county, the share of its Poles on the
+    other side and, by language, the share of its counted non-Poles on the
+    Polish side."""
+    g = sr.grid
+    pl = LANG_INDEX["pl"]
+    s = lines_for(sr, res, [year])[0]
+    west = s["polish_side"]
+    X = sr.display(sr.frame(year))
+    keep = 1.0 - excluded_share(res, year)[g.region]
+    C = X * keep
+    codes = list(sr.region_codes)
+    east_poles, west_others = {}, {}
+    from .data.languages import LANGUAGES
+    for r, code in enumerate(codes):
+        m = g.region == r
+        if not m.any():
+            continue
+        tot = C[m].sum(axis=0)
+        if tot[pl] > 0:
+            f = float(C[m & ~west, pl].sum() / tot[pl])
+            if f > 1e-4:
+                east_poles[code] = round(f, 5)
+        d = {}
+        for l in LANGUAGES:
+            k = LANG_INDEX[l.code]
+            if k == pl or l.code in EXCLUDED_LANGS or tot[k] <= 0:
+                continue
+            f = float(C[m & west, k].sum() / tot[k])
+            if f > 1e-4:
+                d[l.code] = round(f, 5)
+        if d:
+            west_others[code] = d
+    return {"year": int(year), "east_poles": east_poles, "west_others": west_others,
+            "lines": [[[round(float(x), 3), round(float(y), 3)] for x, y in ln] for ln in s["lines"]],
+            "counts": {k: round(s[k]) for k in FIELDS[1:]}}

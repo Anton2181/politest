@@ -30,7 +30,10 @@ SCENARIO_NOTES = {
     "wakar_poland_belarus": "Wakar's Poland-Belarus: Wakar's Poland together with all of Soviet Belarus; Polish and "
                             "Belarusian co-official",
     "no_official_language": "Poland with no official language (all languages equal); Lithuania as in the baseline",
+    "curzon_exchange": "Baseline with an equal population exchange in 1946 along that year's computed Curzon line",
 }
+ID_NAMES = {"pl": "Polish", "uk": "Ukrainian", "be": "Belarusian", "lt": "Lithuanian", "jw": "Jewish",
+            "de": "German", "loc": "Local ('tutejszy')"}
 
 CSS = """
 /* Layout: one reading column for prose, a wider column for figure plates and tables. */
@@ -127,6 +130,141 @@ def _read_csv(path):
         return list(csv.reader(fh))
 
 
+def _csv_or_none(path):
+    return _read_csv(path) if os.path.exists(path) else None
+
+
+def _extra_sections(outroot: str, end: int) -> dict:
+    """HTML of the sections on calibration, identity, ensemble certainty and the
+    Curzon line (empty strings where the inputs are missing)."""
+    out = {}
+    mapdir, caldir = os.path.join(outroot, "maps"), os.path.join(outroot, "calibration")
+    # calibration
+    tg = _csv_or_none(os.path.join(caldir, "targets.csv"))
+    pr = _csv_or_none(os.path.join(caldir, "parameters.csv"))
+    if tg and pr:
+        trows = [[r[1], r[2], r[3], r[5], r[6], r[7], r[8]] for r in tg[1:]]
+        ttab = _table(["Case", "Measure", "Observed", "Before", "I", "Now", "I"], trows,
+                      "History-matching targets: observed value, the model before and after calibration, and the "
+                      "implausibility I (distance in standard deviations of observation and model error; > 3 rules out)")
+        prows = [[r[0], r[1], f"{r[2]}-{r[4]}", r[5], "yes" if r[6] == "1" else "no (kept)"] for r in pr[1:]]
+        ptab = _table(["Parameter", "Before", "Not ruled out (5-95 %)", "Now", "Constrained"], prows,
+                      "Language-shift parameters before and after history matching")
+        out["calibration"] = f"""
+<section>
+  <h2>Calibrating language shift on history</h2>
+  <p class="prose">The model starts in 1931 and cannot be run backwards. The obvious Polish comparisons also measure
+  something else. Between the 1921 nationality census and the 1931 mother-tongue census the question changed. Between
+  1897 and 1931 came the 1915 evacuations, two wars and another change of question. So the shift rates were matched to
+  cases where a minority language was counted the same way at both ends:</p>
+  <ul class="prose">
+    <li><b>Masurian districts, 1890-1910:</b> a same-faith vernacular under a modern state language, like the Catholic
+    Belarusian speakers.</li>
+    <li><b>Carinthian Slovenes, 1880-1910:</b> a standardised same-faith national language, like the Lithuanians.</li>
+    <li><b>Wales, 1921-1951:</b> Welsh speakers and Welsh monolinguals.</li>
+    <li><b>Prussian Poles, 1871-1910:</b> a different-faith nation with strong institutions; almost no shift.</li>
+    <li><b>Second-generation immigrants:</b> from US census evidence.</li>
+  </ul>
+  <p class="prose">4,000 parameter draws in two waves were run through the model's own language code on stylised
+  populations. 279 were not ruled out by any case. The adopted values are the medians of that set:</p>
+  <ul class="prose">
+    <li>Same-faith national minorities shift about three times faster than assumed before.</li>
+    <li>Catholic Belarusian speakers shift a little slower.</li>
+    <li>A new diaspora term makes scattered speakers and migrants' children shift within two or three generations.</li>
+    <li>Schools teach the state language faster.</li>
+  </ul>
+  <p class="prose">The ensemble draws its language parameters jointly from the not-ruled-out set.</p>
+  {_fig(caldir, "history_matching.png", "History matching", "Grey: all draws; blue: draws not ruled out; red: previous value; green: adopted.")}
+  <div class="two">{ttab}{ptab}</div>
+  <p class="note prose">The model's frequency effect is weaker than in Masuria, where the share fell fastest where it was
+  smallest (Oletzko). German settlement and the Masurians' own departure for the Ruhr concentrated there too, and are not
+  in the stylised case.</p>
+</section>"""
+    # identity
+    idt = _csv_or_none(os.path.join(outroot, "identity_summary.csv"))
+    if idt:
+        bl = [r for r in idt[1:] if r[0] == "baseline"]           # start and end rows
+        facts = ""
+        if len(bl) == 2 and bl[0][10]:
+            s0, s1 = bl
+            facts = (f" In the baseline, Polish is the home language of {s1[9]} % in {s1[1]} but the identity of {s1[2]} %: "
+                     f"many who switch to Polish keep a Ukrainian, Belarusian or Jewish identity. Jewish identity "
+                     f"({s0[6]} -> {s1[6]} %) outlasts Yiddish, and 'local' identities give way to Belarusian and "
+                     f"Ukrainian ({s0[8]} -> {s1[8]} % local). In the Lithuanian member, with Polish co-official, the pull "
+                     f"of the Lithuanian state on identity is weak: Polish identity ({s0[11]} -> {s1[11]} thousand) falls "
+                     f"about as fast as Polish speech ({s0[10]} -> {s1[10]} thousand speakers).")
+        rows = []
+        for r in idt[1:]:
+            rows.append([r[0], r[1]] + r[2:9] + [r[9]] + ([f"{r[10]} / {r[11]}"] if r[10] else ["-"]))
+        itab = _table(["Scenario", "Year"] + [ID_NAMES[k] for k in ["pl", "uk", "be", "lt", "jw", "de", "loc"]]
+                      + ["Polish at home", "Lithuania: Polish speakers / Polish identity (k)"], rows,
+                      "National identity (% of residents) against home language, one seeded run per scenario")
+        out["identity"] = f"""
+<section>
+  <h2>National identity, apart from language</h2>
+  <p class="prose">Identity is tracked separately from home language. Catholic Belarusian speakers mostly call
+  themselves Poles, Polesian villagers "local", Polish-speaking Jews Jews. A language switcher keeps the old identity
+  four times in ten. "Local" identities turn national as schools and newspapers arrive. The state nation pulls slowly,
+  and much more slowly when identity and home language agree. Nationality censuses (1921, 1923, today) read identity;
+  mother-tongue censuses read language.{facts}</p>
+  {_fig(mapdir, "map_identity.png", "Identity map", "Top: most common home language of each 3.5 km cell. Bottom: most common national identity of each county.")}
+  {itab}
+</section>"""
+    # ensemble certainty
+    if os.path.exists(os.path.join(mapdir, "map_uncertainty.png")):
+        out["uncertainty"] = f"""
+<section>
+  <h2>How certain are the maps?</h2>
+  <p class="prose">Every member of the baseline ensemble was downscaled to the 3.5 km grid. The left maps show the
+  language most likely to lead each cell, paler where the runs disagree. The others give the share of runs in which
+  Belarusian, Ukrainian or Lithuanian still leads. About one cell in twenty has a leader that fewer than 80 % of the
+  runs agree on. They lie on two frontiers: the Belarusian-Polish transition in the north-east, where by 2032 Belarusian
+  keeps its lead only in parts of Nowogródek and the eastern Wilno lands and in only some runs, and the mixed Polish-Ukrainian
+  belt of western Galicia between the San and Lwów. In 1982 the Polesian marshes are a third: whether West Polesian or
+  Polish leads there depends on the run. Lithuanian leads the same cells in every run.</p>
+  {_fig(mapdir, "map_uncertainty.png", "Ensemble certainty", "Ensemble certainty, 1982 and 2032.")}
+</section>"""
+    # Curzon line
+    cz = _csv_or_none(os.path.join(mapdir, "baseline_curzon.csv"))
+    ex = _csv_or_none(os.path.join(outroot, "exchange_summary.csv"))
+    if cz and "hist_west_others" in cz[0]:
+        h = cz[0]
+        ix = {k: h.index(k) for k in h if k != "line_lon_lat"}
+        crows = []
+        for r in cz[1:]:
+            if int(r[0]) not in (1932, 1950, 1970, 1990, 2010, end):
+                continue
+            M = lambda k: f"{float(r[ix[k]]) / 1e6:.2f}"  # noqa: E731
+            crows.append([r[0], M("west_others"), M("east_poles"), M("hist_west_others"), M("hist_east_poles"),
+                          M("hist_east_others")])
+        ctab = _table(["Year", "Computed line: non-Poles west (M)", "Poles east (M)", "1919-20 line: non-Poles west (M)",
+                       "Poles east (M)", "non-Poles east (M)"], crows,
+                      "Baseline: people on the 'wrong' side of the computed equal-exchange line and of the historical "
+                      "Curzon line (Kashubians, Wymysorys speakers, Germans and Jews not counted)")
+        etab = ""
+        if ex and len(ex) > 1:
+            erows = [[r[2], LANG_NAMES.get(r[3], r[3]), f"{int(float(r[4])):,}"] for r in ex[1:]]
+            etab = _table(["Moves", "Home language", "Persons"], erows,
+                          f"Population exchange of 1 January {ex[1][1]} along the computed line (scenario curzon_exchange)")
+        out["curzon"] = f"""
+<section>
+  <h2>The Curzon line: computed, historical, and an exchange</h2>
+  <p class="prose">The equal-exchange line splits the state so that as many non-Poles stay on its Polish side as Poles
+  on the other side, with the most Poles on the Polish side. It follows the modelled population cell by cell. The
+  historical line of 1919-20 followed the ethnographic maps of its day, with "line A" in Galicia. The table counts the
+  same people on the wrong side of each.</p>
+  {_fig(mapdir, "map_curzon.png", "Curzon line", "The computed equal-exchange line in 1932, 1982 and 2032.")}
+  {ctab}
+  <p class="prose">The scenario <b>curzon_exchange</b> carries out the exchange on 1 January 1946. Every Pole beyond that
+  year's line moves to the Polish side, and every counted non-Pole on the Polish side moves to the other side. Each
+  takes the place of someone who left, weighted towards counties of their own language. The economy and policy are
+  untouched.</p>
+  {_fig(mapdir, "curzon_exchange_before_after.png", "Exchange", "Most widely spoken home language before and after the exchange.")}
+  {etab}
+</section>"""
+    return out
+
+
 def build_page(outroot: str, standalone: bool = True) -> str:
     figdir = os.path.join(outroot, "figures")
     nat = pd.read_csv(os.path.join(outroot, "ensemble_baseline", "ensemble_national.csv"))
@@ -201,6 +339,8 @@ def build_page(outroot: str, standalone: bool = True) -> str:
     ntab = _table(["Opens", "New rail link", "km", "Benefit-cost"], nrows, "New lines chosen by the appraisal model")
 
     F = lambda n, alt, cap: _fig(figdir, n, alt, cap)  # noqa: E731
+    X = _extra_sections(outroot, end)
+    n_scen = len(ss) - 1
     body = f"""
 <div class="wrap">
 <header class="mast">
@@ -208,8 +348,8 @@ def build_page(outroot: str, standalone: bool = True) -> str:
   <h1>Poland-Lithuania without the Second World War</h1>
   <p class="lede prose">The interwar Polish state, in federal union with Lithuania, simulated for a century
   with no war: births, deaths and migration, the languages people speak at home, and the rail and road networks.</p>
-  <p class="meta">plsim 1.0 · 23 regions × urban/rural × 43 community-language groups × single years of age ·
-  {n_members}-member Monte-Carlo ensemble · 12 scenarios</p>
+  <p class="meta">plsim 1.0 · about 270 counties × urban/rural × 43 community-language groups × single years of age
+  · national identity · {n_members}-member Monte-Carlo ensemble · {n_scen} scenarios</p>
 </header>
 
 <div class="tiles">{tile_html}</div>
@@ -238,6 +378,9 @@ def build_page(outroot: str, standalone: bool = True) -> str:
   {F("region_languages.png", "Languages by region", "Home language by region, 1932 and 2032.")}
   {F("endangered.png", "Minority and endangered languages", "Home speakers on a log scale, ensemble median with 50 % and 90 % bands.")}
 </section>
+{X.get("calibration", "")}
+{X.get("identity", "")}
+{X.get("uncertainty", "")}
 
 <section>
   <h2>What the censuses would have said</h2>
@@ -246,9 +389,10 @@ def build_page(outroot: str, standalone: bool = True) -> str:
   The model therefore tracks what people speak at home. A separate observation layer shows what a 1931-type Polish
   census, the 1897 imperial Russian census or a modern self-identification census would have printed.
   The religion-corrected and 1897-anchored starting points both reproduce the printed 1931 figures once the
-  census's recording habits are applied.</p>
+  census's recording habits are applied. Nationality censuses (1921-type and modern self-identification) read
+  the modelled national identity instead.</p>
   <div class="two">
-  {F("census_regimes_1932.png", "Census regimes 1932", "The 1932 population under four recording regimes.")}
+  {F("census_regimes_1932.png", "Census regimes 1932", "The 1932 population under five recording regimes.")}
   {F("census_regimes_2032.png", "Census regimes 2032", "The 2032 population under the same regimes.")}
   </div>
   {ctab}
@@ -261,9 +405,10 @@ def build_page(outroot: str, standalone: bool = True) -> str:
   {F("scenario_languages.png", "Language shares by scenario", "Share of each language in 2032 by scenario; baseline highlighted.")}
   <div class="two">
   {F("scenario_population.png", "Population by scenario", "Population of the Polish voivodeships by scenario.")}
-  {F("lithuania_poles.png", "Polish speakers in Lithuania", "The Lauda question: Polish home speakers in the Lithuanian units. Federal bilingualism keeps most of them; forced Lithuanisation removes two thirds; a Polonising union spreads Polish.")}
+  {F("lithuania_poles.png", "Polish speakers in Lithuania", "The Lauda question: Polish home speakers in the Lithuanian units by scenario.")}
   </div>
 </section>
+{X.get("curzon", "")}
 
 <section>
   <h2>Migration and regional development</h2>
@@ -278,6 +423,9 @@ def build_page(outroot: str, standalone: bool = True) -> str:
   <h2>Railways and roads</h2>
   <p class="prose">Each year the network is appraised pair by pair: travel-time savings for gravity flows between
   about 170 towns, plus local trips for road surfacing. Projects are built under a budget tied to GDP.
+  Expressways and motorways count their running costs and only part of the local traffic, which stays on the old
+  road. This is calibrated so that the union ends with about 20 km of them per 1000 km², close to Czechia and
+  Hungary; earlier versions built more than twice that.
   Historical works (the Coal Trunk Line, Warszawa-Radom, the Samogitian railway) open on their real dates.
   Projects still unfinished in 1939 open in the early 1940s: the Wilno-Gdynia shortcut, Dębica-Jasło and the COP
   Łódź-Dębica trunk.</p>

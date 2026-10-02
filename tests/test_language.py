@@ -1,7 +1,7 @@
 import numpy as np
 
 from plsim.data.languages import GROUP_INDEX, GROUPS
-from plsim.language import REGIMES, census_mapping
+from plsim.language import LANGUAGE_REGIMES, REGIMES, census_mapping
 from plsim.model import Simulation
 from plsim.params import load_scenario
 
@@ -42,8 +42,15 @@ def test_horizontal_conserves_population():
 
 
 def test_census_mappings_are_distributions():
-    for regime in REGIMES:
+    from plsim.identity import IDENTITIES, IDENTITY_REGIMES, identity_mapping
+    for regime in LANGUAGE_REGIMES:
         for (c, l) in GROUPS:
             for b in (0, 1):
                 d = census_mapping(regime, c, l, b, 0, "WIL")
                 assert abs(sum(d.values()) - 1) < 1e-9
+    for regime in IDENTITY_REGIMES:              # nationality censuses read identity
+        for ident in IDENTITIES:
+            for code in ("WIL", "LT_NEA"):
+                d = identity_mapping(regime, ident, code)
+                assert abs(sum(d.values()) - 1) < 1e-9
+    assert set(REGIMES) == set(LANGUAGE_REGIMES) | set(IDENTITY_REGIMES)

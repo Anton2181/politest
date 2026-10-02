@@ -6,6 +6,7 @@
     python -m plsim census                        # 1931 census-reconstruction consistency
     python -m plsim report -n 24                  # everything + outputs/report.html
     python -m plsim maps                          # spatial layer: maps, GIFs, outputs/atlas/
+    python -m plsim calibrate                     # history matching of the language-shift rates
 """
 from __future__ import annotations
 
@@ -22,8 +23,8 @@ from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 
-from .data.languages import LANG_INDEX
-from .ensemble import run_ensemble, save
+from .data.languages import GROUPS, LANG_INDEX
+from .ensemble import CELL_YEARS, run_ensemble, save
 from .export import export_ensemble, export_run
 from .language import CENSUS_CATEGORIES, census_view
 from .model import Simulation
@@ -50,14 +51,15 @@ def all_scenarios() -> list[str]:
 
 # modules whose code does not change a run's results (presentation, reporting)
 _NOT_IN_FINGERPRINT = {"cli.py", "maps.py", "webmap.py", "report.py", "publish.py", "export.py", "validate.py",
-                       "ensemble.py", "curzon.py", "__main__.py"}
+                       "ensemble.py", "curzon.py", "calibration.py", "__main__.py"}
 
 
 def _code_fingerprint() -> str:
     h = hashlib.sha1()
     here = os.path.dirname(os.path.abspath(__file__))
     for path in sorted(glob.glob(os.path.join(here, "**", "*.py"), recursive=True)
-                       + glob.glob(os.path.join(here, "data", "*.json"))):
+                       + glob.glob(os.path.join(here, "data", "*.json"))
+                       + glob.glob(os.path.join(here, "data", "*.geojson"))):
         if os.path.basename(path) in _NOT_IN_FINGERPRINT and os.path.dirname(path) == here:
             continue
         with open(path, "rb") as fh:
@@ -65,7 +67,7 @@ def _code_fingerprint() -> str:
     return h.hexdigest()
 
 
-def _run_cached(name: str, p: dict, cache_dir: str | None):
+def _run_cached(name: str, p: dict, cache_dir: str | None, write: bool = True):
     """Run a scenario, or load the run from ``cache_dir`` when the same
     parameters were run by the same code (``maps`` and ``report`` share runs)."""
     key = hashlib.sha1((json.dumps(p, sort_keys=True, default=str) + _code_fingerprint()).encode()).hexdigest()
@@ -76,11 +78,28 @@ def _run_cached(name: str, p: dict, cache_dir: str | None):
         if k == key:
             return res, True
     res = Simulation(p).run()
-    if path:
+    if path and write:
         os.makedirs(cache_dir, exist_ok=True)
         with open(path, "wb") as fh:
             pickle.dump((key, res), fh, protocol=pickle.HIGHEST_PROTOCOL)
     return res, False
+
+
+def with_exchange_plan(p: dict, outroot: str) -> dict:
+    """Scenarios with a ``population_exchange``: compute who moves from the
+    equal-exchange line of the exchange year in the run of ``line_from``
+    (identical to this scenario's run up to that year)."""
+    ex = p.get("population_exchange")
+    if not ex or ex.get("plan"):
+        return p
+    base = load_scenario(ex["line_from"])
+    base["snapshot_years"] = p["snapshot_years"]
+    if p.get("seed") != base.get("seed"):
+        base["seed"] = p["seed"]
+    res, _ = _run_cached(ex["line_from"], base, os.path.join(outroot, ".runcache"), write=False)
+    sr = downscale(res, frame_years=[ex["year"]])
+    p["population_exchange"] = dict(ex, plan=curzon.exchange_plan(sr, res, ex["year"]))
+    return p
 
 
 def _pool(workers: int | None, n: int):
@@ -98,6 +117,7 @@ def _report_job(args):
         p["seed"] = seed
     p["snapshot_years"] = sorted(set(p["snapshot_years"]) | set(webmap.FRAMES))    # same runs as the maps
     t = time.time()
+    p = with_exchange_plan(p, outroot)
     res, cached = _run_cached(name, p, os.path.join(outroot, ".runcache"))
     export_run(res, os.path.join(outroot, "runs", name))
     return res, f"  {name}: {time.time() - t:.1f}s" + (" (cached run)" if cached else "")
@@ -122,6 +142,7 @@ SCENARIO_TITLES = {
     "wakar_poland": "Wakar's Poland",
     "wakar_poland_belarus": "Wakar's Poland-Belarus",
     "no_official_language": "No official language",
+    "curzon_exchange": "Curzon-line population exchange",
 }
 
 
@@ -132,9 +153,13 @@ def _map_job(args):
     mapdir, atlasdir = os.path.join(outroot, "maps"), os.path.join(outroot, "atlas")
     p = load_scenario(name)
     p["snapshot_years"] = sorted(set(p["snapshot_years"]) | set(webmap.FRAMES))   # network frames
+    p = with_exchange_plan(p, outroot)
     res, cached = _run_cached(name, p, os.path.join(outroot, ".runcache"))
     # the baseline animations need every year; the others only the atlas frames
-    sr = downscale(res, frame_years=None if name == "baseline" else webmap.FRAMES)
+    # (and the exchange year, for the before/after map)
+    ex_year = (p.get("population_exchange") or {}).get("year")
+    frames = sorted(set(webmap.FRAMES) | ({ex_year, ex_year + 1} if ex_year else set()))
+    sr = downscale(res, frame_years=None if name == "baseline" else frames)
     full = webmap.full_grid()
     title = SCENARIO_TITLES.get(name, name)
     if name == "baseline":
@@ -146,11 +171,36 @@ def _map_job(args):
     curzon.write_csv(lines, os.path.join(mapdir, f"{name}_curzon.csv"))
     if name == "baseline":
         mp.fig_curzon(sr, lines, os.path.join(mapdir, "map_curzon.png"), title="Equal-exchange Curzon line, baseline")
-    webmap.write_data(atlasdir, name, webmap.encode_frames(sr, full))
+        mp.fig_identity(sr, res, os.path.join(mapdir, "map_identity.png"),
+                        title="Home language (cells) and national identity (counties), baseline")
+    if name == "curzon_exchange":
+        mp.fig_plurality(sr, os.path.join(mapdir, f"{name}_before_after.png"),
+                         years=(1932, ex_year, ex_year + 1, 1970, 2000, 2032),
+                         title=f"Population exchange on 1 January {ex_year} along that year's equal-exchange line "
+                               f"({ex_year}: before, {ex_year + 1}: after)")
+    # ensemble certainty (baseline): written by ``report`` when it ran the ensemble
+    uncert, unc_meta = b"", None
+    cells_path = os.path.join(outroot, "ensemble_baseline_cells.npz")
+    if name == "baseline" and os.path.exists(cells_path):
+        z = np.load(cells_path)
+        prob = {int(y): z[f"prob_{int(y)}"].astype(np.float32) for y in z["years"]}
+        if all(len(v) == len(sr.grid.lat) for v in prob.values()):
+            uncert = webmap.encode_uncert(prob, sr.grid, full)
+            unc_meta = {"years": sorted(prob), "n": int(z["n"])}
+    blob = webmap.encode_frames(sr, full, ident=webmap.identity_frames(res), uncert=uncert)
+    webmap.write_data(atlasdir, name, blob)
     entry = {"name": name, "title": title, "description": p["meta"]["description"],
              "series": webmap.national_series(res), "towns": webmap.town_series(sr),
              "net": webmap.network_payload(res), "geo": webmap.geometry_payload(res, sr, full),
-             "curzon": webmap.curzon_payload(lines)}
+             "curzon": webmap.curzon_payload(lines), "ident": webmap.identity_series(res)}
+    if unc_meta:
+        entry["uncert"] = unc_meta
+    if getattr(res, "exchange", None):
+        ex = res.exchange
+        entry["exchange"] = {"year": ex["year"], "west": round(ex["to_polish_side"] / 1e3),
+                             "east": round(ex["to_other_side"] / 1e3),
+                             "byLang": {k: round(v / 1e3) for k, v in ex["by_language"].items()},
+                             "lines": ex["lines"]}
     return name, entry, last, f"  {name}: {time.time() - t:.1f}s" + (" (cached run)" if cached else "")
 
 
@@ -224,7 +274,17 @@ def build_report(outroot: str, n_ens: int, scenarios: list[str] | None = None, w
     base = results["baseline"]
     print(f"ensemble (n={n_ens}) for baseline ...")
     t = time.time()
-    ens = run_ensemble(load_scenario("baseline"), n=n_ens, workers=workers)
+    ens = run_ensemble(load_scenario("baseline"), n=n_ens, workers=workers, cells=True)
+    cells = {y: ens.pop(f"cells_{y}") for y in CELL_YEARS if f"cells_{y}" in ens}
+    if cells:
+        # probability maps: in how many runs each language leads each cell
+        prob = {y: mp.plurality_probability(c) for y, c in cells.items()}
+        np.savez_compressed(os.path.join(outroot, "ensemble_baseline_cells.npz"), years=np.array(sorted(prob)),
+                            n=n_ens, **{f"prob_{y}": p.astype(np.float16) for y, p in prob.items()})
+        from .data.geography import build_grid
+        mp.fig_uncertainty(build_grid(base.region_codes), prob, os.path.join(outroot, "maps", "map_uncertainty.png"),
+                           n_ens, title="How sure is the map? The baseline across the ensemble")
+        del cells
     save(ens, os.path.join(outroot, "ensemble_baseline.npz"))
     export_ensemble(ens, os.path.join(outroot, "ensemble_baseline"))
     print(f"  {time.time() - t:.1f}s")
@@ -256,6 +316,7 @@ def build_report(outroot: str, n_ens: int, scenarios: list[str] | None = None, w
             rp.fig_language_area(results[k], F(f"languages_{k}.png"),
                                  f"Home language, scenario '{k}'")
     write_scenario_summary(outroot, results)
+    write_extras(outroot, results)
     write_checks(outroot, base)
     from .publish import write_pages
     write_pages(outroot)
@@ -294,6 +355,50 @@ def write_scenario_summary(outroot, results):
         w.writerow(SUMMARY_HEADER)
         for row in _scenario_rows(results):
             w.writerow([c.replace(",", "") for c in row])
+
+
+ID_SHOW = ["pl", "uk", "be", "lt", "jw", "de", "loc"]
+
+
+def write_extras(outroot, results):
+    """identity_summary.csv (national identity against home language, by
+    scenario) and exchange_summary.csv (scenarios with a population exchange)."""
+    import csv
+    from .identity import ID_INDEX
+    rows = []
+    for n, res in results.items():
+        if not getattr(res, "identity", None):
+            continue
+        lt = np.array([c.startswith("LT") for c in res.region_codes])
+        for label, y in (("start", res.params["start_year"]), ("end", res.years[-1])):
+            I = mp.identity_at(res, y)
+            P = np.asarray(res.pop0 if label == "start" else res.pop[-1])            # (R,2,G)
+            tot = I.sum()
+            pl_speak = sum(P[:, :, g].sum() for g, (_c, l) in enumerate(GROUPS) if l == "pl")
+            row = [n, y] + [f"{I[:, ID_INDEX[k]].sum() / tot * 100:.1f}" for k in ID_SHOW]
+            row.append(f"{pl_speak / tot * 100:.1f}")
+            if lt.any():
+                lt_pl_speak = sum(P[lt][:, :, g].sum() for g, (_c, l) in enumerate(GROUPS) if l == "pl")
+                row += [f"{lt_pl_speak / 1e3:.0f}", f"{I[lt, ID_INDEX['pl']].sum() / 1e3:.0f}"]
+            else:
+                row += ["", ""]
+            rows.append(row)
+    with open(os.path.join(outroot, "identity_summary.csv"), "w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(["scenario", "year"] + [f"identity_{k}_pct" for k in ID_SHOW]
+                   + ["polish_speakers_pct", "lithuania_polish_speakers_k", "lithuania_polish_identity_k"])
+        w.writerows(rows)
+    ex_rows = []
+    for n, res in results.items():
+        ex = getattr(res, "exchange", None)
+        if ex:
+            for lang, v in sorted(ex["by_language"].items(), key=lambda kv: -kv[1]):
+                ex_rows.append([n, ex["year"], "to the other side", lang, round(v)])
+            ex_rows.append([n, ex["year"], "to the Polish side", "pl", round(ex["to_polish_side"])])
+    with open(os.path.join(outroot, "exchange_summary.csv"), "w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(["scenario", "year", "direction", "home_language", "persons"])
+        w.writerows(ex_rows)
 
 
 def write_checks(outroot, base):
@@ -338,6 +443,11 @@ def main(argv=None):
     m.add_argument("--scenarios", nargs="*")
     m.add_argument("--no-gifs", action="store_true")
     m.add_argument("--workers", type=int)
+    k = sub.add_parser("calibrate")
+    k.add_argument("-n", type=int, default=2000, help="draws per wave")
+    k.add_argument("--workers", type=int)
+    k.add_argument("--out", default=os.path.join(ROOT, "outputs"))
+    k.add_argument("--write-nroy", action="store_true", help="replace plsim/data/nroy_language.csv")
     sub.add_parser("list")
     args = ap.parse_args(argv)
     if args.cmd == "run":
@@ -361,6 +471,17 @@ def main(argv=None):
         build_report(args.out, args.n, args.scenarios, args.workers)
     elif args.cmd == "maps":
         build_maps(args.out, args.scenarios, gifs=not args.no_gifs, workers=args.workers)
+    elif args.cmd == "calibrate":
+        from . import calibration as cb
+        hm = cb.history_match(n=args.n, workers=args.workers or os.cpu_count() or 1)
+        outdir = os.path.join(args.out, "calibration")
+        cb.write_outputs(hm, outdir)
+        cb.figure(hm, os.path.join(outdir, "history_matching.png"))
+        with open(os.path.join(outdir, "summary.txt"), "w", encoding="utf-8") as fh:
+            fh.write(cb.summary(hm) + "\n")
+        if args.write_nroy:
+            cb.write_nroy(hm)
+        print(cb.summary(hm))
     elif args.cmd == "list":
         for n in all_scenarios():
             print(n, "-", load_scenario(n)["meta"]["description"])

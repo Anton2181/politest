@@ -207,6 +207,48 @@ could narrow it.
 | Abrams-Strogatz exponent | a ~ 1.31 | A |
 | Spatial shift kernel (maps) | Gaussian neighbourhood; front velocity 0.11 km/y, D = 0.136 km²/y, k = 0.022/y (southern Carinthia, 1 km grid) | A | Prochazka & Vogl 2017, PNAS 114: 4365 |
 
+### History-matching cases (`plsim/calibration.py`)
+
+| Case | Value used | Grade | Source / note |
+|---|---|---|---|
+| Masurian districts 1890 -> 1910 | Polish/Masurian speakers: Johannisburg 78.8 -> 68.0 %, Lyck 66.6 -> 51 %, Neidenburg 75.6 -> 66.6 %, Oletzko 47.7 -> 29.6 % | B | Prussian censuses by Kreis, as quoted in the literature on the Masurians (e.g. the English Wikipedia article "Masurians"); bilingual answers and German settlement add noise (sd 0.042 with model error) |
+| Carinthian Slovenes 1880 -> 1910 | 91,927 (26.4 % of 348,730) -> 74,210-82,212 of 396,200 (sources differ); share ratio 0.75 ± 0.064 | B | Austrian censuses (Umgangssprache, a language-of-use question open to pressure) |
+| Wales 1921 -> 1951 | able to speak Welsh 37.1 -> 28.9 % (aged 3+); Welsh only 6.3 -> 1.7 % of the population | A | Censuses of England and Wales (Vision of Britain); 1901: 49.9 %, Welsh only 15.1 % |
+| Province of Posen 1871 -> 1910 | Polish share stable or rising; shift net of migration ~0 (ratio 0.99 ± 0.021) | B | Prussian censuses; the rise reflects German out-migration, so the target is the absence of shift |
+| Second generation of immigrants | 40 % (Indian) to 76 % (Filipino) of children of immigrants spoke only English at home (1990); 60-70 % of third-generation Hispanics | A | Alba, Logan, Lutz & Stults 2002, *Demography* 39: 467-484; Portes & Rumbaut 2001 |
+| Finland Swedes 1880 -> 1950 | 14.3 % -> 8.6 % | A | not used as a target: most of the fall is lower fertility and emigration to Sweden, which the stylised harness does not represent |
+
+### The historical Curzon line (`curzon.HISTORICAL_LINE`)
+
+The Allied declaration of 8 December 1919 and Curzon's note of 11 July 1920:
+"Grodno, Vapovka [Jałówka], Nemirov, Brest-Litovsk, Dorogusk, Ustilug, east of
+Grubeshov, Krilov, and thence west of Rawa Ruska, east of Przemysl to the
+Carpathians" (Britannica; the English Wikipedia article "Curzon Line"; Oxford
+Public International Law). The northern section follows the declaration: the
+Bug downstream to the Bielsk-Brest district boundary, north-east past
+Hajnówka to the source of the Łosośna, the Łosośna and the Niemen past
+Grodno, then the Suwałki district boundary to East Prussia. Digitised by hand
+from these descriptions (about 10 km); grade C as a line, A as a description.
+
+### Data that could not be obtained here
+
+* **1931 county language tables for the centre and the west.** In the
+  census volumes by voivodeship (*Drugi Powszechny Spis Ludności*,
+  *Statystyka Polski* seria C), digitised in the Kujawsko-Pomorska (kpbc.umk.pl),
+  Mazowiecka (mbc.cyfrowemazowsze.pl) and Wielkopolska (wbc.poznan.pl)
+  digital libraries. Also in the Polish Wikipedia voivodeship articles,
+  which provided the eastern tables through search summaries. The libraries
+  and Wikipedia (and its mirrors) were blocked by the build environment's
+  network policy, and search summaries did not reproduce the central and
+  western tables.
+* **1931 powiat boundaries.** The MPIDR Population History GIS Collection
+  (mosaic.ipums.org / censusmosaic.demog.berkeley.edu; registration) has
+  Poland's 1931 administrative division. It was blocked as well. The only
+  GeoJSON powiat sets on GitHub are modern. The model accepts the file when
+  supplied (`plsim/data/powiaty_1931.geojson`, `tools/match_powiaty.py`).
+* **1926 Soviet census by raion** (for Soviet Belarus below the okrug):
+  in the census volumes and on Demoscope, which was blocked.
+
 ## Geography (maps only)
 
 | Item | Value | Grade | Source / note |
@@ -237,7 +279,7 @@ about each county besides its seat.
 | Nowogródek | 8 | A | population, mother tongue; Orthodox and Roman Catholic for 5 | English Wikipedia, "Belarusians in Poland" (county table). Belarusian, tutejszy and Russian are given as one category, which the model splits by the downscaled pattern |
 | Polesie | 5 A + 4 B | A/B | as Nowogródek where found (Kamień Koszyrski, Kosów, Pińsk, Prużana, Stolin); population only for the rest | ditto |
 | Lublin | 13 B + 5 C | B | population (Biała includes Konstantynów, 174,460) | 1931 administrative tables, rounded |
-| Kraków, Kielce, Łódź, Warsaw, Poznań, Pomorze, Silesia | 136 | C | seat only | the county language tables were not reachable from this environment |
+| Kraków, Kielce, Łódź, Warsaw, Poznań, Pomorze, Silesia | 136 | C | seat only | the county language tables were not reachable from this environment (see "Data that could not be obtained here") |
 | Lithuania (apskritys, 1923) | 22 | C | seat only | ditto; the 1923 census apskritis tables |
 
 How the table enters the model is described in `docs/METHODOLOGY.md` §12.6.

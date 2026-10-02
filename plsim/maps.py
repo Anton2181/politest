@@ -31,6 +31,10 @@ CAT_LABEL = {"pl": "Polish", "uk": "Ukrainian", "yi": "Yiddish", "be": "Belarusi
              "oth": "Other (incl. Russian)"}
 CAT_COLOR = dict(zip(CATS, SLOTS[:8] + [OTHER]))
 CURZON = "#c4007f"          # the Curzon line: magenta, apart from borders and language colours
+# national identity, drawn with the colour of the matching language category
+IDCATS = ["pl", "uk", "jw", "be", "lt", "de", "loc", "reg", "oth"]
+IDCAT_LABEL = {"pl": "Polish", "uk": "Ukrainian", "jw": "Jewish", "be": "Belarusian", "lt": "Lithuanian",
+               "de": "German", "loc": "Local ('tutejszy')", "reg": "Kashubian, Lemko/Rusyn", "oth": "Other (incl. Russian)"}
 REGIONAL = ["csb", "rue", "wym"]
 SEA = "#eef3f6"
 FOREIGN = "#efeee9"
@@ -492,3 +496,106 @@ def write_maps(sr, outdir: str, tag: str = "", gifs: bool = True) -> list[str]:
             fn(sr, p)
             out.append(p)
     return out
+
+
+# ---------------------------------------------------------------------------------
+# National identity and ensemble certainty
+# ---------------------------------------------------------------------------------
+def identity_shares(I: np.ndarray) -> np.ndarray:
+    """(R, NI) identity counts -> (R, 9) shares in IDCATS order."""
+    from .identity import IDENTITIES
+    idx = {k: i for i, k in enumerate(IDENTITIES)}
+    out = np.zeros((len(I), len(IDCATS)))
+    for k, c in enumerate(IDCATS[:7]):
+        out[:, k] = I[:, idx[c]]
+    out[:, 7] = I[:, idx["csb"]] + I[:, idx["rue"]]
+    out[:, 8] = I.sum(axis=1) - out[:, :8].sum(axis=1)
+    return np.clip(out / np.maximum(I.sum(axis=1, keepdims=True), 1e-9), 0, 1)
+
+
+def identity_at(res, year: int) -> np.ndarray:
+    """(R, NI) identity counts at 1 January of ``year``."""
+    if year == res.params["start_year"] and res.identity0 is not None:
+        return np.asarray(res.identity0)
+    return np.asarray(res.identity[res.years.index(year)])
+
+
+def fig_identity(sr, res, path: str, years=(1932, 1982, 2032), title: str = ""):
+    """Most common national identity of each county (identity is tracked by
+    county, not by cell), beside the most common home language."""
+    cv = Canvas(sr.grid)
+    g = sr.grid
+    fig, axs = plt.subplots(2, len(years), figsize=(4.4 * len(years), 10.2))
+    for j, y in enumerate(years):
+        ax = axs[0, j]
+        cv.base(ax, f"Home language, {y}" if j == 0 else str(y))
+        cv.show(ax, plurality_rgba(display_shares(sr.display(sr.frame(y))), cv))
+        cv.overlay(ax, rivers=False)
+        ax = axs[1, j]
+        sh = identity_shares(identity_at(res, y))[g.region]
+        cv.base(ax, f"National identity, {y}" if j == 0 else str(y))
+        cv.show(ax, plurality_rgba(sh, cv))
+        cv.overlay(ax, rivers=False)
+    if title:
+        fig.suptitle(title, x=0.01, ha="left", fontsize=13, fontweight="bold", color=INK)
+    fig.tight_layout(rect=(0, 0.07, 1, 0.96 if title else 1))
+    handles = [Patch(facecolor=CAT_COLOR[c], edgecolor="none",
+                     label=CAT_LABEL[c] if CAT_LABEL[c] == IDCAT_LABEL[i] else f"{CAT_LABEL[c]} / {IDCAT_LABEL[i]}")
+               for c, i in zip(CATS, IDCATS)]
+    fig.legend(handles=handles, loc="lower center", ncol=3, bbox_to_anchor=(0.5, 0.0), fontsize=8.5, frameon=False)
+    _save(fig, path)
+
+
+def plurality_probability(cells: np.ndarray) -> np.ndarray:
+    """(members, Nc, NL) language shares -> (Nc, 9): share of members in
+    which each map category is the most spoken home language of the cell."""
+    out = np.zeros((cells.shape[1], len(CATS)))
+    for S in cells:
+        top = display_shares(S.astype(np.float32)).argmax(axis=1)
+        out[np.arange(len(top)), top] += 1
+    return out / len(cells)
+
+
+def fig_uncertainty(grid, prob: dict, path: str, n: int, title: str = ""):
+    """Ensemble certainty: the most likely leading language of each cell,
+    paler where fewer runs agree; and the probability that Belarusian,
+    Ukrainian or Lithuanian leads."""
+    cv = Canvas(grid)
+    years = sorted(prob)
+    show = ("be", "uk", "lt")
+    fig, axs = plt.subplots(len(years), 1 + len(show), figsize=(4.2 * (1 + len(show)), 4.6 * len(years) + 0.9))
+    axs = np.atleast_2d(axs)
+    fig.subplots_adjust(left=0.01, right=0.95, top=0.93 if title else 0.97, bottom=0.11, wspace=0.04, hspace=0.12)
+    for i, y in enumerate(years):
+        P = prob[y]
+        k = P.argmax(axis=1)
+        p = P.max(axis=1)
+        t = np.clip((p - 0.34) / 0.66, 0.12, 1.0)[:, None]
+        base = np.array([_hex(CAT_COLOR[c]) for c in CATS])[k]
+        rgb = base * t + _hex(SURFACE)[None, :] * (1 - t)
+        ax = axs[i, 0]
+        cv.base(ax, f"Most likely leading language, {y}")
+        cv.show(ax, cv.raster(np.column_stack([rgb, np.ones(len(rgb))]), fill=0.0))
+        cv.overlay(ax, rivers=False)
+        unsure = (p < 0.8).mean()
+        ax.text(0.02, 0.02, f"{unsure * 100:.0f}% of cells: leader in under 80% of runs", transform=ax.transAxes,
+                fontsize=8, color=INK2, path_effects=_halo())
+        for j, c in enumerate(show):
+            ax = axs[i, 1 + j]
+            q = P[:, CATS.index(c)]
+            cv.base(ax, f"P({CAT_LABEL[c]} leads), {y}")
+            img = cv.raster(np.where(q > 0, q, np.nan))
+            im = cv.show(ax, np.ma.masked_invalid(img), cmap=_seq_cmap(CAT_COLOR[c]), vmin=0, vmax=1)
+            cv.overlay(ax, rivers=False, inner_color="#d9d8d2")
+        pos = axs[i, -1].get_position()
+        cax = fig.add_axes([pos.x1 + 0.006, pos.y0 + 0.15 * pos.height, 0.008, 0.7 * pos.height])
+        cb = fig.colorbar(im, cax=cax)
+        cb.ax.tick_params(labelsize=7)
+        cb.set_label("share of runs", fontsize=8)
+    if title:
+        fig.suptitle(title, x=0.01, ha="left", fontsize=13, fontweight="bold", color=INK)
+    _legend_cats(fig, None, y=0.035)
+    fig.text(0.01, 0.008, f"Ensemble of {n} runs of the baseline (parameters drawn from their uncertainty ranges and the "
+             "calibrated set, own random shocks), each downscaled to the 3.5 km grid. Left: paler where fewer runs "
+             "agree on the leading language.", fontsize=8, color=INK2)
+    _save(fig, path)

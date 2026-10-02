@@ -17,3 +17,4 @@ PASS,plausibility,TFR 2000 (1.2-2.2),1.74,1.2 - 2.2
 PASS,plausibility,e0 both sexes 2000 (70-81),74.32,70 - 81
 PASS,plausibility,Urban share 2000 (0.50-0.80),0.59,0.5 - 0.8
 PASS,plausibility,Polish-unit population 2000 (M),47.99,40 - 65
+PASS,plausibility,"Expressways + motorways, last year (km per 1000 km2)",19.37,15 - 35

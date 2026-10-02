@@ -64,6 +64,10 @@ ROAD_FAST = {  # km/h for motor vehicles
     "motorway": [[1931, 95], [1970, 115], [2000, 125]],
 }
 ROAD_SLOW = {"dirt": 5.0, "gravel": 7.0, "paved": 8.5, "express": 8.5, "motorway": 8.5}
+# Limited-access classes: built as new carriageways next to the old road, which
+# keeps most local traffic; only the share ``local_share_limited`` of the
+# farm-to-market (hinterland) benefit is counted for them.
+LIMITED_ACCESS = ("express", "motorway")
 
 # Upgrade paths: (mode, from_class) -> (to_class, cost per km [M 1990 GK$], first year)
 UPGRADES = {
@@ -330,7 +334,10 @@ class Network:
         Local benefit (roads only): farm-to-market and local trips of the
         rural hinterland along the improved link, which inter-town gravity
         flows do not capture (all-weather surfacing was the main gain of
-        interwar and post-war road programmes).
+        interwar and post-war road programmes); for expressways and
+        motorways only the share of local traffic that leaves the old road.
+        Costs: construction plus the present value of operation and
+        maintenance (``om_share`` of the capital cost per year).
         vot: (N,) value of time per hour at nodes; equity: (N,) welfare weights."""
         D = self.D.astype(np.float32)
         np.fill_diagonal(D, 0.0)       # true path lengths (the 0.3 h self-time is for demand only)
@@ -342,6 +349,8 @@ class Network:
         growth = self.p["demand_growth_factor"]
         freight = 1.0 + self.p["freight_uplift"]
         local_rate = piecewise(year, self.p["local_trip_rate"])
+        om = self.p.get("om_share", {})
+        local_limited = self.p.get("local_share_limited", {})
         bcr = np.zeros(len(projects))
         cur_t = self._times
         for k, pr in enumerate(projects):
@@ -352,7 +361,8 @@ class Network:
             if pr.mode == "road" and pr.edge >= 0 and hinterland is not None:
                 dt_edge = max(cur_t[pr.edge] - w_new, 0.0)
                 local = local_rate * (hinterland[a] + hinterland[b]) * 0.5 * dt_edge * \
-                    0.5 * (vot[a] * equity[a] + vot[b] * equity[b])
+                    0.5 * (vot[a] * equity[a] + vot[b] * equity[b]) * \
+                    (local_limited.get(pr.new_class, 0.0) if pr.new_class in LIMITED_ACCESS else 1.0)
             if w_new >= cur - 1e-6 and local <= 0:
                 continue
             benefit = local
@@ -363,7 +373,8 @@ class Network:
                 np.maximum(saving, 0.0, out=saving)
                 induced = np.exp(beta * saving)
                 benefit += float((W * saving * 0.5 * (1 + induced)).sum()) * freight
-            bcr[k] = benefit * annuity * growth / max(pr.cost * 1e6, 1.0)
+            cost = pr.cost * (1 + om.get(pr.new_class, 0.0) * annuity)
+            bcr[k] = benefit * annuity * growth / max(cost * 1e6, 1.0)
         return bcr
 
     def invest(self, year: int, budget: float, vehicles: float, vot: np.ndarray, equity: np.ndarray,

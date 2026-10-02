@@ -259,14 +259,17 @@ def fig_pyramids(res, path: str, years=(1932, 1970, 2000, 2032)):
 
 
 def fig_census_regimes(res, path: str, year: int):
-    """Dot plot: the same population as four census regimes would record it."""
-    regs = ["latent", "polish_1931", "modern_selfid", "imperial_1897"]
-    names = {"latent": "Latent home language", "polish_1931": "As a 1931-type Polish census",
-             "modern_selfid": "Modern self-identification", "imperial_1897": "As the 1897 imperial census"}
-    cats = ["uk", "ruth", "yi", "he", "be", "tut", "lt", "de", "ru", "other"]
+    """Dot plot: the same population as five census regimes would record it
+    (language censuses read home language, nationality censuses identity)."""
+    regs = ["latent", "polish_1931", "imperial_1897", "polish_1921", "modern_selfid"]
+    names = {"latent": "Latent home language", "polish_1931": "As a 1931-type census (mother tongue)",
+             "imperial_1897": "As the 1897 imperial census (native language)",
+             "polish_1921": "As a 1921-type census (nationality)",
+             "modern_selfid": "Modern self-identification (identity)"}
+    cats = ["uk", "ruth", "yi", "he", "jw", "be", "tut", "lt", "de", "ru", "other"]
     cat_label = {"pl": "Polish", "uk": "Ukrainian", "ruth": "'Ruthenian'", "yi": "Yiddish", "he": "Hebrew",
-                 "be": "Belarusian", "tut": "'Local' / Polesian", "lt": "Lithuanian", "de": "German",
-                 "ru": "Russian", "other": "Other"}
+                 "jw": "Jewish (nationality)", "be": "Belarusian", "tut": "'Local' / Polesian", "lt": "Lithuanian",
+                 "de": "German", "ru": "Russian", "other": "Other"}
     vals = {}
     for rg in regs:
         tab = res.census[(rg, year)].sum(axis=0)
@@ -294,7 +297,7 @@ def fig_census_regimes(res, path: str, year: int):
     ax1.set_title("Other categories")
     ax1.set_xlim(0, None)
     ax1.legend(loc="lower right")
-    fig.suptitle(f"The same {year} population as four different censuses would record it", x=0.01, ha="left",
+    fig.suptitle(f"The same {year} population as five different censuses would record it", x=0.01, ha="left",
                  fontsize=12, fontweight="bold")
     fig.tight_layout()
     _save(fig, path)

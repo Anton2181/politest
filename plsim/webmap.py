@@ -7,7 +7,13 @@ serves text but not arbitrary binary):
 * ``shares``: (F, N, 8) uint8, the share x 255 of the first eight map
   categories (``maps.CATS``); "other" is the remainder;
 * ``dens``: (F, N) uint8, ``round(log10(persons/km2) / 4.5 * 254) + 1``,
-  where 0 means no data (cell outside the state in this scenario).
+  where 0 means no data (cell outside the state in this scenario);
+* ``ident``: (F, R, 8) uint8, the share x 255 of the first eight national
+  identity categories (``maps.IDCATS``) in each of the scenario's R regions
+  (identity is tracked by county, not by cell);
+* ``uncert`` (baseline, when an ensemble was run): for each ensemble year,
+  (N,) uint8 the most likely leading map category and (N,) uint8 the share
+  x 250 of runs in which it leads (255 = no data).
 
 N indexes the cells of the full grid, which includes Lithuania, so all
 scenarios share one geometry.  Small series (national language totals,
@@ -25,7 +31,8 @@ import numpy as np
 from .data.geography import BBOX, build_grid, load_base_geography, load_borders
 from .data.languages import LANG_INDEX
 from .data.regions import REGIONS
-from .maps import CAT_COLOR, CAT_LABEL, CATS, LABEL_TOWNS, REGIONAL, display_shares
+from .maps import (CAT_COLOR, CAT_LABEL, CATS, IDCAT_LABEL, IDCATS, LABEL_TOWNS, REGIONAL, display_shares,
+                   identity_at, identity_shares)
 from .spatial import lang_totals
 
 FRAMES = [1932] + list(range(1935, 2031, 5)) + [2032]
@@ -50,7 +57,36 @@ def cell_map(full, grid) -> np.ndarray:
     return np.array([lookup.get((r, c), -1) for r, c in zip(gr, gc)])
 
 
-def encode_frames(sr, full, frames=FRAMES) -> bytes:
+def identity_frames(res, frames=FRAMES) -> np.ndarray:
+    """(F, R, 9) identity shares of each region in IDCATS order."""
+    return np.stack([identity_shares(identity_at(res, y)) for y in frames])
+
+
+def identity_series(res, frames=FRAMES) -> dict:
+    """National identity totals (thousands) per frame, for the legend."""
+    return {"years": list(frames), "cats": [[round(float(v) / 1000, 1) for v in
+                                             (identity_shares(identity_at(res, y)) *
+                                              identity_at(res, y).sum(axis=1, keepdims=True)).sum(axis=0)]
+                                            for y in frames]}
+
+
+def encode_uncert(prob: dict, grid, full) -> bytes:
+    """Most likely leading category and its probability per cell of the full grid."""
+    idx = cell_map(full, grid)
+    ok = idx >= 0
+    N = len(full.lat)
+    out = b""
+    for y in sorted(prob):
+        P = prob[y]
+        top = np.full(N, 255, np.uint8)
+        pr = np.full(N, 255, np.uint8)
+        top[idx[ok]] = P[ok].argmax(axis=1).astype(np.uint8)
+        pr[idx[ok]] = np.round(P[ok].max(axis=1) * 250).astype(np.uint8)
+        out += top.tobytes() + pr.tobytes()
+    return out
+
+
+def encode_frames(sr, full, frames=FRAMES, ident: np.ndarray | None = None, uncert: bytes = b"") -> bytes:
     idx = cell_map(full, sr.grid)
     ok = idx >= 0
     N = len(full.lat)
@@ -63,7 +99,10 @@ def encode_frames(sr, full, frames=FRAMES) -> bytes:
         sh[f, idx[ok]] = np.round(s[ok] * 255).astype(np.uint8)
         q = np.round(np.log10(np.clip(d, 1.0, 10 ** DENS_SCALE)) / DENS_SCALE * 254).astype(int) + 1
         dn[f, idx[ok]] = q[ok].astype(np.uint8)
-    return gzip.compress(sh.tobytes() + dn.tobytes(), compresslevel=9, mtime=0)
+    extra = b""
+    if ident is not None:
+        extra = np.round(ident[:, :, :8] * 255).astype(np.uint8).tobytes()
+    return gzip.compress(sh.tobytes() + dn.tobytes() + extra + uncert, compresslevel=9, mtime=0)
 
 
 def national_series(res) -> dict:
@@ -120,6 +159,10 @@ def legend_payload() -> list:
     return [{"code": c, "label": CAT_LABEL[c], "color": CAT_COLOR[c]} for c in CATS]
 
 
+def identity_legend_payload() -> list:
+    return [{"code": i, "label": IDCAT_LABEL[i], "color": CAT_COLOR[c]} for c, i in zip(CATS, IDCATS)]
+
+
 def write_data(outdir: str, name: str, blob: bytes) -> str:
     os.makedirs(os.path.join(outdir, "data"), exist_ok=True)
     path = os.path.join(outdir, "data", f"{name}.txt")
@@ -141,7 +184,8 @@ def build_atlas(atlasdir: str) -> list[str]:
         base_b64 = fh.read().strip()
     full = full_grid()
     from .data.network import NODES
-    meta = {"frames": FRAMES, "densScale": DENS_SCALE, "cats": legend_payload(), "grid": grid_payload(full),
+    meta = {"frames": FRAMES, "densScale": DENS_SCALE, "cats": legend_payload(), "idcats": identity_legend_payload(),
+            "grid": grid_payload(full),
             "geo": geo_payload(), "scenarios": entries,
             "nodes": [[round(n.lat, 3), round(n.lon, 3)] for n in NODES],
             "rail": RAIL_CLS, "road": ROAD_CLS}
@@ -251,8 +295,12 @@ def curzon_payload(lines: list[dict]) -> dict:
     in thousands, [Poles, counted, Polish side, its Poles, its others, other side's Poles,
     its others, not counted]."""
     keys = ["poles", "people", "west", "west_poles", "west_others", "east_poles", "east_others", "excluded"]
+    hist = ["hist_west_poles", "hist_west_others", "hist_east_poles", "hist_east_others"]
+    from .curzon import HISTORICAL_LINE
     return {"lines": [[[[round(float(x), 3), round(float(y), 3)] for x, y in ln] for ln in s["lines"]] for s in lines],
-            "stats": [[round(s[k] / 1e3) for k in keys] for s in lines]}
+            "stats": [[round(s[k] / 1e3) for k in keys] for s in lines],
+            "hist": [[round(s[k] / 1e3) for k in hist] for s in lines],
+            "histLine": [[round(float(lon), 3), round(float(lat), 3)] for lat, lon in HISTORICAL_LINE]}
 
 
 def nodes_payload(res) -> list:

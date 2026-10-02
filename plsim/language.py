@@ -24,6 +24,11 @@ Unger & Steele (2010, Phil. Trans. R. Soc. B):
   (own-language schooling, church, press); ``Mod`` rises with urbanity,
   modernisation and market access (roads, rails, schools and the army as the
   agents of national integration - Weber 1976, "Peasants into Frenchmen").
+  Where the group's own-language institutions are incomplete (local share
+  below ``completeness_share``) its propensity sigma0 is raised towards a
+  diaspora floor ``sigma_diaspora``: scattered speakers and migrants in
+  cities shift within two or three generations whatever their nationality
+  (Veltman 1983; Alba et al. 2002).
   The target language K is drawn in proportion to A_K among the targets
   admissible for community c (Catholic Belarusian speakers are pulled to
   Polish, Orthodox ones to Belarusian/Russian/Polish, Polesians to Ukrainian,
@@ -41,13 +46,14 @@ language balance exactly as in Kandler et al.'s "internal recruitment" term.
 
 Observation model
 -----------------
-``CensusRegime`` maps the latent (community, home-language, competence)
-state to the categories a given census would have printed, e.g. the 1931
+``census_mapping`` maps the latent (community, home-language, competence)
+state to the categories a language census would have printed: the 1931
 Polish census ("tutejszy", "ruski", Catholic Belarusian speakers returned as
-Polish), the 1897 imperial Russian census (vernacular "native language"),
-the 1923 Lithuanian census (nationality) or a modern self-identification
-census.  Latent and "as-recorded" series can therefore diverge, as they did
-historically.
+Polish) or the 1897 imperial Russian census (vernacular "native language").
+Nationality censuses (Poland 1921, Lithuania 1923, modern
+self-identification) record national identity instead, which
+``plsim.identity`` tracks separately from home language.  Latent and
+"as-recorded" series can therefore diverge, as they did historically.
 """
 from __future__ import annotations
 
@@ -58,7 +64,7 @@ from .economy import piecewise
 from .params import matching_patterns, region_lookup
 
 CENSUS_CATEGORIES = ["pl", "uk", "ruth", "be", "tut", "yi", "he", "de", "ru", "lt", "cs", "lv",
-                     "csb", "rue", "rom", "kdr", "wym", "other"]
+                     "csb", "rue", "rom", "kdr", "wym", "other", "jw"]     # jw: Jewish nationality
 CAT_INDEX = {c: i for i, c in enumerate(CENSUS_CATEGORIES)}
 
 
@@ -103,6 +109,13 @@ class LanguageModel:
         inst = params["institutional"]
         self.inst = np.array([inst.get(f"{c}:{l}", inst.get(l, 0.0)) for c, l in GROUPS])
         self.a = params["a"]
+        # Diaspora floor (second-generation assimilation): where a group lacks
+        # local institutions its shift propensity rises towards sigma_diaspora.
+        exempt = set(params.get("diaspora_exempt", ()))
+        self.dia_floor = np.array([0.0 if (f"{c}:{l}" in exempt or l in exempt) else
+                                   max(params.get("sigma_diaspora", 0.0) - s, 0.0)
+                                   for (c, l), s in zip(GROUPS, self.sigma0)])
+        self.last_sigma = None
         conc = params.get("concentration", {})
         k = np.array([conc.get(f"{c}:{l}", conc.get(l, 1.0)) for c, l in GROUPS], dtype=float)
         self.conc = np.tile(k, (self.R, 1))                                  # (R, G)
@@ -259,7 +272,12 @@ class LanguageModel:
         omega = np.clip((self.p["school_weight"] * own[:, None, :] + self.inst[None, None, :]) * complete, 0, 0.95)
         mod = self.modifier(M, ma_norm)                     # (R,2)
         pol = self.pressure(year)                           # (R,)
-        base = self.sigma0[None, None, :] * mod[:, :, None] * pol[:, None, None] * (1 - omega) * frac
+        # A diaspora (institutionally incomplete) shifts at least at about the
+        # rate of second-generation immigrants (Alba et al. 2002): the group's
+        # propensity is raised towards sigma_diaspora by (1 - completeness).
+        sig = self.sigma0[None, None, :] + self.dia_floor[None, None, :] * (1 - complete)    # (R,2,G)
+        self.last_sigma = sig
+        base = sig * mod[:, :, None] * pol[:, None, None] * (1 - omega) * frac
         p_shift = np.stack([base * self.p["m_mono"], base], axis=3)   # (R,2,G,2)
         p_shift = np.clip(p_shift, 0, self.p["max_shift"])
         return p_shift, dist, frac, mod, pol, omega
@@ -291,7 +309,7 @@ class LanguageModel:
         P[:, :, :, 1] += moved
         # --- adult re-identification of bilinguals (switch home language)
         p_shift, dist, frac, mod, pol, omega = self.transmission(year, P, M, ma_norm)
-        rate = p["h0"] * (self.sigma0 / p["sigma_ref"])[None, None, :] * mod[:, :, None] * \
+        rate = p["h0"] * (self.last_sigma / p["sigma_ref"]) * mod[:, :, None] * \
             pol[:, None, None] * (1 - omega) * frac
         hz = 1 - np.exp(-np.clip(rate, 0, 0.5))                         # (R,2,G)
         switch = P[:, :, :, 1, :, 15:65] * hz[..., None, None]          # (R,2,G,S,50)
@@ -300,7 +318,8 @@ class LanguageModel:
         # switchers into the dominant language are b=1; into another minority
         # language they keep D competence too (they were bilingual)
         P[:, :, :, 1, :, 15:65] += inflow
-        return {"acquired": moved.sum(), "switched": switch.sum()}
+        flows = dist * switch.sum(axis=(3, 4))[..., None]                 # (R,2,G_from,G_to)
+        return {"acquired": moved.sum(), "switched": switch.sum(), "flows": flows}
 
     # ---------------------------------------------------------------- community flows
     def haredi_exit(self, year: float) -> tuple[float, float]:
@@ -318,7 +337,6 @@ def _dist(**kw) -> dict:
 def census_mapping(regime: str, c: str, l: str, b: int, u: int, region_code: str) -> dict:
     """Probability that a person in latent state (c, l, b, u) is recorded as
     each census category under the given regime."""
-    lt_region = region_code.startswith("LT")
     if regime == "latent":
         return {("tut" if l == "pls" else ("other" if l == "oth" else l)): 1.0}
     if regime == "polish_1931":
@@ -381,31 +399,13 @@ def census_mapping(regime: str, c: str, l: str, b: int, u: int, region_code: str
         if l in ("wym", "kdr", "rom"):
             return {"other": 1.0}
         return {l: 1.0} if l in CAT_INDEX else {"other": 1.0}
-    if regime == "lithuanian_1923":
-        # Nationality census; Catholic Polish-speakers in Lithuania frequently
-        # entered as Lithuanians.
-        if lt_region and l == "pl" and c == "RC":
-            return _dist(pl=.40, lt=.60)
-        if l == "pls":
-            return {"tut": 1.0}
-        if l == "oth":
-            return {"other": 1.0}
-        return {l: 1.0} if l in CAT_INDEX else {"other": 1.0}
-    if regime == "modern_selfid":
-        if l == "pls":
-            return _dist(pl=.25, be=.25, uk=.25, tut=.25)
-        if l == "oth":
-            return {"other": 1.0}
-        if b and l not in ("pl", "lt"):
-            dom = "lt" if lt_region else "pl"
-            p_dom = .30 if l in ("csb", "rue", "be", "rom", "wym", "kdr") else .15
-            d = {l if l in CAT_INDEX else "other": 1 - p_dom, dom: p_dom}
-            return d
-        return {l: 1.0} if l in CAT_INDEX else {"other": 1.0}
     raise ValueError(regime)
 
 
-REGIMES = ["latent", "polish_1931", "imperial_1897", "lithuanian_1923", "modern_selfid"]
+# Language censuses (home language / mother tongue) read the latent language
+# state; nationality censuses read national identity (plsim.identity).
+LANGUAGE_REGIMES = ["latent", "polish_1931", "imperial_1897"]
+REGIMES = LANGUAGE_REGIMES + ["polish_1921", "lithuanian_1923", "modern_selfid"]
 
 
 def census_matrix(regime: str, region_codes: list[str]) -> np.ndarray:

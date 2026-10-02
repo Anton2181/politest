@@ -1,0 +1,13 @@
+# Baseline with a population exchange along the equal-exchange Curzon line.
+# On 1 January 1946 every Pole on the other side of that year's line moves to
+# the Polish side and every counted non-Pole on the Polish side moves to the
+# other side (plsim/exchange.py), an equal exchange by construction of the
+# line. A thought experiment after the transfers of 1944-46, which in this
+# counterfactual have no war to follow; everything else is the baseline.
+extends: baseline
+meta:
+  name: curzon_exchange
+  description: "Baseline with an equal population exchange in 1946 along that year's computed Curzon line"
+population_exchange:
+  year: 1946
+  line_from: baseline

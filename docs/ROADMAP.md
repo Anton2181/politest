@@ -8,26 +8,28 @@ Each names the part of the code it touches.
 
 ## Priority list
 
+Done in this round (see METHODOLOGY): identity separate from home language
+(§6.7), history-matching calibration of the shift rates (§6.4), probability
+maps from the ensemble (§11), a calibrated road programme (§7.3),
+second-generation assimilation (the diaspora term, §6.4), the historical
+Curzon line and a population-exchange scenario (§12.8).
+
 | # | Development | Why it matters | Effort |
 |---|---|---|---|
-| 1 | "As a census would print it" maps | The observation model exists (`language.census_view`). Applying it per cell would show, for the same latent population, what a 1931-style Polish census, a 1923-style Lithuanian census or a modern self-identification census would record. This turns census unreliability into something visible. | small |
-| 2 | Identity as a state separate from home language | Many key cases are identity, not language: Catholic Belarusian speakers declaring Polish, Polish-speaking Lauda gentry who became Lithuanian by identity, Polish-speaking Jews. The census regimes would then map identity, and "Lithuanisation" could be modelled as identity shift with or without language shift. | medium |
-| 3 | County data — **projection done, data partial** | Every scenario now runs on the powiats (270 regions; `data/counties.py`, METHODOLOGY §12.6). The 1931 county tables are in for the eight eastern voivodeships (grade A); Lublin has county populations only, and the centre, the west and Lithuania have seats only. Still to do: the central and western county tables (Kashubian, German and Jewish districts), the 1923 Lithuanian apskritis tables (Lauda), county religion for all voivodeships, and digitised powiat boundaries. | small (data entry) |
-| 4 | Calibration by history matching | Fit shift propensities, status and institutional parameters to observed changes rather than by hand. Targets: 1897→1931 county language change, 1921 vs 1931 censuses, interwar Lithuanian censuses, and analogues (Carinthia, Bukovina, Finland Swedes). | medium |
-| 5 | Probability maps from ensembles | Downscale every ensemble member and map, for example, the probability that Belarusian still leads a cell in 2032. Shows which fronts are robust and which are noise. | small |
-| 6 | Calibrate the road programme | By 2032 the baseline builds ~16,700 km of expressways and ~5,700 km of motorways, about 50 km per 1,000 km²: 1.5 times Spain's density and three times today's Poland. Appraisal has no traffic threshold, no maintenance cost and no congestion, so every busy town-to-town link qualifies. Fit budgets and thresholds to the Spanish, Portuguese and Greek build-outs of 1960-2010, and add upkeep. | small |
-| 7 | Second-generation assimilation of migrants | Migrants keep their language at their destination unless the regional shift rates move them. In the baseline, Warsaw city ends up 13 % Ukrainian-speaking and Silesia 8 %. Interwar and post-war evidence (Poles in the Ruhr and in France, Ukrainians in interwar Warsaw, internal migrants in post-war Poland) points to faster loss in the second generation. A separate urban-migrant shift rate would fix this. | small |
+| 1 | **County language tables for the centre and the west, Lithuania and Soviet Belarus** | Grade C counties (Warsaw, Łódź, Kielce, Kraków, Poznań, Pomerania, Silesia; the Lithuanian apskritys) are still downscaled from their voivodeship, so the German districts of Pomerania and Poznań, the Jewish shtetl counties of Kielce and Lublin and the Kashubian core are smoothed. The tables exist: the 1931 census volumes by voivodeship (*Statystyka Polski*, seria C), digitised in the Kujawsko-Pomorska, Mazowiecka and Wielkopolska digital libraries; the 1923 Lithuanian census by apskritis; the 1926 Soviet census by raion. All of those hosts were blocked from the build environment. Entering them is data entry into `data/counties.py` (grade A rows). | small (data entry) |
+| 2 | **Real 1931 powiat boundaries** | The county borders are Voronoi approximations. The MPIDR Population History GIS Collection holds Poland's 1931 administrative division (registration required; not reachable here). The model is ready for it: put the polygons in `plsim/data/powiaty_1931.geojson`, with `tools/match_powiaty.py` adding the county codes by name, and `data/subregions.assign` uses them. | small once the file is in hand |
+| 3 | A stronger frequency effect | History matching shows the model's loss is less concentrated where a minority is small than in Masuria (1890-1910). Attraction now counts bilingual minority speakers as competent in the state language, which flattens the Abrams-Strogatz frequency term. Testing an attraction based on home-language shares, or a separate local-majority term, against the Masurian and Carinthian district series would sharpen language frontiers. | medium |
+| 4 | Calibrate identity | The identity layer's starting mixes match the 1921 nationality census and the 1923 Lithuanian census, but its rates (nation-building, the state pull, `follow`) are judgements. County-level 1921 nationality against 1931 mother tongue, and the 1923 -> 1942 Lithuanian series, would let them be history-matched like the shift rates. Identity by age would also let the "follow" rule act on cohorts. | medium |
+| 5 | Downscaling uncertainty | The probability maps vary the model's parameters and shocks but not the spatial downscaling (kernel widths, town seeding, the share of shift placed by neighbourhood). Drawing those per member would widen the bands on the frontiers. | small |
+| 6 | "As a census would print it" maps | The observation model (`language.census_view`, `identity.identity_census`) applied per cell would show what a 1931-style census, a 1921-style nationality census or a modern self-identification census would record, for the same population. | small |
 
 ## Spatial resolution and geography
 
 * **Real boundaries.** The state borders now come from CShapes 2.0. The
   voivodeships and counties inside them are still weighted Voronoi
-  approximations. Digitised 1931 voivodeship and powiat boundaries
-  (historical GIS sources, e.g. the MPIDR Population History GIS
-  Collection) would replace them; `data/geography.py` keeps the same
-  interface. County shapes
-  would then come from the boundaries rather than from the cells nearest
-  each seat; on the maps, a county now ends halfway to the next seat.
+  approximations. Digitised 1931 powiat boundaries plug in through
+  `plsim/data/powiaty_1931.geojson` (priority 2); voivodeship boundaries
+  would need the same in `data/geography.py`.
 * **County-level calibration.** County runs inherit the voivodeship
   calibration. Migration is nested so a split voivodeship sends and draws
   as one, but language shift runs on each county's own mix. Comparing
@@ -99,15 +101,20 @@ Each names the part of the code it touches.
 
 ## Calibration, uncertainty and validation
 
-* **History matching or ABC** with emulators (Vernon et al. 2010;
-  Andrianakis et al. 2015). This rules out parameter regions inconsistent
-  with the targets listed above.
+* **History matching: next waves.** The language rates are now history
+  matched on five cases (METHODOLOGY §6.4) by brute force. Next steps:
+  * an emulator (Gaussian process; Vernon et al. 2010; Andrianakis et
+    al. 2015), which would allow more parameters and more waves;
+  * more cases: Bukovina 1880-1910, Finland Swedes with their demography,
+    Upper Silesian Polish 1890-1910, Latgale;
+  * per-case settings drawn as nuisance parameters, instead of fixed
+    judgements.
 * **Global sensitivity analysis** (Sobol indices) of the language outcomes,
   to show which assumptions drive them, e.g. status versus schooling versus
   differential fertility.
 * **Out-of-sample checks** against settings the model was not tuned on:
-  Lithuanian Poles 1959-2011, Carinthian Slovenes 1880-2001, Bukovina
-  1880-1930.
+  Lithuanian Poles 1959-2011, Carinthian Slovenes 1910-2001 (the matching
+  stops at 1910), Bukovina 1880-1930.
 
 ## Belarus and the Curzon line
 
@@ -125,11 +132,15 @@ Each names the part of the code it touches.
   Variants: a length penalty for a smoother line, a minimum corridor width,
   identity instead of home language, a line fixed in 1932 with the
   minorities on each side followed over time, or Poland alone in the union
-  scenarios. A digitised historical Curzon line (A and B) would allow a
-  direct comparison.
-* **Population exchange.** Use the line as the border of a hypothetical
-  exchange in a given year and simulate the transfer and its demographic
-  aftermath, against the real 1944-46 exchanges.
+  scenarios. The historical line (A in Galicia) is now digitised to about
+  10 km from its description. Line B and a survey-grade digitisation are
+  still to do.
+* **Population exchange (done: `curzon_exchange`).** Variants still to do:
+  * an exchange by identity rather than home language (the 1944-46
+    agreements went by declared nationality);
+  * a voluntary, partial exchange (the real take-up);
+  * exchange costs: lost capital and a temporary fall in farm output;
+  * an exchange along the historical line.
 
 ## Political structure
 

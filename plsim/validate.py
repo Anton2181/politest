@@ -117,6 +117,14 @@ def plausibility_checks(res: Results) -> list[Check]:
         urb = A["pop"][i][:, 1].sum() / A["pop"][i].sum()
         out.append(Check("Urban share 2000 (0.50-0.80)", urb, 0.5, 0.8, "plausibility"))
         out.append(Check("Polish-unit population 2000 (M)", A["pop"][i][pl].sum() / 1e6, 40, 65, "plausibility"))
+    if res.years[-1] >= 2030:
+        # dual carriageways per 1000 km2 of the state (Czechia, Hungary, Poland's
+        # 2033 plan ~18-26; Spain, France, Portugal ~35; Germany ~45)
+        from .data.regions import REGIONS
+        area = sum(r.area_km2 for r in REGIONS if r.code in {c.split(".")[0] for c in res.region_codes})
+        km = res.km[-1]
+        out.append(Check("Expressways + motorways, last year (km per 1000 km2)",
+                         (km["road_express"] + km["road_motorway"]) / area * 1000, 15, 35, "plausibility"))
     return out
 
 

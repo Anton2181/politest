@@ -47,6 +47,10 @@ DEFAULTS: dict[str, Any] = {
     # Regions or counties left out of the state (codes, parent codes, wildcards
     # or region_groups names): their people, towns and land are foreign.
     "exclude": [],
+    # Population exchange along the equal-exchange Curzon line of a year
+    # (plsim/exchange.py): {year, line_from: scenario whose line is used};
+    # the CLI adds the plan (who moves, county by county) before the run.
+    "population_exchange": None,
     "snapshot_years": [1932, 1939, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020, 2032],
 
     # ------------------------------------------------------------------ demography
@@ -118,6 +122,14 @@ DEFAULTS: dict[str, Any] = {
         "vot_share": 0.35, "freight_uplift": 0.8, "discount": 0.05, "life": 40,
         "demand_growth_factor": 1.25,
         "bcr_threshold": 1.0, "account_cap_years": 6, "appraisal_interval": 2,
+        # yearly operation and maintenance (incl. periodic renewal) as a share
+        # of the capital cost, counted in the appraisal over the project life
+        "om_share": {"express": 0.015, "motorway": 0.02},
+        # share of the local (hinterland) traffic benefit earned by a
+        # limited-access road; the rest stays on the old road. Calibrated so
+        # that the baseline has about 19 km of expressway and motorway per
+        # 1000 km2 by 2032 (Czechia, Hungary ~18-21; Spain, France ~35)
+        "local_share_limited": {"express": 0.65, "motorway": 0.3},
         "equity_weight": [[1931, 0.3], [1939, 0.3], [1940, 1.0], [1954, 1.0], [1955, 0.4], [2032, 0.4]],
         "bus_access": [[1931, 0.25], [1950, 0.45], [1965, 0.70], [1980, 0.80]],
         "local_trip_rate": [[1931, 20.0], [1960, 40.0], [1990, 80.0], [2032, 100.0]],
@@ -170,9 +182,13 @@ DEFAULTS: dict[str, Any] = {
         "m_mono": 0.15,                 # shift propensity of monolingual vs bilingual mothers
         "max_shift": 0.90,
         "sigma_ref": 0.2,
+        # history-matched classes (plsim/calibration.py, outputs/calibration):
+        # same-faith vernaculars (RC:be, RC:pls, RC:csb) x0.8 and same-faith
+        # national minorities (RC:lt, RC:uk, RC:de, RC:cs, RC:lv) x3.08 of
+        # their earlier values; different-faith ones (GC:uk, OR:uk ...) kept
         "sigma0": {"default": 0.20,
-                   "RC:pl": 0.05, "RC:be": 0.55, "RC:lt": 0.12, "RC:de": 0.15, "RC:csb": 0.20, "RC:cs": 0.25,
-                   "RC:uk": 0.20, "RC:wym": 0.80, "RC:rom": 0.04, "RC:pls": 0.30, "RC:ru": 0.30, "RC:lv": 0.20,
+                   "RC:pl": 0.05, "RC:be": 0.44, "RC:lt": 0.37, "RC:de": 0.46, "RC:csb": 0.16, "RC:cs": 0.77,
+                   "RC:uk": 0.62, "RC:wym": 0.80, "RC:rom": 0.04, "RC:pls": 0.24, "RC:ru": 0.30, "RC:lv": 0.62,
                    "RC:oth": 0.30,
                    "GC:uk": 0.06, "GC:rue": 0.10, "GC:pl": 0.03,
                    "OR:uk": 0.06, "OR:be": 0.22, "OR:pls": 0.45, "OR:ru": 0.12, "OR:pl": 0.03, "OR:rue": 0.08,
@@ -193,6 +209,10 @@ DEFAULTS: dict[str, Any] = {
         "official_schooling": 0.9,      # own-language schooling for speakers of an official language (number or schedule)
         "school_weight": 0.5,
         "completeness_share": 0.25,     # local own-language share at which institutions are complete
+        # shift propensity approached by an institutionally incomplete group
+        # (diaspora, migrants' children); groups listed keep their own sigma0
+        "sigma_diaspora": 0.53,
+        "diaspora_exempt": ["JH:yi", "RC:rom", "OT:kdr", "RC:wym"],
         "own_school_blocks": 0.7,
         "status": {"default": 0.1, "pl": 1.0, "lt": 0.35, "uk": 0.35, "be": 0.15, "pls": 0.05,
                    "yi": [[1931, 0.25], [1970, 0.18]], "de": [[1931, 0.55], [1960, 0.40]],
@@ -207,11 +227,20 @@ DEFAULTS: dict[str, Any] = {
         "own_schooling_regions": {"LT_*": {"pl": 0.30, "RC:pl": 0.30, "de": 0.50, "ru": 0.20}},
         "pressure": {"default": [[1931, 1.0], [1950, 0.9], [1990, 0.8]], "LT_*": 0.8},
         "urban_mult": 0.6, "mod_base": 0.5, "mod_slope": 1.0, "access_mult": 0.15,
-        "h0": 0.003,
-        "acq_school": 0.22, "acq_adult": 0.012, "acq_urban_bonus": 0.8, "acq_military": 0.35,
+        "h0": 0.0021,
+        "acq_school": 0.36, "acq_adult": 0.012, "acq_urban_bonus": 0.8, "acq_military": 0.35,
         "conscription": [[1931, 1.0], [1990, 0.8], [2008, 0.0]],
         "haredi_exit": [[1931, 0.20], [1970, 0.15], [2000, 0.12]],
         "haredi_entry": 0.01,
+    },
+
+    # ------------------------------------------------------------------ national identity
+    "identity": {                      # plsim/identity.py
+        "follow": 0.6,                 # language switchers taking the identity of the new language
+        "nation_building": 0.02,       # yearly rate x modernisation: "local" -> national identity
+        "assimilation": 0.008,         # yearly rate x pressure x modernisation: pull of the state nation
+        "anchor": 0.85,                # reduction of that pull when identity matches home language
+        "compat": {"RC": 1.0, "GC": 0.25, "OR": 0.3, "JW": 0.6, "JH": 0.0, "PR": 0.5, "OT": 0.5},
     },
 
     # ------------------------------------------------------------------ spatial downscaling (maps only)

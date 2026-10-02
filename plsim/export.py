@@ -121,3 +121,13 @@ def export_ensemble(ens: dict, outdir: str) -> None:
     df = pd.DataFrame(cols)
     df.insert(0, "year", yrs)
     df.to_csv(os.path.join(outdir, "ensemble_network_km.csv"), index=False, float_format="%.1f")
+    if "identity" in ens:
+        from .identity import IDENTITIES
+        cols = {}
+        for i, k in enumerate(IDENTITIES):
+            q = np.percentile(ens["identity"][:, :, i], QUANTILES, axis=0)
+            for qq, v in zip(QUANTILES, q):
+                cols[f"{k}_p{qq}"] = v
+        df = pd.DataFrame(cols)
+        df.insert(0, "year", yrs)
+        df.to_csv(os.path.join(outdir, "ensemble_identity.csv"), index=False, float_format="%.6g")

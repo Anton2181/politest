@@ -175,10 +175,18 @@ under a given regime:
   into Polish, and so on;
 * `imperial_1897`: vernacular recording; no Kashubian or Rusyn categories;
   Polesians as "Little/White Russian";
-* `lithuanian_1923`: a nationality census that entered many Catholic
-  Polish-speakers in Lithuania as Lithuanian;
-* `modern_selfid`: bilingual minority speakers partly identify with the
-  dominant language.
+
+Those two are *language* censuses and read the latent home language. The
+*nationality* censuses read national identity, which the model tracks
+separately (§6.7):
+
+* `polish_1921`: the nationality question of 1921. There were no Kashubian or
+  Lemko categories, and enumerators entered most "local" people under a
+  nationality;
+* `lithuanian_1923`: the Lithuanian nationality census. Its Polish count
+  follows the Polish *identity* of Lithuania's Polish speakers, which starts
+  at 42 % and can drift further (Lithuanisation);
+* `modern_selfid`: today's self-identification, read directly from identity.
 
 **Consistency test** (`python -m plsim census`). If you pass the baseline
 (religion-corrected) or the vernacular reconstruction through the 1931
@@ -484,23 +492,121 @@ face the full regional majority and vanish unrealistically fast.
 ### 6.3 Horizontal processes (annual hazards)
 
 * **Schooling** (ages 7-14): acquisition of the dominant language at rate
-  0.22 x enrolment x (1 - 0.7 x own-language schooling share).
+  0.36 x enrolment x (1 - 0.7 x own-language schooling share) (history
+  matched, §6.4; formerly 0.22).
 * **Adult contact** (15-64): 0.012 x local dominant-language share x
   (1.8 in towns).
 * **Conscription** (men 20-21): 0.35 while conscription lasts.
-* **Adult re-identification** of bilinguals: 0.3 %/yr scaled like the
-  vertical term.
+* **Adult re-identification** of bilinguals: 0.21 %/yr scaled like the
+  vertical term (history matched; formerly 0.3 %).
 * **Haredi defection** at birth: 20 % per birth in 1931, falling to 12 %.
   There is a small reverse flow.
 
-### 6.4 Calibration anchors
+### 6.4 Calibration: history matching on documented cases
+
+**Why not the Polish censuses themselves?** The model starts in December
+1931 and cannot run backwards. The two obvious Polish comparisons measure
+something else:
+
+* **1921 → 1931.** The 1921 census asked nationality, the 1931 census
+  mother tongue and religion. 1.06 M Belarusians (1921) against 0.99 M
+  Belarusian speakers plus 0.71 M "tutejszy" (1931), or 3.9 M Ukrainians
+  against 4.4 M Ukrainian and "Ruthenian" speakers, measure the change of
+  question and of the enumerators' practice. They do not measure ten years
+  of shift. The identity layer (§6.7) now makes this explicit: the same 1931
+  population read through the 1921 question gives back the 1921 shares.
+* **1897 → 1931.** Between these censuses lie the 1915 evacuation (over a
+  million people from the Grodno, Vilna and Minsk governorates, many of whom
+  never returned), the wars of 1918-21, the departure of Russian officials,
+  emigration and, again, a different question.
+
+**Cases.** The shift rates are therefore matched to cases where the same kind
+of minority language under the same kind of state language was counted the
+same way at both ends (`plsim/calibration.py`):
+
+| Case | Observed | Stands for |
+|---|---|---|
+| Masuria 1890 -> 1910, Polish/Masurian share by district (Prussian censuses) | Johannisburg 78.8 -> 68.0 %, Lyck 66.6 -> 51 %, Neidenburg 75.6 -> 66.6 %, Oletzko 47.7 -> 29.6 % | same-faith vernacular, no own schools: `RC:be` (with `RC:pls`, `RC:csb`) |
+| Carinthian Slovenes 1880 -> 1910 (Umgangssprache) | 26.4 % -> 18.7-20.7 %, a share ratio of about 0.75 | same-faith national language with partly own schools: `RC:lt` (with `RC:uk`, `RC:de`, `RC:cs`, `RC:lv`) |
+| Wales 1921 -> 1951 (aged 3+) | Welsh speakers 37.1 -> 28.9 % (ratio 0.78; home language falls faster, target 0.74); monolinguals 17 % -> 6 % of Welsh speakers | the same class; acquisition rates |
+| Province of Posen 1871 -> 1910 | Polish share stable or rising despite Germanisation: shift net of migration about nil | different-faith nation with strong institutions: `GC:uk`, `OR:uk`, `PR:de` ... |
+| Second generation of immigrants (Alba et al. 2002; Portes & Rumbaut 2001) | 40 % (Indian) to 76 % (Filipino) of children of immigrants spoke only English at home in 1990 | the diaspora floor `sigma_diaspora` |
+
+**Harness.** Each case is run through the model's own `LanguageModel`: vertical
+transmission, acquisition and re-identification. The population is a stylised
+single region with a stable age structure and the case's setting: status,
+own schooling, institutions, pressure, modernisation and clustering. Minority
+and majority have the same demography, so only shift moves the shares; the
+diaspora case is an immigrant cohort.
+
+**Method.** History matching (Craig et al. 1997; Vernon, Goldstein & Bower
+2010):
+
+* Ten parameters are drawn by Latin hypercube: the three class propensities,
+  a, m_mono, h0, completeness_share, sigma_diaspora and the two acquisition
+  rates.
+* A draw is ruled out when any target's implausibility
+  `I = |model - observed| / sqrt(sd_obs² + sd_discrepancy²)` exceeds 3. The
+  discrepancy term covers migration in the cases, census definitions and the
+  stylised settings.
+* A second wave samples the box around the first wave's survivors. 279 of
+  4,000 draws are not ruled out.
+
+**Adopted values.** For each constrained parameter, the median of the
+not-ruled-out set; this vector is itself not ruled out (worst I = 2.5).
+Unconstrained parameters keep their values.
+
+| Parameter | Before | Not ruled out (5-95 %) | Adopted |
+|---|---|---|---|
+| sigma0, same-faith vernacular (`RC:be`) | 0.55 | 0.23-0.75 | 0.44 |
+| sigma0, same-faith national (`RC:lt`) | 0.12 | 0.17-0.49 | 0.37 (class x3.08) |
+| sigma0, different-faith national (`GC:uk`) | 0.06 | 0.01-0.19 | 0.06 (not constrained) |
+| sigma_diaspora (new) | - | 0.28-0.77 | 0.53 |
+| h0 (adult re-identification) | 0.003 | 0.0002-0.008 | 0.0021 |
+| acq_school | 0.22 | 0.27-0.40 | 0.36 |
+| a, m_mono, completeness_share, acq_adult | | not constrained | kept |
+
+Implausibility of the previous defaults: Carinthia 3.1, Wales monolinguals
+5.2, diaspora 4.8; now at most 2.5.
+
+**What the history match does not do:**
+
+* The cases constrain *classes* of minorities, not each group.
+* Each case's setting is a judgement.
+* The model's frequency effect is weaker than Masuria shows. There the share
+  fell fastest where it was smallest (Oletzko), and the model reproduces this
+  only in part (I = 2.1); German settlers and the Masurians' departure for
+  the Ruhr are not in the stylised case.
+
+The ensemble draws the calibrated parameters jointly from the
+not-ruled-out set (`plsim/data/nroy_language.csv`). Rerun with
+`python -m plsim calibrate [--write-nroy]`. Outputs go to
+`outputs/calibration/`: all draws with their implausibilities, the
+not-ruled-out set, the target and parameter tables, and a figure.
+
+**Diaspora term (second-generation assimilation).** Where a group's local
+own-language share is below `completeness_share` (0.25), its propensity
+sigma0 is raised towards `sigma_diaspora` in proportion to
+`1 - completeness`:
+
+    sigma_eff = sigma0 + max(sigma_diaspora - sigma0, 0) x (1 - complete)
+
+The same effective propensity scales adult re-identification. Scattered
+speakers and migrants in cities therefore shift within two or three
+generations whatever their nationality, as immigrants' children do. Earlier
+versions let Ukrainian and Belarusian migrants keep their language in Warsaw
+indefinitely. Haredi Yiddish, Romani, Karaim and Wymysorys are exempt; they
+maintain their languages through endogamy and religion rather than local
+numbers.
+
+#### Other anchors (not fitted; checks on the baseline after calibration)
 
 | Anchor | Evidence | Model (baseline) |
 |---|---|---|
-| Yiddish among acculturating Jews | Soviet Jews 70.4 % Yiddish (1926) -> ~41 % (1939) under coercion; interwar Polish-Jewish youth rapidly Polonising in state schools; Hungarian and Czech Jewry shifted in ~2 generations | 78 % (1935) -> 51 % (1960) -> 28 % (1990) -> 12 % (2030) |
-| Wymysorys | 92 % of Wilamowice (1,525/1,662) spoke it in 1880, 72 % in 1890 | ~1,500 -> ~250 (2000) -> ~60 (2032): moribund even without the post-war ban |
-| Catholic Belarusian vernacular | rapid Polonisation of Catholic Belarusian-speakers; the 1897 -> 1931 recording gap | 85 k (1935) -> 75 k (1960) -> 48 k (1990) -> 18 k (2030) in Wilno/Nowogródek/Białystok |
-| Greek Catholic Ukrainian | strong institutions (church, Prosvita, cooperatives) | 85 % of Greek Catholics Ukrainian-speaking (1935) -> 82 % (1990) -> 79 % (2030) |
+| Yiddish among acculturating Jews | Soviet Jews 70.4 % Yiddish (1926) -> ~41 % (1939) under coercion; interwar Polish-Jewish youth rapidly Polonising in state schools; Hungarian and Czech Jewry shifted in ~2 generations | 79 % (1935) -> 53 % (1960) -> 28 % (1990) -> 10 % (2030) |
+| Wymysorys | 92 % of Wilamowice (1,525/1,662) spoke it in 1880, 72 % in 1890 | ~1,450 -> ~420 (1990) -> ~60 (2032): moribund even without the post-war ban |
+| Catholic Belarusian vernacular | rapid Polonisation of Catholic Belarusian-speakers; the 1897 -> 1931 recording gap | 86 k (1935) -> 82 k (1960) -> 58 k (1990) -> 25 k (2030) in Wilno/Nowogródek/Białystok |
+| Greek Catholic Ukrainian | strong institutions (church, Prosvita, cooperatives) | 96 % of Greek Catholics Ukrainian-speaking (1935) -> 88 % (1990) -> 79 % (2030) |
 | Scottish Gaelic (Kandler et al.) | shift ~0.035/yr in an Anglophone state | Polesian and Kashubian rates of the same order once bilingual |
 | Karaim | community 800-900; language maintained in Trakai in the 1930s | ~680 -> ~230 speakers (2032) |
 
@@ -550,6 +656,64 @@ Co-officiality therefore removes the status premium of one language and
 protects each official community with its own schools. It does not remove
 the pull of numbers: in the Abrams–Strogatz attraction, a bigger language
 still draws speakers, now only through its local share.
+
+### 6.7 National identity, separate from home language
+
+Home language and national identity were never the same thing here.
+Catholic Belarusian speakers mostly called themselves Poles. Many Orthodox
+villagers of Polesie answered "tutejszy". Polish-speaking Jews remained Jews.
+In Lithuania a large part of the Polish-speaking Catholics were entered, and
+in time saw themselves, as Lithuanians. `plsim.identity` therefore tracks
+identity counts `I[r, u, g, i]` for every region, rural/urban cell and
+community-language group. The 13 identities are Polish, Ukrainian,
+Belarusian, Lithuanian, Russian, German, Jewish, Czech, Latvian, Kashubian,
+Lemko/Rusyn, "local" and other. They always add up to the population of the
+cell and group; identity is not tracked by age.
+
+* **Start (1931).** Each group has an identity mix (`identity.INITIAL`),
+  with overrides for the Lithuanian member and Soviet Belarus. The mixes are
+  set so that the 1931 population, read through the 1921 nationality question
+  (`polish_1921`), gives back the 1921 census: Polish 69.3 % (census 69.2 %),
+  Ukrainian and Ruthenian 14.3 % (14.3 %), Jewish 8.3 % (7.8 %), Belarusian
+  and "local" 4.2 % (Belarusian 3.9 %), Lithuanian 0.3 % (0.3 %). Two
+  caveats: 1921 left out the Wilno region and Upper Silesia, and over half a
+  million Germans had left before 1931. For Lithuania, 42 % of Polish
+  speakers have a Polish identity. Read through the 1923 question, that gives
+  70 thousand Poles (2.9 %), against the census's 65.6 thousand (3.2 %
+  without Klaipėda) and some 150 thousand Polish speakers. For the BSSR, nearly all
+  Belarusian speakers have a Belarusian identity (the indigenisation of the
+  1920s).
+* **Births and language switches.** A child raised in its mother's language
+  takes her identity. A child (or adult) who switches language takes the
+  identity that goes with the new language with probability `follow` (0.6),
+  and otherwise keeps the old one. "The identity that goes with" a language
+  depends on faith: Polish for a Catholic speaking Belarusian or Polish,
+  Belarusian for an Orthodox Belarusian speaker, Jewish for a Jew of any
+  language.
+* **Nation-building.** "Local" identities turn national (the identity that
+  goes with the person's language and faith) at `0.02 x M` per year, where M
+  is the modernisation index of the cell (schools, press, army, elections;
+  Weber 1976, Hroch 1985).
+* **Pull of the state nation.** Any other identity moves to the identity of
+  the region's contact language at
+  `0.008 x pressure x M x compat(community)` per year. The rate is cut by
+  85 % when the identity is the one that goes with the person's own home
+  language. Compatibility: Catholics 1, Jews 0.6, Protestants and others
+  0.5, Orthodox 0.3, Greek Catholics 0.25, Haredim 0. `pressure` is the
+  language policy of the scenario. **Lithuanisation** in the Lithuanian
+  member can now run through identity as well as language. How fast depends
+  on the pressure and on whether Polish keeps official status. In the
+  baseline federation, with Polish co-official, Polish identity in Lithuania
+  falls about as fast as Polish speech (78 -> 66 thousand, against 150 ->
+  119 thousand speakers, 1932-2032).
+* **Migration and exchange.** Leavers take their cell's identity mix.
+  Arrivals take the mix of their group's leavers, first from the same region
+  (rural-urban moves), then from the whole state.
+
+Outputs: identity by region and year, identity by home language at the
+snapshot years, the nationality censuses, an identity map in the report and
+the atlas's "Identity" layer (by county). The parameters are judgements, not
+fits. Only the starting mixes are tied to data (1921, 1923, 1926).
 
 ## 7. Transport networks
 
@@ -616,7 +780,10 @@ Commercial speeds are set by class and era. Examples: secondary lines
     full recomputation);
   * *local road benefit*: farm-to-market trips of each town's rural
     hinterland (20 -> 100 trips/head/yr). All-weather surfacing was the main
-    gain of the 1930s Road Fund and of post-war programmes.
+    gain of the 1930s Road Fund and of post-war programmes. An expressway or
+    motorway is a new carriageway beside the old road, which keeps most local
+    traffic. It earns only a share of this benefit (`local_share_limited`:
+    0.65 for expressways, 0.3 for motorways).
   * Benefits are valued at 35 % of income per hour, discounted at 5 % over
     40 years, and optionally **equity-weighted** towards poor regions (full
     weight 1940-54, the Fifteen-Year Plan's goal of erasing Poland "A" and
@@ -625,6 +792,24 @@ Commercial speeds are set by class and era. Examples: secondary lines
   and roads have separate accounts (as with PKP vs. the 1931 Road Fund), with
   the rail share falling from 55 % to 35-40 %. Accounts may accumulate up to
   six years' allocation for large works. Greedy selection by BCR >= 1.
+* **Running costs.** Expressways and motorways also carry operation and
+  maintenance costs, including periodic renewal: 1.5 % and 2 % of the
+  capital cost per year, counted in present value over the 40-year life.
+  This raises their cost by 26 % and 34 %.
+* **Calibration of the road programme.** Earlier versions counted the full
+  local benefit and no running costs. Nearly every candidate then passed
+  (median BCR of the expressways built: 1.04), and the baseline had about
+  22,500 km of expressway and motorway by 2032. That is about 51 km per
+  1000 km², more than Germany's Autobahn network. The comparators are:
+  * Czechia and Hungary about 18-21 km per 1000 km²; Poland's own 2033 plan
+    about 26;
+  * Spain, France and Portugal about 35; Germany about 37 (motorways only).
+  Runs with local shares of 0.3/0.1, 0.5/0.2, 0.8/0.4 and 1.0/0.6 gave 8.5,
+  14, 29 and 37 km per 1000 km². The adopted 0.65/0.3 aimed at about 24. In
+  the recalibrated baseline it gives 19.4 km per 1000 km² (ensemble median
+  8,600 km, about 13-30 km per 1000 km² across the ensemble), at the level of
+  Czechia and Hungary and in the lower half of the band. A plausibility
+  check (15-35) guards it (§10.2).
 * **Dated projects**:
   * *historical*: Coal Trunk Line completion (1933), Warszawa-Radom (1934),
     Telšiai-Kretinga (1932), Warsaw electrification (1936-37);
@@ -718,7 +903,9 @@ is probably slightly inflated.
 
 These are not targets. They are bands from comparator countries: TFR 1960 in
 2.3-3.8 and 2000 in 1.2-2.2; e0 1960 in 58-72 and 2000 in 70-81; urban share
-2000 in 50-80 %. They are checked automatically by `python -m plsim validate`.
+2000 in 50-80 %; expressways and motorways in the last year 15-35 km per
+1000 km² of the state (§7.3). They are checked automatically by
+`python -m plsim validate`.
 
 ### 10.3 Census consistency
 
@@ -739,12 +926,24 @@ comparisons use common random numbers:
 * **Economy**: convergence speed (1.5-3 %), shock volatility.
 * **Migration**: emigration propensity, position of the migration hump,
   immigration ceiling.
-* **Language**: Abrams-Strogatz exponent (1.1-1.5), the monolingual damping,
-  and the key shift propensities (Yiddish, Polesian, Catholic Belarusian,
-  Greek-Catholic Ukrainian, Kashubian, Haredi exit).
+* **Language**: the history-matched parameters are drawn *jointly* from the
+  not-ruled-out set of §6.4. These are the class propensities (scaling all
+  groups of a class together), a, m_mono, h0, completeness_share,
+  sigma_diaspora and the acquisition rates. Yiddish, Polesian and Orthodox
+  Belarusian propensities and the Haredi exit keep independent ranges.
 * **Network**: gravity decay, BCR threshold.
 
 Reports give medians with 50 % and 90 % bands.
+
+**Probability maps.** With `cells=True` (as in `report`), each member is
+also downscaled to the 3.5 km grid for 1982 and 2032. For every cell, the
+share of members in which each language category is the most spoken home
+language is computed (`maps.plurality_probability`). The outputs are
+`outputs/ensemble_baseline_cells.npz`, the figure
+`outputs/maps/map_uncertainty.png`, and the atlas's "Certainty" layer for the
+baseline: the most likely leading language, paler where runs disagree. The
+spatial downscaling itself (kernel widths, town seeding) is not varied, so
+these maps show model-parameter uncertainty under one downscaling.
 
 ## 12. Maps: spatial downscaling and local language shift
 
@@ -1157,10 +1356,60 @@ problem).
 
 **Outputs.**
 
-* The atlas overlay ("Curzon line", magenta), with the counts on each side.
+* The atlas overlay ("Equal-exchange line", magenta), with the counts on
+  each side.
 * `outputs/maps/<scenario>_curzon.csv`: the counts, the people not counted
   and the line, by frame.
 * `outputs/maps/map_curzon.png` for the baseline.
+
+**The historical Curzon line.** `curzon.HISTORICAL_LINE` is the line of the
+Allied declaration of 8 December 1919 and Curzon's note of 11 July 1920. In
+Eastern Galicia it follows "line A", which leaves Lwów on the other side;
+"line B" would have given Lwów and Drohobych to Poland. It is digitised
+approximately (to about 10 km) from the published description, north to
+south:
+
+* from the East Prussian border along the eastern and northern boundary of
+  the Suwałki district to the Niemen;
+* down the Niemen past Grodno;
+* up the Łosośna to its source;
+* south-west past Jałówka and east of Hajnówka to the Bug at Niemirów;
+* up the Bug past Brest, Włodawa, Dorohusk and Uściług to Kryłów;
+* then west of Rawa Ruska and east of Przemyśl to the Carpathians.
+
+The same people as for the computed line are counted on each side of it
+(the `hist_*` columns of the CSV, and the atlas overlay "Curzon line of
+1919-20", dashed). This shows how far the equal-exchange line, which follows
+the modelled population, lies from the diplomats' line, which followed the
+ethnographic maps of 1919. In the baseline of 1932 the historical line leaves
+0.96 M non-Poles on its west side and 3.27 M Poles on its east side (the
+Wilno lands, Lwów and the eastern towns); the computed line leaves 1.89 M
+each way. By 2032 the historical line's imbalance grows to 2.38 M against
+9.0 M as the east Polonises. In the autonomy scenarios it comes close to
+balance (3.0 M against 4.1 M).
+
+**A population exchange along the line** (scenario `curzon_exchange`,
+`plsim.exchange`). On 1 January of the exchange year (1946), every Pole on
+the other side of that year's line moves to the Polish side. Every counted
+non-Pole on the Polish side moves to the other side. Jews and the other
+people not counted do not move. The line makes the two flows equal by
+construction. The plan is computed from the run of the base scenario, which
+is identical to this scenario up to that year: for every county, the share of
+its Poles beyond the line, and by language the share of its counted
+non-Poles on the Polish side. These shares come from the 3.5 km cells, so a
+county cut by the line gives up only the people on the wrong side.
+
+Movers take the places of those who left:
+
+* Poles settle in the counties (town or country) the non-Poles vacated, in
+  proportion to the places vacated;
+* the speakers of each other language settle where the Poles left, weighted
+  towards counties where their language is spoken (Ukrainians to Ukrainian
+  counties, and so on).
+
+Age, sex, community, bilingualism and identity move with them. The economy,
+the network and language policy are untouched, so the scenario isolates the
+demographic and linguistic effect of an "equal" exchange.
 
 ### 12.9 What the maps cannot show
 

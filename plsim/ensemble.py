@@ -19,6 +19,7 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 
 from .data.languages import COMMUNITIES, GROUPS, LANG_INDEX, LANGUAGES, NC, NL
+from .identity import NI
 from .language import CENSUS_CATEGORIES, REGIMES
 from .model import Simulation
 from .params import UNCERTAINTY, get_path, set_path
@@ -28,9 +29,21 @@ KM_KEYS = ["rail_nar", "rail_sec", "rail_main", "rail_main_el", "rail_hsr",
            "road_dirt", "road_gravel", "road_paved", "road_express", "road_motorway"]
 
 
-def draw_params(base: dict, rng: np.random.Generator) -> dict:
+def draw_params(base: dict, rng: np.random.Generator, nroy: list | None = None) -> dict:
+    """Re-draw the uncertain parameters. With ``nroy`` (rows of the history
+    match, ``plsim.calibration``) the calibrated language parameters are
+    drawn jointly from it and their entries in UNCERTAINTY are skipped."""
+    from .calibration import CLASS_GROUPS, PARAMS, apply_theta
     p = copy.deepcopy(base)
+    skip = set()
+    if nroy:
+        row = nroy[int(rng.integers(len(nroy)))]
+        p["language"] = apply_theta(p["language"], row, scale_classes=True)
+        skip = {f"language.{path}" for path, _lo, _hi in PARAMS.values()}
+        skip |= {f"language.sigma0.{g}" for gs in CLASS_GROUPS.values() for g in gs}
     for path, (dist, a, b) in UNCERTAINTY.items():
+        if path in skip:
+            continue
         try:
             get_path(p, path)
         except (KeyError, IndexError, TypeError):
@@ -96,25 +109,41 @@ def summarise(res) -> dict:
         "km": np.array([[k[x] for x in KM_KEYS] for k in res.km]),
         "census_years": np.array(snap_years),
         "census": census,
+        "identity": np.array(res.identity).sum(axis=1) if res.identity else np.zeros((T, NI)),
     }
 
 
+CELL_YEARS = (1982, 2032)      # map frames kept for every member (probability maps)
+
+
 def _run_member(args):
-    params, seed = args
+    params, seed, cells = args
     p = copy.deepcopy(params)
     p["seed"] = int(seed)
     sim = Simulation(p)
     res = sim.run()
-    return summarise(res)
+    out = summarise(res)
+    if cells:
+        # downscale the member to the 3.5 km grid: language shares of each cell
+        from .spatial import downscale
+        sr = downscale(res, frame_years=list(CELL_YEARS))
+        for y in CELL_YEARS:
+            X = sr.display(sr.frame(y))
+            out[f"cells_{y}"] = (X / np.maximum(X.sum(axis=1, keepdims=True), 1e-9)).astype(np.float16)
+    return out
 
 
 def run_ensemble(base: dict, n: int = 24, seed: int = 7, workers: int | None = None,
-                 vary_params: bool = True) -> dict:
+                 vary_params: bool = True, cells: bool = False) -> dict:
+    """``cells``: also downscale each member and keep its map frames
+    (``CELL_YEARS``) for probability maps."""
+    from .calibration import load_nroy
     rng = np.random.default_rng(seed)
+    nroy = load_nroy()
     members = []
     for i in range(n):
-        p = draw_params(base, rng) if vary_params else copy.deepcopy(base)
-        members.append((p, int(rng.integers(1, 2**31 - 1))))
+        p = draw_params(base, rng, nroy) if vary_params else copy.deepcopy(base)
+        members.append((p, int(rng.integers(1, 2**31 - 1)), cells))
     workers = workers or max(1, min(os.cpu_count() or 1, n))
     if workers > 1:
         with ProcessPoolExecutor(max_workers=workers) as ex:
@@ -122,6 +151,14 @@ def run_ensemble(base: dict, n: int = 24, seed: int = 7, workers: int | None = N
     else:
         outs = [_run_member(m) for m in members]
     return stack(outs)
+
+
+def plurality_probability(ens: dict, year: int) -> np.ndarray:
+    """(cells, languages): share of members in which each language is the
+    most spoken home language of each cell."""
+    S = ens[f"cells_{year}"].astype(np.float32)                 # (members, cells, NL)
+    top = S.argmax(axis=2)
+    return np.stack([(top == k).mean(axis=0) for k in range(S.shape[2])], axis=1)
 
 
 def stack(outs: list[dict]) -> dict:
