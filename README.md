@@ -195,10 +195,10 @@ north-east and in the mixed Polish-Ukrainian belt of western Galicia
     residents, growth since 1932, area, density and home languages, and the
     chart follows it.
   * **Curzon line.** An overlay draws, for every 5-year frame, a continuous
-    line across the state, free to wind cell by cell, that leaves as many
-    non-Poles on its Polish side as Poles on its other side, with the most
-    Poles on the Polish side (details below and in `docs/METHODOLOGY.md`
-    §12.8). A second overlay draws the historical Curzon line of 1919-20
+    line across the state along county borders that leaves as many
+    non-Poles on its Polish side as Poles on its other side (to within a
+    county), with the most Poles on the Polish side (details below and in
+    `docs/METHODOLOGY.md` §12.8). A second overlay draws the historical Curzon line of 1919-20
     (line A), with the same people counted on either side.
 * **Static maps and animations**: `outputs/maps/`, including
   `anim_languages.gif` and `anim_density.gif`.
@@ -304,7 +304,9 @@ than 4 minutes). Details are in `docs/METHODOLOGY.md` §12.6.
 | wakar_poland | 32.7 | 73.0 | 4.9 | 4.6 | 12.6 | 0.0 | 1,046 |
 | wakar_poland_belarus | 49.4 | 50.2 | 3.3 | 3.7 | 36.8 | 0.0 | 1,050 |
 | no_official_language | 45.8 | 55.9 | 20.0 | 5.2 | 9.2 | 4.3 | 1,474 |
-| curzon_exchange | 46.0 | 68.6 | 16.7 | 3.8 | 3.4 | 4.2 | 878 |
+| curzon_exchange | 46.1 | 67.9 | 17.2 | 3.8 | 3.6 | 4.2 | 877 |
+| nw_krai (Poland and the krai together) | 63.8 | 45.7 | 12.3 | 3.6 | 29.5 | 3.1 | 1,217 |
+| lit_bel (Poland and Lit-Bel together) | 52.7 | 52.7 | 14.3 | 3.9 | 20.8 | 3.5 | 1,188 |
 
 Polish-speakers in the Lithuanian units (Polish is co-official in Lithuania
 in every scenario with the union, except the unitary `polonizing_union`),
@@ -317,7 +319,9 @@ and those of them with a Polish identity:
 | census_official (the 1923 census as printed) | 78 k | 58 k | 23 k → 15 k | 48 k → 41 k |
 | ukraine_autonomy_tricantonal (Lithuanian canton) | 153 k | 172 k | 54 k → 50 k | 78 k → 107 k |
 | autonomy_grand_duchy_coofficial (one Grand Duchy) | 154 k | 350 k | 54 k → 82 k | 78 k → 259 k |
-| curzon_exchange (Poles moved west in 1946) | 152 k | 88 k | 54 k → 4 k | 78 k → 88 k |
+| curzon_exchange (Poles moved west in 1946) | 152 k | 16 k | 54 k → 3 k | 78 k → 30 k |
+| nw_krai (the Lithuanian lands of the krai) | 154 k | 400 k | 54 k → 101 k | 76 k → 298 k |
+| lit_bel (the Lithuanian lands of Lit-Bel) | 155 k | 423 k | 54 k → 103 k | 76 k → 321 k |
 
 **Ukrainian autonomy + tri-cantonal Lithuania** (`ukraine_autonomy_tricantonal`).
 Lwów, Tarnopol and Stanisławów voivodeships plus Volhynia form a Ukrainian
@@ -334,7 +338,7 @@ in the autonomy and in every canton. By 2032:
   counties west of the San stay Polish.
 * Polish falls to 58 % of the union (69 % in the baseline).
 
-**Four more political settlements** (details in `docs/SCENARIOS.md`):
+**Six more political settlements** (details in `docs/SCENARIOS.md`):
 
 * `autonomy_grand_duchy_coofficial`: the same autonomy, and an undivided
   Grand Duchy with **Lithuanian, Polish and Belarusian co-official**.
@@ -359,30 +363,50 @@ in the autonomy and in every canton. By 2032:
   * Polish ends at 56 % of the union, and about 6 M more people keep a
     minority language than in the baseline.
   * Only 20 counties change their plurality language.
+* `nw_krai` (**Poland and the Northwestern Krai**) and `lit_bel` (**Poland
+  and Lit-Bel**): Poland without the lands of the old north-western
+  governorates, which form a separate state, simulated in the same run, with
+  Lithuanian, Belarusian, Polish, Yiddish and Russian official. The krai
+  holds Lithuania (without Klaipėda), the Wilno, Nowogródek and Grodno
+  lands, Polesie and all of Soviet Belarus; Lit-Bel, the borders of the
+  1919 republic, keeps only the Minsk-governorate part of Soviet Belarus.
+  * Poland: 28.0 M in 1933, 37.6 M in 2032, 73 % Polish.
+  * The krai: 12.1 M to 29.3 M, Belarusian 46 → 67 %, Polish 16 → 11 %
+    (1.9 → 3.3 M speakers), Lithuanian 16 → 7 %. Lit-Bel: 9.2 M to 19.4 M,
+    Belarusian 36 → 59 %, Polish 20 → 16 %.
+  * Polesie turns Belarusian. Wilno county stays Polish-plurality (47-49 %),
+    with a third of it Belarusian.
 * `curzon_exchange`: the baseline with an equal population exchange on
-  1 January 1946 along that year's equal-exchange line. 2.39 M Poles move
-  to the Polish side; 2.39 M others move to the other side (0.93 M
-  Ukrainians, 0.89 M Belarusians, 0.21 M Lithuanians, 0.13 M Lemkos ...).
-  * Wilno voivodeship becomes 91 % Polish (75 % in the baseline) and Lublin's
-    Ukrainians fall from 9 to 2 %; the Lauda Poles almost all leave.
-  * In the long run the exchange slightly *raises* the number of minority
-    speakers (Ukrainian 8.06 M against 7.94 M in 2032): consolidated
-    minorities have fewer scattered speakers to lose.
+  1 January 1946 along that year's equal-exchange line. Whole counties
+  move: 2.40 M Poles to the Polish side, 2.34 M others to the other side
+  (1.37 M Ukrainians, 0.54 M Belarusians, 0.13 M Lemkos, 0.10 M
+  Lithuanians ...).
+  * By 2032 Lwów voivodeship is 69 % Polish (59 % in the baseline),
+    Lublin's Ukrainians fall from 9 to 3 % (13 % in the baseline), and
+    Lithuania's Poles, the Lauda gentry included, almost all leave (16 k
+    Polish speakers left, against 119 k).
+  * In the long run the exchange *raises* the number of minority speakers
+    (Ukrainian 8.27 M against 7.94 M in 2032): consolidated minorities have
+    fewer scattered speakers to lose.
 
 **The equal-exchange Curzon line.** For every 5-year frame the atlas can
 draw (in magenta) a continuous line across the state, from border to border
-and free to wind cell by cell, that leaves as many non-Poles on its Polish
-side as Poles on its other side, with the most Poles on the Polish side.
-Kashubians, Wymysorys speakers, Germans and Jews are not counted.
+along county borders, that leaves as many non-Poles on its Polish side as
+Poles on its other side (to within one county), with the most Poles on the
+Polish side. Kashubians, Wymysorys speakers, Germans and Jews are not
+counted.
 
-* In the baseline it moves 1.9 M people each way in 1932 and 4.3 M in 2032.
-* In 1932 the Polish side keeps the Wilno lands (through a strip along the
-  Lithuanian frontier) and Lwów; Lithuania, the Belarusian lands, Volhynia
-  and the rest of eastern Galicia are on the other side.
-* By 2032 the Polish side has spread east over a Polonised Polesie.
+* In the baseline it moves 1.84 M people each way in 1932 and 4.4 M in
+  2032.
+* In 1932 the Polish side keeps the western Wilno lands with Wilno (joined
+  through Grodno and Lida), Lwów with most of lwowskie, and Tarnopol;
+  Lithuania, Polesie, Volhynia, Stanisławów and the eastern Wilno and
+  Nowogródek lands are on the other side.
+* By 2032 the Polish side has spread east over a Polonised Polesie, and
+  Tarnopol has passed to the other side.
 * **Against the historical line** of 1919-20 (line A in Galicia; dashed in
   the atlas): in 1932 it leaves 0.96 M non-Poles west and 3.27 M Poles east,
-  against 1.89 M each way for the computed line. The diplomats' line was
+  against 1.84 M each way for the computed line. The diplomats' line was
   drawn on the ethnographic maps of 1919 and leaves the Poles of the Wilno
   lands, Lwów and the eastern towns on the other side. As the east Polonises
   in the baseline, the gap widens: 2.38 M non-Poles west and 9.0 M Poles east
@@ -425,7 +449,7 @@ plsim/
   data/geo_base.json     coastline, lakes and rivers (GSHHS via basemap-data)
   spatial.py             downscaling + neighbourhood (Prochazka-Vogl) language-shift allocation
   maps.py, webmap.py     static maps, GIF animations, interactive atlas data
-  curzon.py              the equal-exchange Curzon line (free cell-by-cell partition), the 1919-20 line
+  curzon.py              the equal-exchange Curzon line (whole counties), the 1919-20 line
   atlas_template.html    the interactive atlas page
   cli.py                 command-line interface
 scenarios/*.yaml         13 scenarios (extends/override)

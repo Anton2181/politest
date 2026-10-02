@@ -211,7 +211,8 @@ RAIL_CLS = ["nar", "sec", "main", "main_el", "hsr"]
 ROAD_CLS = ["dirt", "gravel", "paved", "express", "motorway"]
 MEMBER_LABELS = {"PL": "Poland", "LT": "Lithuania", "UA": "Ukrainian autonomy",
                  "GD-L": "Grand Duchy: Lithuanian canton", "GD-P": "Grand Duchy: Polish canton",
-                 "GD-B": "Grand Duchy: Belarusian canton", "GD": "Grand Duchy of Lithuania (autonomous)"}
+                 "GD-B": "Grand Duchy: Belarusian canton", "GD": "Grand Duchy of Lithuania (autonomous)",
+                 "NWK": "Northwestern Krai (separate state)", "LB": "Lit-Bel (separate state)"}
 LOG_KINDS = {"new", "dated", "closure"}
 LOG_UPGRADES = {"hsr", "motorway"}
 

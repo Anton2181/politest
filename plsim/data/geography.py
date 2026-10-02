@@ -377,6 +377,17 @@ def _build_base_grid(region_codes: list[str], dlat: float, dlon: float) -> Grid:
     reg_state = np.array([state_of_code(c) for c in region_codes])
     state = np.full(len(la), "", dtype="<U2")
     state[land] = state_of(la[land], lo[land])
+    # Soviet Belarus is the modern outline minus Poland and Lithuania of 1932;
+    # slivers left over along the old Polish border (north of Brasław, by the
+    # Druja bend of the Dvina) were never part of the BSSR: keep its main body
+    by = (state == "BY").reshape(LA.shape)
+    if by.any():
+        from scipy import ndimage
+        lab, n = ndimage.label(by, structure=np.ones((3, 3)))
+        if n > 1:
+            sizes = ndimage.sum(by, lab, index=np.arange(1, n + 1))
+            stray = by & (lab != 1 + int(np.argmax(sizes)))
+            state[stray.ravel()] = ""
     idx = np.where(np.isin(state, np.unique(reg_state)))[0]
     la, lo, cell_state = la[idx], lo[idx], state[idx]
     dom = [(n.lat, n.lon, reg_idx[n.region]) for n in NODES if n.region in reg_idx]

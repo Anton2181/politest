@@ -314,9 +314,9 @@ def fig_curzon(sr, lines: list[dict], path: str, years=(1932, 1982, 2032), title
         fig.suptitle(title, x=0.01, ha="left", fontsize=13, fontweight="bold", color=INK)
     fig.tight_layout(rect=(0, 0.09, 1, 0.95 if title else 1))
     _legend_cats(fig, present, y=0.035)
-    fig.text(0.01, 0.005, "Magenta line: the continuous line across the state that leaves as many non-Poles on its Polish "
-             "side as Poles on the other, with the most Poles on the Polish side. Kashubians, Wymysorys, Germans "
-             "and Jews are not counted.", fontsize=8, color=INK2)
+    fig.text(0.01, 0.005, "Magenta line: the line along county borders that leaves as many non-Poles on its Polish side "
+             "as Poles on the other (to within a county), with the most Poles on the Polish side. Kashubians, "
+             "Wymysorys, Germans and Jews are not counted.", fontsize=8, color=INK2)
     _save(fig, path)
 
 

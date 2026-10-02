@@ -143,3 +143,54 @@ def test_county_polygons_override_voronoi(tmp_path, monkeypatch):
     monkeypatch.setattr(sr, "_POLYS", None)
     assert sr.assign("TAR", [lat, 49.55], [lon, 25.6]).tolist() == ["TAR.tarnopol", "TAR.tarnopol"]
     monkeypatch.setattr(sr, "_POLYS", None)
+
+
+# ---------------------------------------------------------------- county Curzon line, Belarus exclave, new states
+def test_county_curzon_line_keeps_counties_whole():
+    from plsim.curzon import BBOX, split
+    d = 0.1
+    rr, cc = np.meshgrid(np.arange(30), np.arange(30), indexing="ij")
+    lat = BBOX[1] + d / 2 + rr.ravel() * d
+    lon = BBOX[0] + d / 2 + cc.ravel() * d
+    units = (rr // 5 * 6 + cc // 5).ravel()                     # 36 counties of 5 x 5 cells
+    people = np.full(lat.size, 100.0)
+    share = np.clip(1.1 - cc.ravel() / 25.0, 0, 1)              # Polish in the west, not in the east
+    s = split(lat, lon, share * people, people, d, d, units=units)
+    side = s["polish_side"]
+    for u in np.unique(units):
+        assert side[units == u].all() or not side[units == u].any()
+    assert abs(s["residual"]) <= 2500                             # within one county
+    assert len(s["lines"]) == 1
+
+
+def test_belarus_has_no_exclave():
+    from scipy import ndimage
+    from plsim.data.geography import BBOX, build_grid
+    from plsim.params import load_scenario
+    from plsim.model import Simulation
+    p = load_scenario("wakar_poland_belarus")
+    p["end_year"] = p["start_year"]
+    codes = Simulation(p).codes
+    g = build_grid(codes)
+    by = np.array([codes[k].startswith("BY_") for k in g.region])
+    r = np.round((g.lat[by] - (BBOX[1] + g.dlat / 2)) / g.dlat).astype(int)
+    c = np.round((g.lon[by] - (BBOX[0] + g.dlon / 2)) / g.dlon).astype(int)
+    M = np.zeros((r.max() + 2, c.max() + 2), int)
+    M[r, c] = 1
+    _, n = ndimage.label(M, structure=np.ones((3, 3)))
+    assert n == 1
+
+
+@pytest.mark.parametrize("name,member,out", [("nw_krai", "NWK", []),
+                                             ("lit_bel", "LB", ["BY_WIT", "BY_MOH.mohylew", "BY_HOM.homel"])])
+def test_krai_scenarios_split_the_lands(name, member, out):
+    from plsim.params import load_scenario, region_lookup
+    p = load_scenario(name)
+    for code in ["WIL.wilno", "NOW.lida", "BIA.grodno", "POL.pinsk", "LT_KAU", "LT_NEA.utena", "BY_MIN.minsk"]:
+        assert region_lookup(p["members"], code) == member
+        assert sorted(region_lookup(p["official_languages"], code)) == ["be", "lt", "pl", "ru", "yi"]
+    for code in ["BIA.lomza", "BIA.suwalki", "POL.kamienkoszyrsk", "WOL.luck", "WAR"]:
+        assert region_lookup(p["members"], code) == "PL"
+    assert "LT_KLA" in p["exclude"]
+    for code in out:
+        assert code in p["exclude"]

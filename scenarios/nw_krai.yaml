@@ -1,0 +1,58 @@
+# The Northwestern Krai: Poland without the lands of the six "north-western"
+# governorates of the Russian Empire (Vilna, Kovno, Grodno, Minsk, Mogilev,
+# Vitebsk), which form a state of their own, simulated alongside it.
+#
+# * Premise: in 1919-21 the old Northwestern Krai is not partitioned between
+#   Poland, Lithuania and Soviet Russia but survives as one state of the
+#   Lithuanian and Belarusian lands. Poland keeps the rest of its 1931
+#   territory (with Volhynia and Galicia); there is no Polish-Lithuanian union.
+# * The krai, by 1931 counties (governorates of 1897 in brackets): Lithuania
+#   without Klaipėda (Kovno; Suvalkija, which was Suwałki governorate, stays
+#   with the Lithuanian lands); the whole of wileńskie and nowogródzkie
+#   (Vilna, Minsk, Grodno); Białystok, Bielsk, Sokółka, Grodno and Wołkowysk
+#   (Grodno); Polesie except Kamień Koszyrski, which was Volhynia (Grodno,
+#   Minsk); and all of Soviet Belarus (Minsk, Mogilev, Vitebsk). Klaipėda,
+#   German Memelland until 1923, is left out.
+# * Two states in one run. The krai has its own official languages and policy;
+#   migration across the Polish-krai border is an international flow
+#   (friction 0.03, against 0.10 between federal members), and Polish
+#   settlement goes to Volhynia only. Both share one growth path and one
+#   transport budget, a simplification.
+# * Languages of the krai: Lithuanian, Belarusian, Polish, Yiddish and Russian
+#   are all official (status, schools, open to shift). Each county works in
+#   whichever of Lithuanian, Polish and Belarusian (with West Polesian) had
+#   the most speakers in 1931. Assimilation pressure is low (0.6).
+extends: baseline
+meta:
+  name: nw_krai
+  description: "Poland without the Northwestern Krai (Vilna, Kovno, Grodno, Minsk, Mogilev, Vitebsk governorates), a separate state with five official languages"
+include_belarus: true
+region_groups:
+  KRAI: [WIL, NOW, BIA.bialystok, BIA.bielskpodlaski, BIA.sokolka, BIA.grodno, BIA.wolkowysk,
+         POL.brzesc, POL.drohiczyn, POL.kobryn, POL.kosowpoleski, POL.luniniec, POL.pinsk, POL.pruzana, POL.stolin,
+         LT_KAU, LT_LAU, LT_NEA, LT_SUV, LT_ZEM, BY_WIT, BY_MIN, BY_MOH, BY_HOM]
+exclude: [LT_KLA]
+members:
+  _replace: true
+  default: PL
+  KRAI: NWK
+dominant_language:
+  _replace: true
+  default: pl
+  KRAI: auto:lt,pl,be+pls
+official_languages:
+  _replace: true
+  KRAI: [lt, be, pl, yi, ru]
+migration:
+  member_friction:
+    _replace: true
+    "PL|NWK": 0.03
+  settlement:
+    destinations:
+      _replace: true
+      WOL: 1.0
+language:
+  pressure:
+    _replace: true
+    default: [[1931, 1.0], [1950, 0.9], [1990, 0.8]]
+    KRAI: 0.6

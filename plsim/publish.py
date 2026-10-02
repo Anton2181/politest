@@ -31,6 +31,10 @@ SCENARIO_NOTES = {
                             "Belarusian co-official",
     "no_official_language": "Poland with no official language (all languages equal); Lithuania as in the baseline",
     "curzon_exchange": "Baseline with an equal population exchange in 1946 along that year's computed Curzon line",
+    "nw_krai": "Poland without the Northwestern Krai (the Vilna, Kovno, Grodno, Minsk, Mogilev and Vitebsk "
+               "governorates), which is a separate state with Lithuanian, Belarusian, Polish, Yiddish and Russian official",
+    "lit_bel": "Poland without Lit-Bel (the Vilna, Kovno, Grodno and Minsk governorates), a separate state with the "
+               "same five official languages",
 }
 ID_NAMES = {"pl": "Polish", "uk": "Ukrainian", "be": "Belarusian", "lt": "Lithuanian", "jw": "Jewish",
             "de": "German", "loc": "Local ('tutejszy')"}

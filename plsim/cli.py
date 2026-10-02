@@ -143,6 +143,8 @@ SCENARIO_TITLES = {
     "wakar_poland_belarus": "Wakar's Poland-Belarus",
     "no_official_language": "No official language",
     "curzon_exchange": "Curzon-line population exchange",
+    "nw_krai": "Poland and the Northwestern Krai",
+    "lit_bel": "Poland and Lit-Bel",
 }
 
 
@@ -261,7 +263,38 @@ def census_consistency() -> list[list]:
     return rows
 
 
-def build_report(outroot: str, n_ens: int, scenarios: list[str] | None = None, workers: int | None = None):
+def run_digest(res) -> str:
+    """Fingerprint of a seeded run's results (population, vital events, towns,
+    identity): equal digests mean the run came out bit for bit the same."""
+    h = hashlib.sha1()
+    for k in ("pop", "births", "deaths", "town_pop", "identity"):
+        h.update(np.ascontiguousarray(np.asarray(getattr(res, k), dtype=np.float64)).tobytes())
+    return h.hexdigest()
+
+
+def _ensemble(name: str, n: int, workers, seed: int, outroot: str, digest: str, reuse: bool, cells: bool = False):
+    """Run (or, with ``reuse``, load) the ensemble of a scenario. A saved
+    ensemble is reused only if it has as many members and was made when the
+    scenario's seeded run had the same digest, i.e. when nothing that changes
+    the scenario's results has changed since (presentation, other scenarios,
+    Soviet Belarus geometry ...). Returns (ensemble, map cells or None)."""
+    from .ensemble import load
+    path = os.path.join(outroot, f"ensemble_{name}.npz")
+    if reuse and os.path.exists(path):
+        old = load(path)
+        if str(old.get("run_digest", "")) == digest and len(old["pop_total"]) == n:
+            print(f"  reusing {path}: the seeded {name} run is unchanged", flush=True)
+            return old, None
+        print(f"  {path} is stale; running the ensemble", flush=True)
+    ens = run_ensemble(load_scenario(name), n=n, workers=workers, seed=seed, cells=cells)
+    out = {y: ens.pop(f"cells_{y}") for y in CELL_YEARS if f"cells_{y}" in ens}
+    ens["run_digest"] = np.array(digest)
+    save(ens, path)
+    return ens, (out or None)
+
+
+def build_report(outroot: str, n_ens: int, scenarios: list[str] | None = None, workers: int | None = None,
+                 reuse_ensemble: bool = False):
     figdir = os.path.join(outroot, "figures")
     os.makedirs(figdir, exist_ok=True)
     scenarios = scenarios or all_scenarios()
@@ -274,8 +307,7 @@ def build_report(outroot: str, n_ens: int, scenarios: list[str] | None = None, w
     base = results["baseline"]
     print(f"ensemble (n={n_ens}) for baseline ...")
     t = time.time()
-    ens = run_ensemble(load_scenario("baseline"), n=n_ens, workers=workers, cells=True)
-    cells = {y: ens.pop(f"cells_{y}") for y in CELL_YEARS if f"cells_{y}" in ens}
+    ens, cells = _ensemble("baseline", n_ens, workers, 7, outroot, run_digest(base), reuse_ensemble, cells=True)
     if cells:
         # probability maps: in how many runs each language leads each cell
         prob = {y: mp.plurality_probability(c) for y, c in cells.items()}
@@ -283,14 +315,14 @@ def build_report(outroot: str, n_ens: int, scenarios: list[str] | None = None, w
                             n=n_ens, **{f"prob_{y}": p.astype(np.float16) for y, p in prob.items()})
         from .data.geography import build_grid
         mp.fig_uncertainty(build_grid(base.region_codes), prob, os.path.join(outroot, "maps", "map_uncertainty.png"),
-                           n_ens, title="How sure is the map? The baseline across the ensemble")
+                           n_ens, title="How certain is the map? The baseline across the ensemble")
         del cells
-    save(ens, os.path.join(outroot, "ensemble_baseline.npz"))
     export_ensemble(ens, os.path.join(outroot, "ensemble_baseline"))
     print(f"  {time.time() - t:.1f}s")
     ens_ii = None
     if "ii_rp_only" in scenarios and n_ens >= 8:
-        ens_ii = run_ensemble(load_scenario("ii_rp_only"), n=max(8, n_ens // 2), workers=workers, seed=11)
+        ens_ii, _ = _ensemble("ii_rp_only", max(8, n_ens // 2), workers, 11, outroot,
+                              run_digest(results["ii_rp_only"]), reuse_ensemble)
         export_ensemble(ens_ii, os.path.join(outroot, "ensemble_ii_rp_only"))
     F = lambda n: os.path.join(figdir, n)  # noqa: E731
     rp.fig_population(ens, F("population.png"))
@@ -438,6 +470,8 @@ def main(argv=None):
     d.add_argument("--workers", type=int)
     d.add_argument("--out", default=os.path.join(ROOT, "outputs"))
     d.add_argument("--scenarios", nargs="*")
+    d.add_argument("--reuse-ensemble", action="store_true",
+                   help="reuse a saved ensemble when the scenario's seeded run is unchanged")
     m = sub.add_parser("maps")
     m.add_argument("--out", default=os.path.join(ROOT, "outputs"))
     m.add_argument("--scenarios", nargs="*")
@@ -468,7 +502,7 @@ def main(argv=None):
         for row in census_consistency():
             print(", ".join(row))
     elif args.cmd == "report":
-        build_report(args.out, args.n, args.scenarios, args.workers)
+        build_report(args.out, args.n, args.scenarios, args.workers, args.reuse_ensemble)
     elif args.cmd == "maps":
         build_maps(args.out, args.scenarios, gifs=not args.no_gifs, workers=args.workers)
     elif args.cmd == "calibrate":

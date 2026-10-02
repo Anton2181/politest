@@ -1296,11 +1296,13 @@ rescaling alone removes about 30 k Belarusian speakers.
 For each atlas frame (1932, every 5 years, 2032), `plsim.curzon` draws a
 continuous line across the whole state of the scenario (Poland, with
 Lithuania in the union scenarios and Soviet Belarus where it is part of the
-state), from one point of its outer border to another. The line may wind
-freely, cell by cell on the 3.5 km grid, through counties. It divides the
-state into a Polish side and an other side, each in one piece, and leaves:
+state), from one point of its outer border to another. The line follows
+county borders: every county (powiat, apskritis, okrug) lies wholly on one
+side. It divides the state into a Polish side and an other side, each in one
+piece, and leaves:
 
-* as many **non-Poles on the Polish side** as **Poles on the other side**;
+* as many **non-Poles on the Polish side** as **Poles on the other side**,
+  to within one county (the **residual** is reported);
 * among all such lines, the most Poles on the Polish side.
 
 **Who is counted.**
@@ -1317,42 +1319,58 @@ state into a Polish side and an other side, each in one piece, and leaves:
 
 **Reformulation.** Non-Poles on the Polish side plus Poles on the Polish
 side are the people counted there, and the Poles on both sides are all
-Poles. The condition is therefore that the Polish side holds exactly as many
+Poles. The condition is therefore that the Polish side holds as many
 counted people as there are Poles. The task is to find the most Polish
-connected set of cells of that size whose complement is connected too; the
-line is their common boundary. If both sides are in one piece and touch the
-border, that boundary is a single line from border to border.
+connected set of counties of about that size whose complement is connected
+too; the line is their common border. If both sides are in one piece and
+touch the outer border, that border is a single line from edge to edge.
 
 **Search** (a heuristic: the exact problem is a hard graph-partitioning
-problem).
+problem). Counties are neighbours when their cells touch edge to edge on the
+3.5 km grid.
 
-1. *Growth.* The Polish side grows from its most Polish large cell, always
-   taking the most Polish cell on its edge, until it holds the target number
-   of people.
-2. *One piece.* Pieces of the other side cut off by the growth join the
-   Polish side.
+1. *Growth.* The Polish side grows from its most Polish large county (the
+   top quarter by people), always taking the most Polish county on its edge,
+   until it holds the target number of people. A county whose taking would
+   cut the other side in two is skipped, unless every piece cut off is
+   Polish-majority; such pieces then join the Polish side. A remote Polish
+   district (the Wilno lands, cut off by the Polish side's advance) can be
+   taken in this way; a whole Lithuania or Polesie cannot.
+2. *One piece.* Any piece of the other side still cut off joins the Polish
+   side.
 3. *Exchange.* While the Polish side is too large, it gives away its least
-   Polish edge cell; while too small, it takes the most Polish cell on the
-   other side's edge. A cell moves only if neither side is split by it (a
-   test on its eight neighbours, using edge-to-edge contact). The exchange
-   stops when 60 crossings of the target in a row bring no more Poles; the
-   best state seen is kept.
-4. *Balance.* The balance is made exact inside the last cell moved, whose
-   people are split pro rata.
-5. A test checks on a synthetic grid that both sides are in one piece, the
-   line is one curve, the balance is exact, and the result beats every
-   straight line.
+   Polish county on the line; while too small, it takes the most Polish
+   county on the other side of the line. A county moves only if the side
+   it leaves stays in one piece, and not within six moves of its last move
+   (a "tabu" that stops two counties swapping back and forth).
+4. *Scoring.* Each time the exchange crosses the target, the state is
+   scored by the Poles the Polish side would hold at exact balance (the
+   last county moved counted pro rata). Of the two whole-county states
+   around the best crossing, the one nearer to balance is kept. The
+   exchange stops when 60 crossings in a row bring no better score.
+5. *Islands.* Counties that touch no other part of the state (none at
+   present) stay on the side of their majority.
+6. A test checks on a synthetic grid of 36 counties that every county lies
+   on one side, the line is one curve, and the residual is within one
+   county.
+
+`curzon.split` without `units` still draws the line cell by cell, with exact
+balance (the earlier method of the atlas). That line wound through counties
+in strips one cell wide, which made it hard to read.
 
 **Properties of the optimum.**
 
-* The line is jagged at the scale of a cell: nothing in the rules prefers a
-  smooth line.
-* It uses corridors. In the union scenarios of 1932 a strip one cell wide
-  along Lithuania's frontier joins the Polish-speaking Wilno lands to the
-  rest of the Polish side. It costs 0.1 M non-Poles, against a corridor
-  through the Belarusian-speaking Grodno and Lida lands.
-* Polish towns deep in the other side (Lwów, Tarnopol) are taken in when a
-  corridor to them pays its way.
+* The line is as jagged as the county borders, no more.
+* The residual is at most the people of one border county: under 70
+  thousand in most frames, up to 0.44 M where a large county lies on the
+  line, against flows of 1.2-5 million each way.
+* Whole counties cost nothing in practice. In the baseline of 1932 the
+  line that wound cell by cell left 1.89 M each way, the county line
+  1.84-1.85 M. Both searches are heuristics, and the one on cells, with
+  far more moves open to it, stopped at a poorer solution.
+* Remote Polish districts join the Polish side only if a chain of counties
+  to them pays its way. In the union scenarios of 1932 the western Wilno
+  lands come in through Grodno and Lida, and Tarnopol through Lwów county.
 
 **Outputs.**
 
@@ -1383,8 +1401,8 @@ The same people as for the computed line are counted on each side of it
 the modelled population, lies from the diplomats' line, which followed the
 ethnographic maps of 1919. In the baseline of 1932 the historical line leaves
 0.96 M non-Poles on its west side and 3.27 M Poles on its east side (the
-Wilno lands, Lwów and the eastern towns); the computed line leaves 1.89 M
-each way. By 2032 the historical line's imbalance grows to 2.38 M against
+Wilno lands, Lwów and the eastern towns); the computed line leaves 1.84 M
+non-Poles and 1.85 M Poles. By 2032 the historical line's imbalance grows to 2.38 M against
 9.0 M as the east Polonises. In the autonomy scenarios it comes close to
 balance (3.0 M against 4.1 M).
 
@@ -1392,12 +1410,12 @@ balance (3.0 M against 4.1 M).
 `plsim.exchange`). On 1 January of the exchange year (1946), every Pole on
 the other side of that year's line moves to the Polish side. Every counted
 non-Pole on the Polish side moves to the other side. Jews and the other
-people not counted do not move. The line makes the two flows equal by
-construction. The plan is computed from the run of the base scenario, which
-is identical to this scenario up to that year: for every county, the share of
-its Poles beyond the line, and by language the share of its counted
-non-Poles on the Polish side. These shares come from the 3.5 km cells, so a
-county cut by the line gives up only the people on the wrong side.
+people not counted do not move. The line makes the two flows equal to within
+the residual of one county. The plan is computed from the run of the base
+scenario, which is identical to this scenario up to that year. Since the
+line follows county borders, a county moves as a whole: all its Poles leave
+if it lies on the other side, all its counted non-Poles if it lies on the
+Polish side.
 
 Movers take the places of those who left:
 
