@@ -29,6 +29,16 @@ the Belarusian nationality was declared by nearly all Belarusian speakers
 (Soviet indigenisation), and Catholics were split between Belarusian and
 Polish.
 
+The mixes of the Orthodox and of the Jews were fitted to the 1921
+nationality census by voivodeship (``data.census1921``; the fit is
+``plsim.validate.identity_1921``): the starting identity, recorded as the
+1921 census would have recorded it, against Poland's totals (Polish 69.2 %,
+Ukrainian and Ruthenian 15.2, Jewish 8.0, Belarusian 4.0, German 3.0) and
+Volhynia, Stanisławów, Tarnopol and Polesie (Belarusian 42.6 %, Polish 24.3,
+Ruthenian 17.7, Jewish 10.5, "tutejszy" 4.4). In 1921 the Orthodox of
+Polesie answered Belarusian far more often than in the language census of
+1931, which entered most of them as "tutejszy".
+
 Dynamics
 --------
 * **Births.** A child raised in its mother's language takes her identity.
@@ -59,12 +69,12 @@ import numpy as np
 
 from .data.languages import COMMUNITIES, GROUPS, LANG_INDEX, NG, NL
 
-IDENTITIES = ["pl", "uk", "be", "lt", "ru", "de", "jw", "cs", "lv", "csb", "rue", "loc", "oth"]
+IDENTITIES = ["pl", "uk", "be", "lt", "ru", "de", "jw", "cs", "lv", "csb", "rue", "loc", "oth", "sil"]
 ID_INDEX = {k: i for i, k in enumerate(IDENTITIES)}
 NI = len(IDENTITIES)
 ID_LABEL = {"pl": "Polish", "uk": "Ukrainian", "be": "Belarusian", "lt": "Lithuanian", "ru": "Russian",
             "de": "German", "jw": "Jewish", "cs": "Czech", "lv": "Latvian", "csb": "Kashubian",
-            "rue": "Lemko/Rusyn", "loc": "Local ('tutejszy')", "oth": "Other"}
+            "rue": "Lemko/Rusyn", "loc": "Local ('tutejszy')", "oth": "Other", "sil": "Silesian"}
 
 
 def natural(c: str, l: str) -> str:
@@ -88,8 +98,8 @@ def natural(c: str, l: str) -> str:
 
 # Identity mix of each group in 1931 (missing groups: their natural identity).
 INITIAL = {
-    "RC:pl": {"pl": .998, "lt": .002},
-    "RC:uk": {"pl": .85, "uk": .15},
+    "RC:pl": {"pl": 1.0},
+    "RC:uk": {"pl": .80, "uk": .20},
     "RC:be": {"pl": .78, "be": .12, "loc": .10},
     "RC:pls": {"loc": .70, "pl": .30},
     "RC:de": {"de": .70, "pl": .30},
@@ -105,15 +115,15 @@ INITIAL = {
     "GC:uk": {"uk": .88, "ru": .01, "pl": .06, "loc": .05},
     "GC:rue": {"rue": .60, "uk": .30, "pl": .10},
     "OR:pl": {"pl": .85, "ru": .05, "be": .05, "uk": .05},
-    "OR:uk": {"uk": .78, "loc": .13, "ru": .02, "pl": .07},
-    "OR:be": {"be": .52, "loc": .35, "ru": .03, "pl": .10},
-    "OR:pls": {"loc": .75, "uk": .12, "be": .08, "pl": .05},
+    "OR:uk": {"uk": .90, "loc": .06, "ru": .02, "pl": .02},
+    "OR:be": {"be": .65, "loc": .26, "ru": .03, "pl": .06},
+    "OR:pls": {"loc": .50, "be": .33, "uk": .10, "pl": .07},
     "OR:ru": {"ru": .85, "be": .10, "pl": .05},
     "OR:lt": {"lt": .70, "ru": .30},
     "OR:rue": {"rue": .60, "uk": .30, "ru": .10},
     "OR:cs": {"cs": .90, "uk": .10},
     "JW:pl": {"jw": .35, "pl": .65},
-    "JW:yi": {"jw": .88, "pl": .12},
+    "JW:yi": {"jw": .78, "pl": .22},
     "JW:de": {"jw": .60, "de": .30, "pl": .10},
     "JW:ru": {"jw": .70, "ru": .30},
     "JW:lt": {"jw": .70, "lt": .30},
@@ -122,8 +132,28 @@ INITIAL = {
     "PR:lt": {"de": .50, "lt": .30, "oth": .20},       # Memellanders
     "OT:be": {"be": .70, "loc": .30},
 }
-# Overrides by region prefix: the Lithuanian member, Soviet Belarus, Latgale and the Russian lands
+# Overrides by region prefix: the Lithuanian member, Soviet Belarus, Latgale and the Russian lands,
+# and the west lands (data.west). Upper Silesians of 1931 split between Polish, German and a Silesian
+# identity (a quarter of the German-speaking Catholics of Upper Silesia held the regional one: the
+# "verification" of 1945-50 kept about 850,000 autochthons there) (the 1921 plebiscite gave Germany 60 % of the votes in its part, with Polish majorities in
+# the eastern rural counties); Masurians voted 98 % for Germany in 1920 and mostly felt German or
+# Masurian ("local"); Warmians and the Catholic Poles of Stuhm were more often Polish; in Cieszyn
+# Silesia the "Ślązakowcy" held a Silesian identity apart from Poles and Czechs; the Goral villages of
+# Orava and Spiš were mostly Slovak by identity.
 INITIAL_REGIONS = {
+    "WIL": {"RC:pl": {"pl": .99, "lt": .01}},
+    "DE_OPO": {"RC:pl": {"pl": .30, "sil": .40, "de": .30}, "PR:pl": {"de": .65, "sil": .25, "pl": .10},
+               "RC:cs": {"de": .45, "cs": .25, "sil": .30}, "RC:de": {"de": .75, "sil": .25}},
+    "DE_WAR": {"RC:pl": {"pl": .45, "de": .40, "loc": .15}},
+    "DE_MAZ": {"PR:pl": {"de": .82, "loc": .13, "pl": .05}, "RC:pl": {"pl": .40, "de": .60}},
+    "DE_MAR": {"RC:pl": {"pl": .70, "de": .30}},
+    "DE_": {"RC:pl": {"pl": .65, "de": .35}, "PR:pl": {"de": .80, "pl": .20}, "RC:csb": {"csb": .30, "pl": .30, "de": .40},
+            "RC:de": {"de": 1.0}, "PR:de": {"de": 1.0}, "JW:de": {"jw": .50, "de": .50}, "RC:cs": {"cs": .60, "de": .40}},
+    "DZ_": {"RC:pl": {"pl": .85, "de": .15}, "RC:csb": {"csb": .30, "pl": .60, "de": .10}, "RC:de": {"de": 1.0},
+            "JW:de": {"jw": .50, "de": .50}, "JW:yi": {"jw": 1.0}},
+    "CS_CIE": {"RC:pl": {"pl": .62, "sil": .23, "cs": .15}, "PR:pl": {"pl": .55, "sil": .35, "cs": .10},
+               "RC:cs": {"cs": 1.0}, "PR:cs": {"cs": 1.0}, "RC:de": {"de": 1.0}, "JW:de": {"jw": .50, "de": .50}},
+    "CS_SPO": {"RC:pl": {"cs": .70, "pl": .22, "loc": .08}, "RC:cs": {"cs": 1.0}, "RC:de": {"de": 1.0}},
     "LT_": {"RC:pl": {"pl": .42, "lt": .58}, "RC:lt": {"lt": .998, "pl": .002},
             "RC:be": {"pl": .50, "be": .20, "lt": .30}, "JW:yi": {"jw": .97, "lt": .03}},
     "BY_": {"RC:pl": {"pl": .97, "be": .03}, "RC:be": {"be": .55, "pl": .45},
@@ -282,6 +312,8 @@ def identity_mapping(regime: str, ident: str, region_code: str) -> dict:
     census category by a nationality census."""
     direct = {"pl": "pl", "uk": "uk", "be": "be", "lt": "lt", "ru": "ru", "de": "de", "jw": "jw", "cs": "cs",
               "lv": "lv", "oth": "other"}
+    if ident == "sil":                         # no census before 2002 had a Silesian category
+        return _d(pl=.6, de=.3, other=.1) if regime != "modern_selfid" else {"other": 1.0}
     if regime == "polish_1921":
         # no Kashubian or Lemko category; "local" people were mostly entered
         # by the enumerators under a nationality
@@ -290,7 +322,7 @@ def identity_mapping(regime: str, ident: str, region_code: str) -> dict:
         if ident == "rue":
             return _d(ruth=.7, uk=.2, pl=.1)
         if ident == "loc":
-            return _d(tut=.25, pl=.35, be=.2, uk=.2)
+            return _d(tut=.15, pl=.15, be=.5, uk=.2)
         return {direct[ident]: 1.0}
     if regime == "lithuanian_1923":
         if ident == "csb":

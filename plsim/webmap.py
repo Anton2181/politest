@@ -64,10 +64,10 @@ def identity_frames(res, frames=FRAMES) -> np.ndarray:
 
 def identity_series(res, frames=FRAMES) -> dict:
     """National identity totals (thousands) per frame, for the legend."""
-    return {"years": list(frames), "cats": [[round(float(v) / 1000, 1) for v in
-                                             (identity_shares(identity_at(res, y)) *
-                                              identity_at(res, y).sum(axis=1, keepdims=True)).sum(axis=0)]
-                                            for y in frames]}
+    def tot(y):
+        I = identity_at(res, y)[_poland_mask(res, y)]
+        return (identity_shares(I) * I.sum(axis=1, keepdims=True)).sum(axis=0)
+    return {"years": list(frames), "cats": [[round(float(v) / 1000, 1) for v in tot(y)] for y in frames]}
 
 
 def encode_uncert(prob: dict, grid, full) -> bytes:
@@ -105,11 +105,22 @@ def encode_frames(sr, full, frames=FRAMES, ident: np.ndarray | None = None, unce
     return gzip.compress(sh.tobytes() + dn.tobytes() + extra + uncert, compresslevel=9, mtime=0)
 
 
+def _poland_mask(res, year: int) -> np.ndarray:
+    """Regions counted in the national series: all, or, in a run with border
+    changes (the historical scenario), the regions of Poland at 1 January of
+    ``year``."""
+    if not getattr(res, "border_changes", None):
+        return np.ones(len(res.region_codes), dtype=bool)
+    from .history import members_at
+    return np.array([m == "PL" for m in members_at(res, year)])
+
+
 def national_series(res) -> dict:
     years = [res.params["start_year"]] + list(res.years)
     pops = [np.asarray(res.pop0, float)] + [np.asarray(p, float) for p in res.pop]
     rows, urban = [], []
-    for p in pops:
+    for y, p in zip(years, pops):
+        p = p[_poland_mask(res, y)]
         L = lang_totals(p.sum(axis=1).sum(axis=0))                     # (NL,)
         row = [L[LANG_INDEX[c]] for c in CATS[:7]]
         row.append(sum(L[LANG_INDEX[c]] for c in REGIONAL))
@@ -152,7 +163,11 @@ def geo_payload(ndigits: int = 2) -> dict:
     states = {"PL": r3([p[0] for p in b["PL"]]), "LT": r3([p[0] for p in b["LT"]]),
               "BY": r3([p[0] for p in b["BY"]]), "outline": r3(b["outline"]), "plLt": r3(b["PL_LT"]),
               "plBy": r3(b["PL_BY"]), "outlines": {k: r3(v) for k, v in b["outlines"].items()},
-              "XK": r3([p[0] for p in b.get("XK", [])]), "byXk": r3(b.get("BY_XK", []))}
+              "XK": r3([p[0] for p in b.get("XK", [])]), "byXk": r3(b.get("BY_XK", [])),
+              "DE": r3([p[0] for p in b.get("DE", [])]), "DZ": r3([p[0] for p in b.get("DZ", [])]),
+              "CS": r3([p[0] for p in b.get("CS", [])]),
+              "inner": {k: r3(v) for k, v in b.get("inner", {}).items()},
+              "pl1946": r3([p[0] for p in b.get("PL1946", [])])}
     return {"land": rnd(geo["land"], 3), "lakes": rnd(geo["lakes"], 3), "rivers": rnd(geo["rivers"]), "states": states}
 
 
@@ -213,7 +228,8 @@ ROAD_CLS = ["dirt", "gravel", "paved", "express", "motorway"]
 MEMBER_LABELS = {"PL": "Poland", "LT": "Lithuania", "UA": "Ukrainian autonomy",
                  "GD-L": "Grand Duchy: Lithuanian canton", "GD-P": "Grand Duchy: Polish canton",
                  "GD-B": "Grand Duchy: Belarusian canton", "GD": "Grand Duchy of Lithuania (autonomous)",
-                 "NWK": "Northwestern Krai (separate state)", "LB": "Lit-Bel (separate state)"}
+                 "NWK": "Northwestern Krai (separate state)", "LB": "Lit-Bel (separate state)",
+                 "DE": "Germany", "DZ": "Free City of Danzig", "SU": "Soviet Union"}
 
 
 def network_payload(res, frames=FRAMES) -> dict:
@@ -316,6 +332,11 @@ def geometry_payload(res, sr, full) -> dict:
             "members": [MEMBER_LABELS.get(m, m) for m in members],
             "dominant": list(getattr(res, "dominant", []) or []),
             "official": [list(o) for o in (getattr(res, "official", None) or [[d] for d in res.dominant])],
+            # border changes (plsim.history): from 1 January after ``year``, the regions ``idx`` are in ``member``
+            "changes": [{"year": ch["year"], "member": MEMBER_LABELS.get(ch["member"], ch["member"]),
+                         "idx": [res.region_codes.index(c) for c in ch["codes"]],
+                         "dominant": ch.get("dominant")}
+                        for ch in (getattr(res, "border_changes", None) or []) if ch.get("member")],
             "cellreg": base64.b64encode(cellreg.tobytes()).decode()}
 
 

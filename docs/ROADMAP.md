@@ -144,11 +144,10 @@ Poland (§4.2).
   scenarios. The historical line (A in Galicia) is now digitised to about
   10 km from its description. Line B and a survey-grade digitisation are
   still to do.
-* **Population exchange (done: `curzon_exchange`, and by declared
-  nationality, `curzon_exchange_identity`).** Variants still to do:
-  * a voluntary, partial exchange (the real take-up);
-  * exchange costs: lost capital and a temporary fall in farm output;
-  * an exchange along the historical line.
+* **Population exchange.** The two exchange scenarios along the computed
+  line were removed; the real transfers of 1944-47 are replayed in
+  `historical` (METHODOLOGY §12.10). A counterfactual exchange could now be
+  written with the same `history` events (``transfer`` by identity).
 
 ## Political structure
 

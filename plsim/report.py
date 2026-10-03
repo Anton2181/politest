@@ -463,14 +463,24 @@ def fig_lithuania_poles(results: dict, path: str):
     _save(fig, path)
 
 
+def polish_units(res) -> np.ndarray:
+    """(T, R) regions counted as Poland in each recorded year: the non-Lithuanian
+    units, or, with border changes (the historical scenario), Poland's regions
+    of that year."""
+    if getattr(res, "border_changes", None):
+        from .history import members_at
+        return np.array([[m == "PL" for m in members_at(res, y)] for y in res.years])
+    pl = np.array([not c.startswith("LT") for c in res.region_codes])
+    return np.tile(pl, (len(res.years), 1))
+
+
 def fig_scenario_population(results: dict, path: str):
     fig, ax = plt.subplots(figsize=(9, 4.2))
     names = list(results)
     for k, n in enumerate(names):
         res = results[n]
         A = res.arrays()
-        pl = np.array([not c.startswith("LT") for c in res.region_codes])
-        plp = A["pop"][:, pl].sum(axis=(1, 2, 3)) / 1e6
+        plp = (A["pop"].sum(axis=(2, 3)) * polish_units(res)).sum(axis=1) / 1e6
         color = SLOTS[0] if n == "baseline" else OTHER
         lw = 2.2 if n == "baseline" else 1.2
         ax.plot(res.years, plp, color=color, lw=lw, zorder=3 if n == "baseline" else 2)
@@ -566,3 +576,30 @@ def img_tag(path: str, alt: str) -> str:
     with open(path, "rb") as fh:
         b64 = base64.b64encode(fh.read()).decode()
     return f'<img alt="{html.escape(alt)}" src="data:image/png;base64,{b64}"/>'
+
+
+def fig_scenario_ranges(ranges: dict, path: str, labels: dict | None = None):
+    """Ranges (10th-90th percentile, median) of the small ensembles of every
+    scenario, in the last year."""
+    panels = [("pop_m", "Population (millions)"), ("pl_pct", "Polish at home (%)"),
+              ("pl_id_pct", "Polish by identity (%)"), ("uk_pct", "Ukrainian at home (%)"),
+              ("be_pct", "Belarusian at home (%)"), ("yi_pct", "Yiddish at home (%)")]
+    names = list(ranges)
+    labels = labels or {}
+    fig, axes = plt.subplots(1, len(panels), figsize=(14, 0.32 * len(names) + 1.6), sharey=True)
+    y = np.arange(len(names))[::-1]
+    for ax, (key, title) in zip(axes, panels):
+        for yy, n in zip(y, names):
+            lo, med, hi, m = ranges[n][key]
+            col = SLOTS[0] if n == "baseline" else INK2
+            ax.plot([lo, hi], [yy, yy], color=col, lw=2.2, solid_capstyle="round", alpha=0.55)
+            ax.plot([med], [yy], "o", color=col, ms=4)
+        ax.set_title(title, fontsize=9)
+        ax.tick_params(axis="x", labelsize=7.5)
+        ax.grid(axis="x", alpha=0.3)
+    axes[0].set_yticks(y)
+    axes[0].set_yticklabels([f"{labels.get(n, n)} ({ranges[n]['pop_m'][3]})" for n in names], fontsize=8)
+    fig.suptitle("Scenarios in 2032: median and 10-90 % range of their ensembles (members in brackets)",
+                 x=0.01, ha="left", fontsize=11, fontweight="bold")
+    fig.tight_layout()
+    _save(fig, path)

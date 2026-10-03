@@ -162,7 +162,9 @@ def test_county_table_integrity():
         if c.lang:
             assert sum(c.lang.values()) <= c.pop * 1.01, c.code      # summaries carry small slips
         east = c.parent.startswith(("BY_", "LV_", "RU_"))
-        assert 47.5 < c.lat < (57.5 if east else 56.6) and 15.5 < c.lon < (33.0 if east else 28.5), c.code
+        west = c.parent.startswith(("DE_", "DZ_", "CS_"))
+        assert 47.5 < c.lat < (57.5 if east else 56.6) and (14.0 if west else 15.5) < c.lon < (33.0 if east else 28.5), \
+            c.code
 
 
 @pytest.mark.parametrize("parent", ["TAR", "STA", "LWO", "WIL", "NOW", "BIA", "WOL", "POM", "BY_WIT", "BY_MIN", "BY_MOH",

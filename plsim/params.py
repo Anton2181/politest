@@ -60,13 +60,19 @@ DEFAULTS: dict[str, Any] = {
         "tfr_scale": 1.07,
         "community_mult": {"RC": 1.0, "GC": 0.97, "OR": 1.05, "JW": 0.70, "JH": 1.15, "PR": 0.85, "OT": 0.90},
         "group_mult": {"RC:rom": 1.35, "OT:kdr": 0.8},
-        "pretransition_U": 5.2,          # U: TFR level at which decline starts (Alkema); max(U, current)
+        "pretransition_U": 5.2,          # U: TFR level at which decline starts (Alkema); max(U, current + onset_offset)
+        # Calibrated on the historical scenario (plsim/history_check.py): rural Poland kept about 3 children
+        # per woman from 1970 to 1980 (2.99, 2.92) and 2.44 in 1990, the towns 1.7-1.9, and the Soviet-ruled
+        # west of Ukraine and Belarus fell to about 2.6 by 1970. The decline is already under way in 1931 where
+        # fertility is high (onset_offset), is slower in the countryside (pace_stratum: rural, urban) and ends
+        # higher there (D4_rural_offset; phase3_mu_rural_offset for the long run).
+        "onset_offset": 0.5, "pace_stratum": [0.7, 1.0], "D4_rural_offset": 0.8, "phase3_mu_rural_offset": 0.3,
         "d_max": 0.62,                   # max 5-year decrement (Alkema 2011 world medians ~0.5-1.0)
         "D1": 1.2, "D3": 1.2, "D4": 1.75, "phase3_entry_margin": 0.12,
         # pace_min 0.55 (was 0.40) and Orthodox pace 1.0 (was 0.85): the poorest eastern lands start
         # their decline sooner, matching rural eastern Poland of 1960-90 (2.9 children in 1970, 2.4-2.6
         # in 1990) and the Orthodox of Podlasie, who had fewer children than their Catholic neighbours
-        "pace_M0": 0.20, "pace_M1": 0.75, "pace_min": 0.55, "pace_max": 1.00,
+        "pace_M0": 0.20, "pace_M1": 0.75, "pace_min": 0.75, "pace_max": 1.00,
         "community_pace": {"RC": 1.0, "GC": 0.9, "OR": 1.0, "JW": 1.1, "JH": 0.12, "PR": 1.05, "OT": 1.0},
         "phase3_mu": {"default": 1.45, "JH": 2.8, "JW": 1.60, "PR": 1.50},
         "phase3_rho": 0.93,
@@ -84,7 +90,9 @@ DEFAULTS: dict[str, Any] = {
         "urban_e0_adj": 1.0,
         "group_e0_adj": {"RC:rom": -8.0},
         "adj_halflife": 35.0,
-        "gap_min": 1.5, "gap_max": 12.0, "gap_power": 1.5,
+        # gap_max: the gap to best practice at zero income, which antibiotics and mass vaccination halved
+        # after the war (Poland's women were 3.6 years behind best practice in 1960 at a third of its income)
+        "gap_min": 1.5, "gap_max": [[1931, 12.0], [1945, 12.0], [1955, 6.0], [2032, 6.0]], "gap_power": 1.5,
         "catchup_pre": 0.030, "catchup_post": 0.120,
         "sex_gap": [[1931, 3.2], [1960, 5.0], [1985, 6.6], [2010, 5.6], [2032, 4.8]],
         "frontier_slope": 0.243, "frontier_slope_post2000": 0.20,

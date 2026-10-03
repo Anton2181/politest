@@ -32,7 +32,8 @@ from .demography import (FertilitySchedule, MortalityModel, alkema_decrement, ca
 from .economy import Economy, piecewise
 from .infrastructure import Network
 from .params import region_lookup, region_match, resolve_governorates
-from .identity import IDENTITY_REGIMES, IdentityModel, identity_census
+from .history import History
+from .identity import ID_INDEX, IDENTITY_REGIMES, STATE_IDENTITY, IdentityModel, identity_census
 from .language import CENSUS_CATEGORIES, LANGUAGE_REGIMES, LanguageModel, census_view
 from .migration import MigrationModel
 
@@ -106,6 +107,7 @@ class Results:
     births: list = field(default_factory=list)       # (R,)
     deaths: list = field(default_factory=list)       # (R,)
     tfr: list = field(default_factory=list)          # (R,)
+    tfr_ru: list = field(default_factory=list)       # (R,2) rural, urban
     e0: list = field(default_factory=list)           # (R,2) m,f
     imr: list = field(default_factory=list)          # (R,)
     emig: list = field(default_factory=list)         # (R,G)
@@ -136,6 +138,8 @@ class Results:
     identity_lang: dict = field(default_factory=dict)  # snapshot year -> (R,NL,NI) identity by home language
     pop0: np.ndarray | None = None                   # (R,2,G) initial state (start_year)
     town_pop0: np.ndarray | None = None              # (N,) initial town populations
+    border_changes: list = field(default_factory=list)  # border changes of the run (plsim.history)
+    history_log: list = field(default_factory=list)  # events applied (plsim.history)
 
     def arrays(self) -> dict:
         return {k: np.array(getattr(self, k)) for k in
@@ -156,7 +160,7 @@ class Simulation:
         self.econ_rng = np.random.default_rng(econ_ss)
         self.net_rng = np.random.default_rng(net_ss)
         self.regions = select_regions(p["include_lithuania"], p.get("include_belarus", False),
-                                      p.get("include_krai_east", False))
+                                      p.get("include_krai_east", False), p.get("include_west") or [])
         self._comp = None
         node_region = {}
         if p.get("partition") or p.get("governorates"):
@@ -199,10 +203,12 @@ class Simulation:
         self.mig.member = np.array(self.member)
         # separate states (two sovereign states in one run): their own economy
         sep = list(p.get("separate_states") or [])
+        self.state_names = ["PL"] + sep
         self.state = np.array([1 + sep.index(m) if m in sep else 0 for m in self.member])
         kby = p["economy"].get("kappa_by_state") or {}
         self.econ.set_states(self.state, np.array([r.pop_1931 for r in self.regions]),
-                             [None] + [kby.get(m) for m in sep])
+                             [None] + [kby.get(m) for m in sep], names=self.state_names, n_states=1 + len(sep))
+        self.mig.state_names = list(self.state_names)
         infra_p = copy.deepcopy(p["infrastructure"])
         infra_p["node_region"] = node_region
         infra_p["region_seats"] = [(r.lat, r.lon) for r in self.regions]
@@ -232,6 +238,8 @@ class Simulation:
         self.res.pop0 = self.P.sum(axis=(3, 4, 5)).astype(np.float32)
         self.res.identity0 = self.ident.by_region().astype(np.float32)
         self.res.town_pop0 = self.net.pop.copy()
+        self.history = History(self, p.get("history") or [])
+        self._node_states()
         self._last_log_ma = None
         self._d_log_ma = np.zeros(self.R)
         self._shift_acc = np.zeros((NL, NL))
@@ -296,13 +304,87 @@ class Simulation:
                         mort["community_e0_adj"].get(cc, 0.0)
                     self.e0f[r, u, c] = reg.e0_female + adj
                     self.e0_adj0[r, u, c] = mort["community_e0_adj"].get(cc, 0.0)
-        self.U = np.maximum(self.tfr, fert["pretransition_U"])
+        # the decline starts from U: at least the pre-transition level, and a little above the current
+        # level where fertility is still high (``onset_offset``), so that it is already under way in 1931
+        self.U = np.maximum(self.tfr + fert.get("onset_offset", 0.0), fert["pretransition_U"])
+        # end of the transition (Alkema's D4): higher in the countryside (``D4_rural_offset``)
+        self.D4 = np.array([fert["D4"] + fert.get("D4_rural_offset", 0.0), fert["D4"]])[None, :, None]
         self.phase3 = np.zeros((R, 2, NC), dtype=bool)
         mu = fert["phase3_mu"]
         self.mu3 = np.array([mu.get(c.code, mu["default"]) for c in COMMUNITIES])
         self.group_fert = np.array([fert["group_mult"].get(f"{c}:{l}", 1.0) for c, l in GROUPS])
         self.group_e0 = np.array([mort["group_e0_adj"].get(f"{c}:{l}", 0.0) for c, l in GROUPS])
         self.pace_c = np.array([fert["community_pace"].get(c.code, 1.0) for c in COMMUNITIES])
+
+    # ------------------------------------------------------------------ border changes
+    def _node_states(self) -> None:
+        """State of each town (-1 abroad), for the cross-state demand factor."""
+        reg = self.net.region
+        self.net.node_state = np.where(reg >= 0, self.state[np.maximum(reg, 0)], -1)
+
+    def change_regime(self, idx, member=None, dominant=None, official=None) -> None:
+        """Regions ``idx`` pass to state ``member``, with contact language
+        ``dominant`` ("auto:a,b" picks by speakers now) and official languages
+        ``official`` (``plsim.history``)."""
+        idx = [int(i) for i in idx]
+        if member is not None:
+            if member not in self.state_names:
+                raise ValueError(f"state {member!r} is not in separate_states")
+            for i in idx:
+                self.member[i] = member
+            self.mig.member = np.array(self.member)
+            self.econ.reassign(idx, self.state_names.index(member), self.region_pop())
+            self.state = self.econ.state.copy()
+            self._node_states()
+        if dominant is not None or official is not None:
+            L = _lang_totals(self.P.sum(axis=(3, 4, 5)))
+            for i in idx:
+                d = dominant or self.dominant[i]
+                if d.startswith("auto"):
+                    cand = d.split(":", 1)[1].split(",")
+                    d = max(cand, key=lambda c: sum(L[i, LANG_INDEX[x]] for x in c.split("+"))).split("+")[0]
+                self.dominant[i] = d
+                self.official[i] = list(dict.fromkeys([d] + list(official or [])))
+            self.dom_idx = np.array([LANG_INDEX[d] for d in self.dominant])
+            self.lang.set_regime(self.dominant, self.official)
+            self.mig.dom = self.dom_idx.copy()
+            self.ident.state = np.array([ID_INDEX[STATE_IDENTITY.get(d, "pl")] for d in self.dominant])
+            # competence in the new contact language: the 1931 starting levels for it
+            P = self.P
+            for r in idx:
+                for u in (0, 1):
+                    for g, grp in enumerate(GROUPS):
+                        tot = P[r, u, g].sum(axis=0)
+                        if tot.sum() <= 0:
+                            continue
+                        bsh = bilingual_share(grp, self.dominant[r], u)
+                        bage = np.clip(bsh * BILING_AGE, 0, 0.98) if bsh < 1 else np.ones(101)
+                        P[r, u, g, 1] = tot * bage[None, :]
+                        P[r, u, g, 0] = tot * (1 - bage)[None, :]
+
+    def adopt_profile(self, idx, like) -> None:
+        """Regions ``idx`` take the vital rates, schooling and relative income
+        of the regions ``like`` (population-weighted means by stratum and
+        community): land resettled from elsewhere (``plsim.history``)."""
+        idx = np.asarray(idx, dtype=int)
+        like = np.asarray(like, dtype=int)
+        if not len(idx) or not len(like):
+            return
+        comp = np.zeros((self.R, 2, NC))
+        np.add.at(comp, (slice(None), slice(None), self.group_comm), self.P.sum(axis=(3, 4, 5)))
+        w = comp[like] + 1e-9                                                   # (L,2,C)
+        for arr in (self.tfr, self.U, self.e0f):
+            arr[idx] = (arr[like] * w).sum(axis=0) / w.sum(axis=0)
+        self.phase3[idx] = (self.phase3[like] * w).sum(axis=0) / w.sum(axis=0) > 0.5
+        pop = self.region_pop()
+        wr = pop[like] / pop[like].sum()
+        for arr in (self.econ.literacy, self.econ.enrollment):
+            arr[idx] = (arr[like] * wr).sum()
+        # relative income: the mean of ``like``, keeping the spread among ``idx``
+        wi = pop[idx] / max(pop[idx].sum(), 1e-9)
+        rel = self.econ.rel
+        rel[idx] = rel[idx] / max((rel[idx] * wi).sum(), 1e-9) * (rel[like] * wr).sum()
+        self.econ.rel0[idx] = rel[idx]
 
     # ------------------------------------------------------------------ helpers
     def urban_share(self) -> np.ndarray:
@@ -383,7 +465,8 @@ class Simulation:
         front = frontier_e0_female(year, mp["frontier_slope"], mp["frontier_slope_post2000"])
         ycell = self.econ.cell_income(self.urban_share())                     # (R,2)
         yrel = ycell / self.econ.y_frontier
-        gap = target_gap(yrel, mp["gap_min"], mp["gap_max"], mp["gap_power"])  # (R,2)
+        gmax = mp["gap_max"] if np.isscalar(mp["gap_max"]) else piecewise(year, mp["gap_max"])
+        gap = target_gap(yrel, mp["gap_min"], gmax, mp["gap_power"])  # (R,2)
         decay = 0.5 ** ((year - self.params["start_year"]) / mp["adj_halflife"])
         target = front - gap[:, :, None] + self.e0_adj0 * decay
         lam = catchup_rate(year, mp["catchup_pre"], mp["catchup_post"])
@@ -395,13 +478,15 @@ class Simulation:
     def _update_fertility(self, year: int, M: np.ndarray):
         fp = self.params["fertility"]
         pace = np.clip((M - fp["pace_M0"]) / (fp["pace_M1"] - fp["pace_M0"]), fp["pace_min"], fp["pace_max"])
+        pace = pace * np.asarray(fp.get("pace_stratum", [1.0, 1.0]))[None, :]
         d = fp["d_max"] * pace[:, :, None] * self.pace_c[None, None, :]
-        dec = alkema_decrement(self.tfr, self.U, d, fp["D1"], fp["D3"], fp["D4"]) / 5.0
+        dec = alkema_decrement(self.tfr, self.U, d, fp["D1"], fp["D3"], self.D4) / 5.0
         f2 = np.where(self.phase3, self.tfr, self.tfr - dec)
         # phase III
-        enter = (~self.phase3) & (f2 <= fp["D4"] + fp["phase3_entry_margin"])
+        enter = (~self.phase3) & (f2 <= self.D4 + fp["phase3_entry_margin"])
         self.phase3 |= enter
-        mu = np.broadcast_to(self.mu3[None, None, :], self.tfr.shape)
+        mu = np.broadcast_to(self.mu3[None, None, :], self.tfr.shape) \
+            + np.array([fp.get("phase3_mu_rural_offset", 0.0), 0.0])[None, :, None]
         rho = fp["phase3_rho"]
         noise = np.stack([self._fert_rngs[c].normal(0, fp["phase3_sd"], self.tfr.shape[1:])
                           for c in self.parents])[self.parent_idx]
@@ -425,6 +510,8 @@ class Simulation:
         year = self.year
         p = self.params
         R = self.R
+        P = self.P
+        self.history.start_of_year(year)
         P = self.P
         pop_r = self.region_pop()
         self.econ.step(year, self._d_log_ma, pop_r)
@@ -515,6 +602,13 @@ class Simulation:
         self.mig.reset_competence(P)
         np.maximum(P, 0.0, out=P)
         self.ident.reconcile(before_m, P.sum(axis=(3, 4, 5)))
+        # ---- events of the year (plsim.history): war deaths, flight, transfers
+        if self.history.events:
+            acc = {"deaths": deaths_r, "emigrants": intl["emigrants"], "immigrants": intl["immigrants"],
+                   "internal": flows_int}
+            self.history.apply(year, acc)
+            np.maximum(self.P, 0.0, out=self.P)
+            P = self.P
         # ---- national identity: nation-building and the pull of the state nation
         self.ident.drift(M, self.lang.pressure(year))
         # ---- vital-rate diagnostics
@@ -524,6 +618,7 @@ class Simulation:
         # TFR by region = sum over ages of population-weighted ASFR
         asfr_r = (asfr * w_c).sum(axis=(1, 2)) / np.clip(w_c.sum(axis=(1, 2)), 1e-9, None)   # (R,35)
         tfr_r = asfr_r.sum(axis=1)
+        tfr_ru = ((asfr * w_c).sum(axis=2) / np.clip(w_c.sum(axis=2), 1e-9, None)).sum(axis=2)   # (R,2)
         wpop = P.sum(axis=(3, 4, 5))                                          # (R,2,G)
         wpop_c = np.zeros((R, 2, NC))
         np.add.at(wpop_c, (slice(None), slice(None), self.group_comm), wpop)
@@ -537,11 +632,12 @@ class Simulation:
         res.births.append(births_r)
         res.deaths.append(deaths_r)
         res.tfr.append(tfr_r)
+        res.tfr_ru.append(tfr_ru.astype(np.float32))
         res.e0.append(e0_r)
         res.imr.append(infant_deaths / np.clip(births_r, 1e-9, None))
         res.emig.append(intl["emigrants"].astype(np.float32))
         res.immig.append(intl["immigrants"].astype(np.float32))
-        res.internal.append(flows_int.astype(np.float32))
+        res.internal.append(np.asarray(flows_int, dtype=np.float32))
         res.rural_urban.append(ur["rural_urban"])
         res.shifts.append(self._shift_acc.copy())
         res.shift_net.append(shift_net.astype(np.float32))
@@ -589,6 +685,7 @@ class Simulation:
                 tot = self.P.sum() / 1e6
                 print(f"{self.year}: {tot:.2f} M")
         self.res.project_log = list(self.net.log)
+        self.res.history_log = list(self.history.log)
         return self.res
 
 

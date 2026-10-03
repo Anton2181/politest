@@ -24,6 +24,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from .data.regions import state_of_code
+
 from .model import Results
 
 
@@ -51,7 +53,8 @@ def _idx(res: Results, year: int) -> int:
 
 
 def _pl_mask(res: Results):
-    return np.array([not c.startswith("LT") for c in res.region_codes])
+    """Regions of 1931 Poland (the checks are about it)."""
+    return np.array([state_of_code(c) == "PL" for c in res.region_codes])
 
 
 def rates(res: Results, year: int, mask) -> tuple[float, float, float]:
@@ -125,6 +128,49 @@ def plausibility_checks(res: Results) -> list[Check]:
         km = res.km[-1]
         out.append(Check("Expressways + motorways, last year (km per 1000 km2)",
                          (km["road_express"] + km["road_motorway"]) / area * 1000, 15, 35, "plausibility"))
+    return out
+
+
+def identity_1921(res: Results) -> list[Check]:
+    """The starting identity, as the 1921 nationality census would have
+    recorded it, against that census (``data.census1921``): Poland's totals
+    (without the regions it did not cover) and the voivodeships of grade A,
+    within 3 points (8 for the 1931-21 drift of Volhynia's Polish share,
+    raised by settlement), and the county table if one has been supplied."""
+    from .data.census1921 import NATIONAL, NOT_COVERED, VOIVODESHIPS, county_table
+    from .identity import identity_census
+    from .language import CENSUS_CATEGORIES
+    I0 = np.asarray(res.identity0, float)                                     # (R, NI)
+    R = len(res.region_codes)
+    rug = np.zeros((R, 1, 1, I0.shape[1]))
+    rug[:, 0, 0] = I0
+    C = identity_census(rug, "polish_1921", res.region_codes, CENSUS_CATEGORIES)
+    ci = {c: i for i, c in enumerate(CENSUS_CATEGORIES)}
+
+    def share(rows, k):
+        tot = C[rows].sum()
+        v = C[rows][:, ci["uk"]].sum() + C[rows][:, ci["ruth"]].sum() if k == "uk" else C[rows][:, ci[k]].sum()
+        return v / max(tot, 1e-9) * 100
+    par = np.array([c.split(".")[0] for c in res.region_codes])
+    out = []
+    pl = np.where([state_of_code(c) == "PL" and p not in NOT_COVERED for c, p in zip(res.region_codes, par)])[0]
+    if len(pl):
+        for k in ("pl", "uk", "jw", "be"):
+            out.append(Check(f"1921 nationality, Poland, {k} (%)", share(pl, k), NATIONAL[k] - 3, NATIONAL[k] + 3, "identity"))
+    for v, (tgt, grade) in VOIVODESHIPS.items():
+        rows = np.where(par == v)[0]
+        if grade != "A" or not len(rows):
+            continue
+        for k, val in tgt.items():
+            tol = 8.0 if (v == "WOL" and k in ("pl", "uk")) else 6.0 if k in ("pl", "uk", "be") else 3.0
+            out.append(Check(f"1921 nationality, {v}, {k} (%)", share(rows, k), val - tol, val + tol, "identity"))
+    for code, row in county_table().items():
+        if code in res.region_codes:
+            r = [res.region_codes.index(code)]
+            for k in ("pl", "uk", "be", "jw"):
+                if row["total"] > 0:
+                    val = row[k] / row["total"] * 100
+                    out.append(Check(f"1921 nationality, {code}, {k} (%)", share(r, k), val - 8, val + 8, "identity"))
     return out
 
 

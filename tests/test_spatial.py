@@ -102,11 +102,14 @@ def test_atlas_cell_regions_survive_county_runs():
 
 def test_state_borders_1932():
     """Territory comes from the CShapes 1932 borders (``data/borders_1932.json``),
-    with Soviet Belarus (the BSSR of 1926) as an optional third state."""
+    with Soviet Belarus (the BSSR of 1926) as an optional third state and the
+    German land Poland held after 1945, Danzig and the Czechoslovak plebiscite
+    lands as optional further ones (``data.west``)."""
     from plsim.data.geography import state_of
     from plsim.data.regions import state_of_code
     places = {"Wilno": (54.68, 25.28, "PL"), "Kaunas": (54.90, 23.90, "LT"), "Klaipėda": (55.71, 21.13, "LT"),
-              "Gdańsk (Free City)": (54.35, 18.65, ""), "Hel": (54.61, 18.80, "PL"), "Stołpce": (53.48, 26.73, "PL"),
+              "Gdańsk (Free City)": (54.35, 18.65, "DZ"), "Hel": (54.61, 18.80, "PL"), "Stołpce": (53.48, 26.73, "PL"),
+              "Breslau": (51.11, 17.03, "DE"), "Berlin": (52.52, 13.40, ""), "Morawska Ostrawa": (49.84, 18.25, ""),
               "Mińsk": (53.90, 27.56, "BY"), "Homel": (52.44, 30.98, "BY"), "Smolensk": (54.78, 32.05, ""),
               "Daugavpils": (55.87, 26.53, ""), "Królewiec": (54.71, 20.51, ""),
               "Zbaraż": (49.66, 25.78, "PL"), "Kamieniec Podolski": (48.68, 26.58, ""), "Cieszyn": (49.75, 18.63, "PL")}
@@ -117,6 +120,12 @@ def test_state_borders_1932():
     assert (state_of(g.lat, g.lon) == st).all()
     for s, official in (("PL", 388_600), ("LT", 55_750), ("BY", 126_792), ("XK", 31_627)):
         assert g.cell_km2[st == s].sum() == pytest.approx(official, rel=0.03), s   # 1931; BSSR 1926; XK 1897 GIS
+    # the west lands: the regions' areas (about 98,400 km2 of German land; Danzig 1,966 km2 by its 1929
+    # census, its 3.5 km cells take some of the Vistula lagoon shore)
+    for s, official, tol in (("DE", 98_400, 0.03), ("DZ", 1_966, 0.08), ("CS", 2_550, 0.03)):
+        assert g.cell_km2[st == s].sum() == pytest.approx(official, rel=tol), s
     # the map grid of Poland and Lithuania does not change when the optional lands are available
-    pl_lt = build_grid([r.code for r in REGIONS if r.country not in ("BY", "XK")])
-    assert len(pl_lt.lat) == 37532 and (~np.isin(st, ["BY", "XK"])).sum() == 37532
+    optional = ["BY", "XK", "DE", "DZ", "CS"]
+    pl_lt = build_grid([r.code for r in REGIONS if r.country not in optional])
+    # (37,528 cells: four shore cells by Danzig, once given to Poland by the coast rule, are the Free City's)
+    assert len(pl_lt.lat) == 37528 and (~np.isin(st, optional)).sum() == 37528

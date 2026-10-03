@@ -51,7 +51,7 @@ def all_scenarios() -> list[str]:
 
 # modules whose code does not change a run's results (presentation, reporting)
 _NOT_IN_FINGERPRINT = {"cli.py", "maps.py", "webmap.py", "report.py", "publish.py", "export.py", "validate.py",
-                       "ensemble.py", "curzon.py", "calibration.py", "__main__.py"}
+                       "ensemble.py", "curzon.py", "calibration.py", "history_check.py", "__main__.py"}
 
 
 def _code_fingerprint() -> str:
@@ -131,6 +131,8 @@ SCENARIO_TITLES = {
     "no_official_language": "No official language",
     "nw_krai": "Poland and the Northwestern Krai",
     "lit_bel": "Poland and Lit-Bel",
+    "plebiscite_poland": "Plebiscite Poland and Danzig",
+    "historical": "Historical Poland (calibration)",
 }
 
 
@@ -296,7 +298,24 @@ def build_report(outroot: str, n_ens: int, scenarios: list[str] | None = None, w
         ens_ii, _ = _ensemble("ii_rp_only", max(8, n_ens // 2), workers, 11, outroot,
                               run_digest(results["ii_rp_only"]), reuse_ensemble)
         export_ensemble(ens_ii, os.path.join(outroot, "ensemble_ii_rp_only"))
+    # small ensembles of every other scenario: the same parameter draws and seeds as the baseline's
+    # first members (seed 7), so scenarios are compared on common random numbers
+    ens_all = {"baseline": ens}
+    if ens_ii is not None:
+        ens_all["ii_rp_only"] = ens_ii
+    n_scen = max(8, min(16, n_ens // 4))
+    for name in scenarios:
+        if name in ens_all or name in NO_ENSEMBLE:
+            continue
+        print(f"ensemble (n={n_scen}) for {name} ...", flush=True)
+        ens_all[name], _ = _ensemble(name, n_scen, workers, 7, outroot, run_digest(results[name]), reuse_ensemble)
+    ranges = write_scenario_ranges(outroot, ens_all)
     F = lambda n: os.path.join(figdir, n)  # noqa: E731
+    rp.fig_scenario_ranges(ranges, F("scenario_ranges.png"), {n: SCENARIO_TITLES.get(n, n) for n in ens_all})
+    add_ranges_to_atlas(outroot, ranges)
+    if "historical" in results:
+        from .history_check import write_report as write_history
+        write_history(results["historical"], os.path.join(outroot, "history"))
     rp.fig_population(ens, F("population.png"))
     rp.fig_vitals(ens, F("vital_rates.png"))
     rp.fig_language_area(base, F("languages_baseline.png"))
@@ -327,13 +346,67 @@ def build_report(outroot: str, n_ens: int, scenarios: list[str] | None = None, w
     print("report:", os.path.join(outroot, "report.html"))
 
 
+# scenarios without an ensemble: the historical run is held to what happened
+NO_ENSEMBLE = {"historical"}
+RANGE_METRICS = [("pop_m", "population, millions"), ("pl_pct", "Polish at home, %"),
+                 ("pl_id_pct", "Polish by national identity, %"), ("uk_pct", "Ukrainian at home, %"),
+                 ("be_pct", "Belarusian at home, %"), ("yi_pct", "Yiddish at home, %"),
+                 ("lt_pct", "Lithuanian at home, %"), ("de_pct", "German at home, %"),
+                 ("gdp", "GDP per head, 1990 GK$"), ("tfr", "total fertility"), ("e0", "life expectancy")]
+
+
+def scenario_ranges(ens: dict) -> dict:
+    """10th, 50th and 90th percentiles of each RANGE_METRICS over the members
+    of an ensemble, in the last year."""
+    from .identity import ID_INDEX
+    tot = ens["pop_total"][:, -1]
+    L = ens["pop_lang"][:, -1]
+    vals = {"pop_m": tot / 1e6, "gdp": ens["y_nat"][:, -1], "tfr": ens["tfr"][:, -1],
+            "e0": ens["e0"][:, -1].mean(axis=1),
+            "pl_id_pct": ens["identity"][:, -1, ID_INDEX["pl"]] / ens["identity"][:, -1].sum(axis=1) * 100}
+    for k in ("pl", "uk", "be", "yi", "lt", "de"):
+        vals[f"{k}_pct"] = L[:, LANG_INDEX[k]] / tot * 100
+    return {k: [float(np.percentile(v, q)) for q in (10, 50, 90)] + [len(v)] for k, v in vals.items()}
+
+
+def write_scenario_ranges(outroot: str, ens_all: dict) -> dict:
+    """scenario_ranges.csv: ranges of the small ensembles of every scenario."""
+    import csv
+    ranges = {n: scenario_ranges(e) for n, e in ens_all.items()}
+    with open(os.path.join(outroot, "scenario_ranges.csv"), "w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(["scenario", "members", "metric", "p10", "p50", "p90"])
+        for n, r in ranges.items():
+            for k, _label in RANGE_METRICS:
+                p10, p50, p90, m = r[k]
+                w.writerow([n, m, k, f"{p10:.2f}", f"{p50:.2f}", f"{p90:.2f}"])
+    return ranges
+
+
+def add_ranges_to_atlas(outroot: str, ranges: dict) -> None:
+    """Put the ensemble ranges into the atlas's scenario list and rebuild it."""
+    atlasdir = os.path.join(outroot, "atlas")
+    path = os.path.join(atlasdir, "scenarios.json")
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as fh:
+        entries = json.load(fh)
+    for e in entries:
+        r = ranges.get(e["name"])
+        if r:
+            e["ranges"] = {k: [round(v, 2) for v in r[k][:3]] + [r[k][3]] for k, _l in RANGE_METRICS}
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(webmap.dumps(entries))
+    webmap.build_atlas(atlasdir)
+
+
 def _scenario_rows(results):
     rows = []
     for n, res in results.items():
         A = res.arrays()
         i = len(res.years) - 1
         w = A["pop"][i].sum(axis=(1, 2))
-        pl = np.array([not c.startswith("LT") for c in res.region_codes])
+        pl = rp.polish_units(res)[i]
         lt = rp.lang_totals(res)[i]
         tot = lt.sum()
         km = res.km[i]

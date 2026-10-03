@@ -51,13 +51,15 @@ from dataclasses import dataclass
 
 from .bssr import region_population as _by_pop
 from .krai_east import region_population as _xk_pop
+from .west import REGION_POP as _W
 
 
 @dataclass(frozen=True)
 class Region:
     code: str
     name: str
-    country: str          # 'PL', 'LT', 'BY' (Soviet Belarus) or 'XK' (rest of the krai), the last two optional
+    country: str          # 'PL', 'LT', 'BY' (Soviet Belarus), 'XK' (rest of the krai), 'DE', 'DZ' or 'CS'; all but
+                          # the first two optional
     partition: str        # 'RU', 'AT', 'DE'
     area_km2: float
     pop_1931: float
@@ -119,6 +121,36 @@ REGIONS: list[Region] = [
            56.00, 29.90, notes="Nevel, Sebezh and Velizh uezds (RSFSR from 1924); 1897 census carried to 1931"),
     Region("RU_MOH", "mohylewskie (wschód)", "XK", "RU", 4_583, _xk_pop("RU_MOH"), 0.04, 0.52, 4.90, 3.00, 48.0, 0.48,
            54.20, 31.90, notes="edge of the Mogilev governorate left in the RSFSR; estimate"),
+    # --- German, Danzig and Czechoslovak lands, only with include_west (data.west) ------------
+    Region("DE_OPO", "opolskie (Oppeln)", "DE", "DE", 9_700, _W["DE_OPO"], 0.42, 1.45, 3.10, 2.00, 59.5, 0.97,
+           50.45, 18.10, "hill", notes="RB Oppeln; 1933 census"),
+    Region("DE_WRO", "wrocławskie (Breslau)", "DE", "DE", 13_573, _W["DE_WRO"], 0.55, 1.60, 2.40, 1.40, 61.5, 0.98,
+           51.00, 16.80, notes="RB Breslau; 1933 census"),
+    Region("DE_LEG", "legnickie (Liegnitz)", "DE", "DE", 10_800, _W["DE_LEG"], 0.45, 1.50, 2.30, 1.50, 62.0, 0.98,
+           51.30, 15.90, "hill", notes="RB Liegnitz east of the Lusatian Neisse; 1933 census"),
+    Region("DE_NMK", "nowomarchijskie (Neumark)", "DE", "DE", 11_300, _W["DE_NMK"], 0.33, 1.40, 2.60, 1.70, 63.0, 0.98,
+           52.50, 15.10, notes="Brandenburg east of the Oder and Neisse; 1933 census"),
+    Region("DE_GRZ", "pilskie (Grenzmark)", "DE", "DE", 7_695, _W["DE_GRZ"], 0.33, 1.30, 2.90, 1.90, 62.0, 0.98,
+           53.00, 16.40, notes="Grenzmark Posen-Westpreussen; 1933 census"),
+    Region("DE_KOS", "koszalińskie (Köslin)", "DE", "DE", 12_936, _W["DE_KOS"], 0.35, 1.35, 2.80, 1.80, 62.5, 0.98,
+           54.10, 16.60, notes="RB Köslin; 1933 census"),
+    Region("DE_SZC", "szczecińskie (Stettin)", "DE", "DE", 7_600, _W["DE_SZC"], 0.58, 1.60, 2.60, 1.50, 62.0, 0.98,
+           53.50, 14.90, notes="Stettin and the RB Stettin east of the Oder; 1933 census"),
+    Region("DE_WAR", "Warmia (Ermland)", "DE", "DE", 4_290, _W["DE_WAR"], 0.30, 1.15, 3.40, 2.10, 61.0, 0.97,
+           54.00, 20.60, notes="Allenstein, Rößel, Heilsberg, Braunsberg; 1933 census"),
+    Region("DE_MAZ", "Mazury (Masuren)", "DE", "DE", 14_090, _W["DE_MAZ"], 0.22, 1.05, 3.10, 2.00, 61.0, 0.97,
+           53.75, 21.60, notes="Masuria: RB Allenstein without Allenstein and Rößel, with Oletzko, Angerburg, Goldap, Rastenburg "
+                 "and the south of Bartenstein"),
+    Region("DE_OBL", "elbląskie (Elbing, Oberland)", "DE", "DE", 3_500, _W["DE_OBL"], 0.38, 1.25, 2.80, 1.80, 62.0, 0.98,
+           54.05, 20.10, notes="Elbing, Pr. Holland, Mohrungen; 1933 census"),
+    Region("DE_MAR", "kwidzyńskie (Marienwerder)", "DE", "DE", 2_927, _W["DE_MAR"], 0.30, 1.20, 3.00, 1.90, 62.0, 0.97,
+           53.80, 19.20, notes="the Marienwerder plebiscite area; 1933 census"),
+    Region("DZ_GDA", "Wolne Miasto Gdańsk", "DZ", "DE", 1_966, _W["DZ_GDA"], 0.75, 1.90, 2.50, 1.50, 62.0, 0.98,
+           54.30, 18.75, notes="the Free City of Danzig; 1929 census grown to 1931"),
+    Region("CS_CIE", "Śląsk Cieszyński (zachodni)", "CS", "AT", 1_300, _W["CS_CIE"], 0.45, 1.30, 3.00, 2.20, 57.0, 0.95,
+           49.75, 18.50, "hill", notes="Fryštát, Český Těšín, Frýdek; Czechoslovak census of 1930"),
+    Region("CS_SPO", "Spisz i Orawa (czechosłowackie)", "CS", "AT", 1_250, _W["CS_SPO"], 0.05, 0.60, 4.30, 3.00, 52.0, 0.82,
+           49.37, 19.80, "mountain", notes="Upper Orava and Zamagurie; estimate"),
 ]
 
 REGION_INDEX: dict[str, int] = {r.code: i for i, r in enumerate(REGIONS)}
@@ -130,11 +162,15 @@ KRESY = ["WIL", "NOW", "POL", "WOL", "LWO", "STA", "TAR"]
 LITHUANIA = [r.code for r in REGIONS if r.country == "LT"]
 BELARUS = [r.code for r in REGIONS if r.country == "BY"]
 KRAI_EAST = [r.code for r in REGIONS if r.country == "XK"]
+WEST = [r.code for r in REGIONS if r.country in ("DE", "DZ", "CS")]
+NEW_COUNTRIES = ("DE", "DZ", "CS")
 CARPATHIAN = ["KRA", "LWO", "STA"]
 
 
 def state_of_code(code: str) -> str:
-    """1932 state of a region, county or sub-region code: 'PL', 'LT', 'BY' or 'XK'."""
+    """1932 state of a region, county or sub-region code: 'PL', 'LT', 'BY', 'XK', 'DE', 'DZ' or 'CS'."""
+    if code[:3] in ("DE_", "DZ_", "CS_"):
+        return code[:2]
     if code.startswith("LT"):
         return "LT"
     if code.startswith("BY_"):
@@ -145,6 +181,14 @@ def state_of_code(code: str) -> str:
 
 
 def select_regions(include_lithuania: bool = True, include_belarus: bool = False,
-                   include_krai_east: bool = False) -> list[Region]:
-    return [r for r in REGIONS if (include_lithuania or r.country != "LT") and (include_belarus or r.country != "BY")
-            and (include_krai_east or r.country != "XK")]
+                   include_krai_east: bool = False, include_west=()) -> list[Region]:
+    """Regions of a run; ``include_west`` lists the German, Danzig and
+    Czechoslovak regions it holds (codes or wildcards such as ``DE_*``)."""
+    west = list(include_west or [])
+
+    def wanted(r):
+        if r.country in NEW_COUNTRIES:
+            return any(r.code == w or (w.endswith("*") and r.code.startswith(w[:-1])) for w in west)
+        return (include_lithuania or r.country != "LT") and (include_belarus or r.country != "BY") \
+            and (include_krai_east or r.country != "XK")
+    return [r for r in REGIONS if wanted(r)]

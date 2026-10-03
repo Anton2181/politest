@@ -1,0 +1,37 @@
+# Plebiscite Poland: the baseline federation, with every plebiscite of
+# 1920-21 won and Danzig Polish.
+#
+# * Premise: the Upper Silesian plebiscite (March 1921), the East Prussian
+#   ones at Allenstein and Marienwerder (July 1920) and the plebiscite planned
+#   for Cieszyn Silesia, Spiš and Orava (cancelled for the Spa arbitration of
+#   July 1920) all go to Poland, whole; Danzig is given to Poland outright at
+#   Versailles instead of becoming a Free City. Everything else is the
+#   baseline: no war, the federation with Lithuania, moderate convergence.
+# * Land (data/west.py; grade E estimates from the German census of 1933,
+#   the Danzig census of 1929 and the Czechoslovak census of 1930):
+#   - Upper Silesia: RB Oppeln without the three western counties outside the
+#     plebiscite area (Neisse, Grottkau, Falkenberg), 1.28 M people;
+#   - the Allenstein area: RB Allenstein with Oletzko (Warmia's Allenstein
+#     and Rößel and Masuria), 0.6 M;
+#   - the Marienwerder area east of the Vistula (Marienwerder, Stuhm,
+#     Rosenberg, Marienburg), 0.21 M;
+#   - Danzig, 0.41 M;
+#   - Cieszyn Silesia west of the Olza (Fryštát, Český Těšín, Frýdek),
+#     0.31 M, and Upper Orava and Zamagurie, 0.06 M.
+#   Poland gains 2.9 M people, of them about 1.9 M German speakers, 0.6 M
+#   speakers of Polish (Upper Silesian, Masurian, Warmian, Goral) and 0.2 M
+#   of Czech or Slovak.
+# * Languages: as in Poland; Germans get German-language schools at the
+#   baseline rate (the Geneva Convention of 1922 for Upper Silesia), and
+#   German is co-official in Danzig (a Polish Danzig with municipal
+#   autonomy). Germans emigrate to Germany through the German channel, as
+#   from Poznań and Pomorze.
+extends: baseline
+meta:
+  name: plebiscite_poland
+  description: "Poland wins every plebiscite of 1920-21 (Upper Silesia, Allenstein, Marienwerder, Cieszyn, Spiš, Orava) and holds Danzig"
+include_west: [DE_OPO, DE_WAR, DE_MAZ, DE_MAR, DZ_GDA, CS_CIE, CS_SPO]
+exclude: [DE_OPO.nysa, DE_OPO.grodkow, DE_OPO.niemodlin, DE_WAR.lidzbarkwarmin, DE_WAR.braniewo,
+          DE_MAZ.wegorzewo, DE_MAZ.goldap, DE_MAZ.ketrzyn, DE_MAZ.bartoszyce]
+official_languages:
+  DZ_GDA: [pl, de]

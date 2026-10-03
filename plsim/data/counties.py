@@ -26,7 +26,9 @@ environment.
 Soviet Belarus, when included, has its 12 okrugs of 1926 as grade-A
 counties (``data.bssr``). Latgale and the Nevel lands, when included, have
 their uezds as grade-E counties: estimates from the 1897 census
-(``data.krai_east``).
+(``data.krai_east``). The German, Danzig and Czechoslovak lands, when
+included, have groups of Kreise and districts as grade-E counties
+(``data.west``).
 
 Conventions
 -----------
@@ -47,6 +49,7 @@ from dataclasses import dataclass, field
 
 from . import bssr as _bssr
 from . import krai_east as _xk
+from . import west as _west
 
 _TR = str.maketrans("ąćęłńóśźżĄĆĘŁŃÓŚŹŻėęįšųūžčĖĮŠŲŪŽČ", "acelnoszzACELNOSZZeeisuuzcEISUUZC")
 
@@ -320,6 +323,11 @@ COUNTIES += [_a(par, name, seat, lat, lon, round(pop * _bssr.GROWTH_1926_1931), 
 # carried to 1931; see data.krai_east). The Mogilev edge is a single unit.
 COUNTIES += [_a(par, name, seat, lat, lon, round(_xk.unit_population(seat)), _xk.unit_languages(seat), grade="E")
              for seat, name, par, lat, lon, _, _ in _xk.UNITS if par != "RU_MOH"]
+
+# The west lands (only with include_west): groups of Kreise and districts as
+# grade-E counties (data.west).
+COUNTIES += [_a(par, name, seat, lat, lon, round(_west.unit_population(seat)), _west.unit_languages(seat), grade="E")
+             for seat, name, par, lat, lon, _, _ in _west.UNITS]
 
 BY_PARENT: dict[str, list[County]] = {}
 for _cty in COUNTIES:

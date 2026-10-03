@@ -80,29 +80,9 @@ class LanguageModel:
         self.regions = regions
         self.codes = [r.code for r in regions]
         self.R = len(regions)
-        self.dom = np.array([LANG_INDEX[d] for d in dominant])
-        # official languages (R, NL): status floor, schooling, admissible shift targets
-        self.official = np.zeros((self.R, NL), dtype=bool)
-        for r, langs in enumerate(official or [[d] for d in dominant]):
-            self.official[r, [LANG_INDEX[l] for l in langs]] = True
-        self.official[np.arange(self.R), self.dom] = True
         self.group_lang = np.array([LANG_INDEX[l] for _, l in GROUPS])
         self.group_comm = np.array([[c.code for c in COMMUNITIES].index(c) for c, _ in GROUPS])
-        # Target matrix: for every group g and every region r, which child groups
-        # are admissible targets (boolean (R, G, G)).
-        tgt = np.zeros((self.R, NG, NG), dtype=bool)
-        for g, (c, l) in enumerate(GROUPS):
-            base = set(SHIFT_TARGETS.get((c, l), ()))
-            for r in range(self.R):
-                ts = set(base)
-                ts.update(LANGUAGES[k].code for k in np.where(self.official[r])[0])
-                for t in ts:
-                    if t == l:
-                        continue
-                    k = GROUP_INDEX.get((c, t))
-                    if k is not None:
-                        tgt[r, g, k] = True
-        self.targets = tgt
+        self.set_regime(dominant, official)
         # sigma0 per group
         s0 = params["sigma0"]
         self.sigma0 = np.array([s0.get(f"{c}:{l}", s0.get(l, s0["default"])) for c, l in GROUPS])
@@ -119,6 +99,31 @@ class LanguageModel:
         conc = params.get("concentration", {})
         k = np.array([conc.get(f"{c}:{l}", conc.get(l, 1.0)) for c, l in GROUPS], dtype=float)
         self.conc = np.tile(k, (self.R, 1))                                  # (R, G)
+
+    def set_regime(self, dominant: list[str], official: list[list[str]] | None = None) -> None:
+        """Contact and official languages of every region (at the start, and
+        after a border change, ``plsim.history``)."""
+        self.dom = np.array([LANG_INDEX[d] for d in dominant])
+        # official languages (R, NL): status floor, schooling, admissible shift targets
+        self.official = np.zeros((self.R, NL), dtype=bool)
+        for r, langs in enumerate(official or [[d] for d in dominant]):
+            self.official[r, [LANG_INDEX[l] for l in langs]] = True
+        self.official[np.arange(self.R), self.dom] = True
+        # Target matrix: for every group g and every region r, which child groups
+        # are admissible targets (boolean (R, G, G)).
+        tgt = np.zeros((self.R, NG, NG), dtype=bool)
+        for g, (c, l) in enumerate(GROUPS):
+            base = set(SHIFT_TARGETS.get((c, l), ()))
+            for r in range(self.R):
+                ts = set(base)
+                ts.update(LANGUAGES[k].code for k in np.where(self.official[r])[0])
+                for t in ts:
+                    if t == l:
+                        continue
+                    k = GROUP_INDEX.get((c, t))
+                    if k is not None:
+                        tgt[r, g, k] = True
+        self.targets = tgt
 
     def nest_concentration(self, P: np.ndarray, codes: list[str]) -> None:
         """County runs.  The concentration factors are set for voivodeships;

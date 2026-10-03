@@ -264,6 +264,80 @@ from these descriptions (about 10 km); grade C as a line, A as a description.
 * **1926 Soviet census by raion** (for Soviet Belarus below the okrug):
   in the census volumes and on Demoscope, which was blocked.
 
+### Where to download them (for the user; not reachable from the build environment)
+
+| What | Where |
+|---|---|
+| 1931 census, short results for **every voivodeship, powiat and town** ("wyniki ostateczne ... w postaci skróconej") | MBC: https://mbc.cyfrowemazowsze.pl/dlibra/publication/17019/edition/14481 |
+| 1931 census, voivodeship volumes (seria C) | Kraków (Wikimedia Commons): https://commons.wikimedia.org/wiki/File:Woj.krakowskie-Polska_spis_powszechny_1931.pdf · Śląsk (Śląska BC): https://sbc.org.pl/dlibra/publication/556434/edition/522609 · Stanisławów (MBC): https://mbc.cyfrowemazowsze.pl/dlibra/publication/16930/edition/14199 · Kielce (MBC): https://bc.cyfrowemazowsze.pl/publication/16942 · Łódź without the city (MBC): http://mbc.cyfrowemazowsze.pl/dlibra/doccontent?id=14233 · Poznań without the city (KPBC): https://kpbc.umk.pl/dlibra/publication/4893/edition/10837 · Białystok (Podlaska BC): https://pbc.biaman.pl/dlibra/publication/1867/edition/2107/content · Wilno city (Podlaska BC): https://www.pbc.biaman.pl/dlibra/publication/1870/edition/2108 |
+| 1931 census forms and instructions | MBC: https://mbc.cyfrowemazowsze.pl/dlibra/publication/edition/14167 |
+| **1921 census**: nationality and religion by powiat (voivodeship volumes "mieszkania, ludność, stosunki zawodowe") | Lwów (Podlaska BC): https://pbc.biaman.pl/dlibra/doccontent?id=2280 · the series in GUS's library: https://statlibr.stat.gov.pl/ |
+| 1921 *Skorowidz miejscowości* (nationality and religion by locality, a volume per voivodeship) | archive.org: https://archive.org/details/skorowidzmiejsco02pola · Polesie (PBC): https://pbc.biaman.pl/dlibra/publication/2225/edition/3106 · Białystok (PBC): https://pbc.biaman.pl/dlibra/publication/26774/edition/27140 · Lublin (MBC): https://mbc.cyfrowemazowsze.pl/dlibra/publication/17131/edition/14618 · Lwów (Podkarpacka BC): https://www.pbc.rzeszow.pl/dlibra/publication/2501/edition/2330 · Poznań (WBC): https://www.wbc.poznan.pl/dlibra/publication/648193/edition/559067 · Polona: https://polona.pl/preview/ef39d8e9-bd8d-43ab-aeec-f94dd3b04762 |
+| **1923 Lithuanian census** (*Lietuvos apgyventos vietos*, by settlement, with the apskritis tables) | archive.org: https://archive.org/details/lietuvos-apgyventos-vietos-1925 · overview: https://lt.wikipedia.org/wiki/1923_m._Lietuvos_gyventoj%C5%B3_sura%C5%A1ymas |
+| **1926 Soviet census**, vol. 10 (BSSR), by okrug and raion | rusneb: https://rusneb.ru/catalog/000199_000009_009004429/ · vyp. 4 (nationality and native language): https://archive.org/details/vyp4nariridmova |
+| **1931 powiat boundaries** (MPIDR Population History GIS Collection; free registration) | https://mosaic.ipums.org/historical-gis-datafiles |
+| German census of 1933 by Kreis (for `data.west`) | GESIS, Falter's Weimar election and census data (Kreise 1920-33): https://access.gesis.org/dbk/67914 · HISTAT: https://histat.safe-frankfurt.de/ · Statistisches Jahrbuch für das Deutsche Reich 1937 (Mannheim): https://digi.bib.uni-mannheim.de/fileadmin/statjahrb/514401303_1937/pdf/514401303_0069.pdf |
+
+A 1921 nationality table by powiat, saved as
+`plsim/data/census1921_powiaty.csv` (columns in `plsim/data/census1921.py`),
+is read and checked county by county (`plsim.validate.identity_1921`).
+
+## The 1921 nationality census (identity layer)
+
+`plsim/data/census1921.py`. Poland's totals (Polish 69.23 %, Ukrainian and
+Ruthenian 15.17, Jewish 7.97, Belarusian 4.03, German 2.99, Russian 0.19,
+"tutejszy" 0.15) are from the census summary (Polish and English Wikipedia
+articles on the census; GUS). Voivodeship shares of grade A were confirmed
+in two places: Volhynia (Ukrainian and Ruthenian 68.4 %, Polish 16.6),
+Stanisławów (70.2, 21.8, Jewish 6.8, German 1.1), Tarnopol (Polish 49.3,
+Ukrainian and Ruthenian 45.5), Polesie (Belarusian 42.6 %, 375 thousand;
+Ruthenian 17.7 %, 156 thousand; Jewish 10.5; "tutejszy" 4.4; Polish 24.3).
+Lwów, Nowogródek and Białystok are recalled (grade C) and only reported.
+The identity layer's starting mixes for the Orthodox and the Jews were
+fitted to the grade-A figures (METHODOLOGY §6.7).
+
+## The German, Danzig and Czechoslovak lands (`plebiscite_poland`, `historical`)
+
+`plsim/data/west.py` (grade E). Region totals: the German census of
+16 June 1933 by Regierungsbezirk (RB Oppeln 1.48 M; RB Breslau about
+1.96 M; RB Liegnitz east of the Neisse 0.97 M; Brandenburg east of the Oder
+0.64 M; Grenzmark 0.34 M; RB Köslin 0.69 M; Stettin and the RB Stettin east
+of the Oder 0.70 M; RB Allenstein 552,541 with Oletzko), split at the
+Oder-Neisse line by county and among the units by Kreis estimates; Danzig's
+1929 census (407,517); the Czechoslovak census of 1930 for Cieszyn Silesia
+(Fryštát and Český Těšín 216,255: 76,230 Poles, 120,639 Czechs and 17,182
+Germans; Frýdek about 95,000). The 1939 total of the land Poland received
+(8.86 M with Danzig) is reproduced to within 0.1 M by the model. Home
+language and faith by unit: the 1925 Prussian census (Upper Silesia:
+Polish 26.7 %, bilingual 7.6 %; Landkreis Oppeln only 26.1 % German-only),
+estimates for Masuria, Warmia, Stuhm and Kashubian Bütow and Lauenburg, and
+confessional shares (details in the module docstring). Borders: CShapes 2.0
+(Germany and Danzig on 1 Jan 1932, Poland 1946-2019) and hand-drawn
+outlines of the Cieszyn, Spiš and Orava plebiscite areas clipped to
+Czechoslovakia (`tools/build_west.py`). Towns and lines: 1933 town
+populations and the main and secondary railways of c. 1931 (Breslau-Oppeln-
+Gleiwitz, the Silesian mountain railway, the Ostbahn, Stettin-Danzig, the
+East Prussian lines, the Košice-Bohumín railway).
+
+## The historical scenario (calibration targets and event sizes)
+
+`scenarios/historical.yaml`, `plsim/history_check.py`. Targets: GUS census
+populations 1946-2021 and urban shares; GUS total fertility (1950 3.71,
+1960 2.98, 1970 2.20 with rural 2.99 and urban 1.67, 1980 2.28 with rural
+2.92 and urban 1.93, 1990 2.04 with rural 2.44 and urban 1.77, 2000 1.37);
+GUS life tables (1952-53 58.6/64.2, 1960-61 64.8/70.5, 1970-72 66.8/73.8,
+1990 66.2/75.2, 2019 74.1/81.8); the 2002 census of nationality and home
+language. Event sizes are rounded from the standard accounts: the
+Holocaust (about 3 M Polish Jews), Polish war losses (about 2 M non-Jewish
+citizens), the Soviet deportations of 1940-41 (about 320,000), the
+repatriation of 1944-47 (1.52 M) and of 1955-59 (0.25 M), the transfer of
+Ukrainians in 1944-46 (482,000), Operation Vistula (141,000), the flight
+and expulsion of the Germans and the "verification" of the autochthons
+(1946 census: 2.29 M Germans and 0.42 M awaiting verification), the
+settlement of the Recovered Territories (5.94 M people in 1950), Jewish
+emigration in 1946-47, 1949-51, 1956-58 and 1968-69, and the Aussiedler
+(about 1.2 M in 1950-1992), with Maddison's income series for Poland.
+
 ## Geography (maps only)
 
 | Item | Value | Grade | Source / note |

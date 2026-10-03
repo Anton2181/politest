@@ -283,7 +283,13 @@ class MigrationModel:
         p = self.p
         state = np.zeros(self.R, dtype=int) if state is None else np.asarray(state)
         z_r = np.broadcast_to(np.asarray(y_nat, float), (self.R,)) / y_frontier       # (R,)
-        openness = piecewise(year, p["openness"])
+        openness = np.full(self.R, piecewise(year, p["openness"]))
+        # a state's own emigration regime (e.g. the closed Soviet border; plsim.history)
+        names = getattr(self, "state_names", ["PL"])
+        for k, nm in enumerate(names):
+            sched = (p.get("openness_by_state") or {}).get(nm)
+            if sched is not None:
+                openness[state == k] = piecewise(year, sched)
         h = hump(z_r, p["hump_peak"], p["hump_shape"])
         # net emigration fades to zero near the immigration threshold
         fade = 1 / (1 + np.exp((z_r - p["immigration_threshold"]) / 0.04))
@@ -296,8 +302,9 @@ class MigrationModel:
         jew = piecewise(year, p["jewish_channel"])
         ger = piecewise(year, p["german_channel"])
         extra = np.where(self.is_jewish, jew * np.where(self.is_haredi, p["haredi_channel_factor"], 1.0), 0.0)
-        extra = extra + np.where(self.is_german, ger, 0.0)
-        rate = (rate_g * push[:, None] + extra[None, :])             # (R,G)
+        # the German channel is the emigration of Germans from a state that is not German
+        not_de = (self.dom != LANG_INDEX["de"])[:, None]
+        rate = (rate_g * push[:, None] + extra[None, :] + np.where(self.is_german[None, :] & not_de, ger, 0.0))
         # Lithuania's own openness (e.g. emigration to Latin America in the 1920s)
         lt_mask = self.country == "LT"
         rate[lt_mask] *= p["lithuania_emig_factor"]
@@ -311,6 +318,8 @@ class MigrationModel:
         imm_w = np.zeros(self.R)
         for k in range(state.max() + 1):
             m = state == k
+            if not m.any():
+                continue                    # a state with no land (yet, or any more)
             zk = z_r[m][0]
             imm_k = p["immigration_max"] / (1 + np.exp(-(zk - p["immigration_threshold"]) / 0.04)) * P[m].sum()
             wk = urb[m] * (y_reg[m] / ybar_s[k]) ** 2

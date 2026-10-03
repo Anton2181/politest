@@ -272,7 +272,13 @@ the end of their birth year with `L(0)`.
   2000.
 * Each (region, urban/rural, community) cell closes its gap to
   `frontier - gap(y/y*)`, a Preston-curve (Preston 1975) income-dependent gap
-  of 1.5-12 years.
+  of 1.5 years at the frontier's income up to `gap_max` at zero income:
+  12 years until 1945, halving to 6 by 1955 (the post-war shift of the
+  Preston curve: in 1960 Poland's women were 3.6 years behind best practice
+  at a third of its income; Portugal, Spain, Greece, Bulgaria 2.5-8). The
+  1945-55 shift is calibrated on the historical scenario (§12.10), where
+  People's Poland adds its own schedule (2.5 in 1955-65, rising to 8 by
+  1990: the socialist stagnation, with a sex gap of 9 years in 1991).
 * The catch-up rate jumps from 3 %/yr before 1945 to 12 %/yr after 1951.
   This is the sulphonamide / penicillin / streptomycin / DDT / vaccination
   "mortality revolution" that took southern and eastern Europe from e0 ~50
@@ -302,20 +308,29 @@ underlies the UN World Population Prospects (bayesTFR):
   & Watkins 1986; Lesthaeghe 1977). There are community pace factors:
   Greek Catholic 0.9, acculturating Jews 1.1, and Haredi 0.12, whose
   fertility drifts to its own long-run mean. The Orthodox decline at the
-  Catholic pace (1.0): after the war the Orthodox Belarusians of Podlasie had
-  fewer children than their Catholic neighbours, and Soviet Belarus and
-  Ukraine fell below Poland's fertility by 1970. Their higher interwar
-  fertility is in the level (x 1.05), not the pace. The pace has a floor of
-  0.55 of its maximum in the least modernised lands, so that the eastern
-  countryside starts its decline in step with rural eastern Poland of
-  1960-90 (about 2.9 children per woman in 1970 and 2.4-2.6 in 1990).
-  With the slower settings of earlier versions (Orthodox 0.85, floor 0.40)
-  the lands of Soviet Belarus still had 3.6 children per woman in 1970 and
-  2.7 in 1990; now 3.4 and 2.3 (`nw_krai`; the model's Lublin
-  voivodeship 3.0 and 2.0). Polesie and Volhynia, the poorest and least
-  literate voivodeships, stay higher: about 4.0 and 2.8 in the baseline,
-  above the analogue, at the upper edge of what the evidence supports.
-  The 1930s checks (§10.1) are unchanged.
+  Catholic pace (1.0); their higher interwar fertility is in the level
+  (x 1.05), not the pace.
+* **Calibration on the historical scenario** (§12.10). Run on the real
+  century, the earlier settings put rural Poland at 2.4 children per woman
+  in 1970 and 2.0 in 1980 (census: 2.99 and 2.92) and left the Soviet-ruled
+  Kresy at 3.1 in 1970 (western Ukraine and Brest about 2.6), while the
+  counterfactual Volhynia and Polesie kept 4-5 in the countryside in 1970.
+  The modernisation index made the transition too fast in the advanced
+  countryside and too slow in the backward one. Four changes, together:
+  * the decline is under way in 1931 where fertility is high: `U` is at
+    least 0.5 above the current level (`onset_offset`), so the Kresy do not
+    sit at the slow start of the double logistic for decades;
+  * the pace depends less on modernisation (floor 0.75 of the maximum,
+    was 0.55) and is slower in the countryside (x 0.7; `pace_stratum`);
+  * the transition ends higher in the countryside (D4 + 0.8;
+    `D4_rural_offset`), and the rural long-run mean is 0.3 higher
+    (`phase3_mu_rural_offset`).
+  With the historical scenario's own period effects (war, post-war
+  compensation, the pro-natalism of the 1970s-80s, the slump after 1990),
+  the model then gives Poland 3.71 in 1950 (census 3.71), 2.86 (2.98) in
+  1960, 2.25 (2.20) in 1970, 2.36 (2.28) in 1980, 2.04 (2.04) in 1990, 1.43
+  (1.37) in 2000 and 1.38 (1.38) in 2010, and the Soviet-ruled Kresy about
+  2.7 in 1970. The 1930s checks (§10.1) still pass.
 * **Phase III**: once TFR reaches D4 + 0.12 the cell follows an AR(1)
   process (rho = 0.93) around a long-run mean. That mean is 1.45 for the
   Catholic/Orthodox majority, with ensemble spread; the Catholic southern
@@ -683,24 +698,41 @@ villagers of Polesie answered "tutejszy". Polish-speaking Jews remained Jews.
 In Lithuania a large part of the Polish-speaking Catholics were entered, and
 in time saw themselves, as Lithuanians. `plsim.identity` therefore tracks
 identity counts `I[r, u, g, i]` for every region, rural/urban cell and
-community-language group. The 13 identities are Polish, Ukrainian,
+community-language group. The 14 identities are Polish, Ukrainian,
 Belarusian, Lithuanian, Russian, German, Jewish, Czech, Latvian, Kashubian,
-Lemko/Rusyn, "local" and other. They always add up to the population of the
+Lemko/Rusyn, "local", other and Silesian. They always add up to the population of the
 cell and group; identity is not tracked by age.
 
 * **Start (1931).** Each group has an identity mix (`identity.INITIAL`),
-  with overrides for the Lithuanian member and Soviet Belarus. The mixes are
-  set so that the 1931 population, read through the 1921 nationality question
-  (`polish_1921`), gives back the 1921 census: Polish 69.3 % (census 69.2 %),
-  Ukrainian and Ruthenian 14.3 % (14.3 %), Jewish 8.3 % (7.8 %), Belarusian
-  and "local" 4.2 % (Belarusian 3.9 %), Lithuanian 0.3 % (0.3 %). Two
-  caveats: 1921 left out the Wilno region and Upper Silesia, and over half a
-  million Germans had left before 1931. For Lithuania, 42 % of Polish
-  speakers have a Polish identity. Read through the 1923 question, that gives
-  70 thousand Poles (2.9 %), against the census's 65.6 thousand (3.2 %
-  without Klaipėda) and some 150 thousand Polish speakers. For the BSSR, nearly all
-  Belarusian speakers have a Belarusian identity (the indigenisation of the
-  1920s).
+  with overrides for the Lithuanian member, Soviet Belarus and the west
+  lands. The mixes of the Orthodox and of the Jews are **fitted to the 1921
+  nationality census** (`data.census1921`, check `validate.identity_1921`):
+  the 1931 population, read through the 1921 nationality question
+  (`polish_1921`), against Poland's totals and the voivodeships confirmed in
+  two sources. Fitted: Orthodox Ukrainian speakers 90 % Ukrainian, 6 %
+  "local"; West Polesians 50 % "local", 33 % Belarusian, 10 % Ukrainian, 7 %
+  Polish; Orthodox Belarusian speakers 65 % Belarusian, 26 % "local";
+  Yiddish speakers 78 % Jewish by nationality; and the 1921 enumerators
+  entered "locals" as Belarusian 50 %, Ruthenian 20 %, Polish 15 %,
+  "tutejszy" 15 %. Result against the census (model / 1921): Poland (1921
+  territory) Polish 67.6 / 69.2 %, Ukrainian and Ruthenian 15.9 / 15.2,
+  Jewish 8.2 / 8.0, Belarusian 4.4 / 4.0; Polesie Belarusian 41.3 / 42.6,
+  Ruthenian 20.2 / 17.7, Polish 22.7 / 24.3, "tutejszy" 5.0 / 4.4, Jewish
+  8.7 / 10.5; Volhynia Ukrainian 62.4 / 68.4, Polish 19.8 / 16.6;
+  Stanisławów 65.2 / 70.2 and 23.0 / 21.8; Tarnopol Polish 44.6 / 49.3,
+  Ukrainian 47.1 / 45.5. The squared error over the targets fell from 1,089
+  to 115 (the earlier mixes had Polesie 34 % Polish and 18 % Belarusian).
+  Caveats: 1921 left out the Wilno region and Upper Silesia, ten years of
+  settlement and emigration lie between the two censuses, and the
+  voivodeship figures are only five; a county table can be dropped in
+  (`plsim/data/census1921_powiaty.csv`) and is then checked county by
+  county. For Lithuania, 42 % of Polish speakers have a Polish identity.
+  Read through the 1923 question, that gives 70 thousand Poles (2.9 %),
+  against the census's 65.6 thousand (3.2 % without Klaipėda) and some 150
+  thousand Polish speakers. For the BSSR, nearly all Belarusian speakers
+  have a Belarusian identity (the indigenisation of the 1920s). A Silesian
+  identity (2002: 173 thousand) is held by part of the Upper Silesians and
+  of the Poles of Cieszyn Silesia in the west lands (§12.9).
 * **Births and language switches.** A child raised in its mother's language
   takes her identity. A child (or adult) who switches language takes the
   identity that goes with the new language with probability `follow` (0.6),
@@ -724,14 +756,18 @@ cell and group; identity is not tracked by age.
   baseline federation, with Polish co-official, Polish identity in Lithuania
   falls about as fast as Polish speech (78 -> 66 thousand, against 150 ->
   119 thousand speakers, 1932-2032).
-* **Migration and exchange.** Leavers take their cell's identity mix.
+* **Migration and transfers.** Leavers take their cell's identity mix.
   Arrivals take the mix of their group's leavers, first from the same region
   (rural-urban moves), then from the whole state.
 
 Outputs: identity by region and year, identity by home language at the
 snapshot years, the nationality censuses, an identity map in the report and
-the atlas's "Identity" layer (by county). The parameters are judgements, not
-fits. Only the starting mixes are tied to data (1921, 1923, 1926).
+the atlas's "Identity" layer (by county). The dynamic parameters are
+judgements, not fits; the starting mixes are tied to data (1921, 1923,
+1926). The historical scenario (§12.10) is a check on the dynamics: it keeps
+minority identities in People's Poland more stable than they were (2002:
+Belarusians and Ukrainians several times too many; Germans and Silesians
+about right).
 
 ## 7. Transport networks
 
@@ -962,6 +998,16 @@ comparisons use common random numbers:
 * **Network**: gravity decay, BCR threshold.
 
 Reports give medians with 50 % and 90 % bands.
+
+**Scenario ensembles.** Every scenario but `historical` also has a small
+ensemble (`report`: 8 members when the baseline has 32; `ii_rp_only` 16).
+Its members use the same parameter draws and seeds as the baseline's first
+members (seed 7), so differences between scenarios are not sampling noise.
+`outputs/scenario_ranges.csv` and the figure `scenario_ranges.png` give the
+10th, 50th and 90th percentiles in 2032 of the population, the shares of
+Polish (by home language and by identity), Ukrainian, Belarusian, Yiddish,
+Lithuanian and German speakers, GDP per head, fertility and life
+expectancy; the atlas shows them under each scenario's description.
 
 **Probability maps.** With `cells=True` (as in `report`), each member is
 also downscaled to the 3.5 km grid for 1982 and 2032. For every cell, the
@@ -1530,44 +1576,125 @@ on either side. By 2032 the historical line's imbalance grows to 2.1 M
 against 7.9 M as the east Polonises. In the autonomy scenarios it comes
 closer to balance (2.7 M against 3.7 M).
 
-**A population exchange along the line** (scenario `curzon_exchange`,
-`plsim.exchange`). On 1 January of the exchange year (1946), every Pole on
-the other side of that year's line moves to the Polish side. Every counted
-non-Pole on the Polish side moves to the other side. Jews and the other
-people not counted do not move. The line makes the two flows equal to within
-the residual of one county. The plan is computed from the run of the base
-scenario, which is identical to this scenario up to that year. Since the
-line follows county borders, a county moves as a whole: all its Poles leave
-if it lies on the other side, all its counted non-Poles if it lies on the
-Polish side.
-
-Movers take the places of those who left:
-
-* Poles settle in the counties (town or country) the non-Poles vacated, in
-  proportion to the places vacated;
-* the speakers of each other language settle where the Poles left, weighted
-  towards counties where their language is spoken (Ukrainians to Ukrainian
-  counties, and so on).
-
-Age, sex, community, bilingualism and identity move with them. The economy,
-the network and language policy are untouched, so the scenario isolates the
-demographic and linguistic effect of an "equal" exchange.
-
-**By declared nationality** (scenario `curzon_exchange_identity`). The
-agreements of 1944-46 went by nationality, not by the language spoken at
-home. With `curzon_count: identity` the line counts Poles by Polish national
-identity (§6.7), whatever their home language: each cell's speakers of a
-language take their region's identity mix for that language
+**Counting Poles by identity.** With `curzon_count: identity` the line
+is drawn on national identity instead of home language: each cell's
+speakers of a language take their region's identity mix for that language
 (`curzon.identity_cells`), and Jews, Germans and Kashubians by identity are
-left out. With `population_exchange: {by: identity}` every Pole by identity
-beyond the line moves west and every counted non-Pole by identity on the
-Polish side moves east, each with home language and identity
-(`exchange.apply_exchange_identity`): a Polish-identity speaker of
-Lithuanian (a Lauda gentleman) goes west speaking Lithuanian, a
-Lithuanian-identity speaker of Polish goes east speaking Polish. Jews of
-every language stay.
+left out. (Two exchange scenarios along the line were removed in this
+version; the real transfers of 1944-47 are replayed in `historical`, §12.10.)
 
-### 12.9 What the maps cannot show
+### 12.9 The German, Danzig and Czechoslovak lands (optional)
+
+Two scenarios need land outside Poland and Lithuania of 1932: the
+plebiscite lands with Danzig (`plebiscite_poland`) and the German land
+Poland received in 1945 (`historical`). `include_west` lists the regions a
+run holds (`data.west`):
+
+* **Land.** `DE` is Germany on 1 January 1932 intersected with Poland of
+  1946-2019 (CShapes 2.0): Silesia and Pomerania east of the Oder and the
+  Lusatian Neisse, the Neumark, the Grenzmark, Stettin and Swinemünde, and
+  southern East Prussia; `DZ` is the Free City of Danzig; `CS` is
+  Czechoslovakia within hand-drawn outlines of the Czechoslovak parts of the
+  Cieszyn, Spiš and Orava plebiscite areas (`tools/build_west.py`). On the
+  grid: 99,790, 2,078 and 2,571 km². The territory of Poland and Lithuania
+  does not change when these lands are available (four shore cells by
+  Danzig, once given to Poland by the 2.5 km coast rule, are the Free
+  City's).
+* **Regions.** Fourteen, on the Regierungsbezirke: Oppeln, Breslau,
+  Liegnitz east of the Neisse, the Neumark, the Grenzmark, Köslin, Stettin,
+  and East Prussia split by faith and speech into Warmia (Catholic, with the
+  Warmian Poles), Masuria with the Barten land (Lutheran, with the
+  Masurians), Elbing and the Oberland, and the Marienwerder plebiscite area;
+  Danzig; Cieszyn Silesia west of the Olza; Upper Orava and Zamagurie. 78
+  units (groups of Kreise and districts) are their counties (grade E).
+  Their regions are drawn like the voivodeships, by the weighted Voronoi of
+  their towns fitted to their areas.
+* **People.** 1933 German census totals, 1929 Danzig, 1930 Czechoslovak;
+  latent home language and faith by unit (DATA_SOURCES). Upper Silesian,
+  Masurian, Warmian, Kashubian and Goral speech are Polish (or Kashubian)
+  home language; identity separates Polish, German, Silesian and "local"
+  (§6.7). In 1932 the land Poland got in 1945 holds 8.1 M people and Danzig
+  0.41 M; the model has 8.89 M together in 1939 (8.86 M).
+* **Towns and lines.** 109 towns with their 1933 populations, under their
+  Polish names, and the main and secondary railways of c. 1931; the
+  Prussian roads between them start paved. They exist only when their land
+  is in the run; a town whose region is left out is a foreign town of the
+  run (Wrocław in `plebiscite_poland`). The 1932 gateways that are towns of
+  these lands (Breslau, Gleiwitz-Beuthen, Stettin, Gdańsk) give way to the
+  towns, and lines that crossed the land (Szamotuły-Stettin, Zbąszyń-Berlin,
+  Działdowo-Königsberg, Grajewo-Königsberg, Gdańsk-Gdynia, Cieszyn-Ostrava)
+  to its own lines.
+* **Income.** About 1.45 times Poland's per head (Danzig 1.9; Cieszyn 1.3,
+  Spiš and Orava 0.6). `y0_1931` is Poland's and Lithuania's income: a state
+  that holds land from outside them starts with its own mean.
+
+### 12.10 The historical scenario: events and calibration
+
+`historical` replays the real century so that the behaviour shared by all
+scenarios can be checked against what happened (`plsim.history`,
+`plsim.history_check`, `scenarios/historical.yaml`).
+
+**Three states, then two.** From 1932 the run holds the 1931 Polish state,
+the German land of 1945 as a separate state `DE` and Danzig as `DZ`, each
+with its own economy (Germany's eastern provinces follow Germany's income
+path at about three quarters of its level), German as the contact language
+there and Germanisation pressure. At the start of 1945 the German land and
+Danzig pass to Poland, and the counties whose land lies mostly outside
+Poland's post-war border (`borders_1932.json` key `PL1946`) pass to a
+Soviet state `SU` that stays in the run: closed border, Ukrainian,
+Belarusian or Lithuanian as contact language with Russian official, its
+own income path. A border change resets competence in the new contact
+language to the 1931 levels for it; the resettled German land takes the
+vital rates, schooling and mean relative income of the rest of Poland
+(`like`), since the people who will live there come from it.
+
+**Events.** A list of dated events, each selecting people by region,
+community, home language, national identity, sex and age:
+
+| Kind | What it does |
+|---|---|
+| `border` | regions change state, contact and official languages |
+| `deaths` | a share or a number of the selected die |
+| `emigrate` | they leave the territory |
+| `transfer` | they move to other regions, by weight or to the homes earlier events vacated (`@vacated`) |
+| `immigrate` | a number arrive from outside, with a group and identity |
+| `identity` | a share change national identity |
+
+Removals take people in proportion to their cohorts; with an identity
+filter, in proportion to that identity's share of each cell. Movers keep
+their age, sex, group and identity. Every event enters the year's
+accounts (deaths, emigrants, immigrants, inter-regional flows), so the
+accounting identity of the projection still holds. The events of the
+scenario: the September campaign, Soviet deportations and the resettlement
+of the Volhynian Germans; deaths under occupation (60 % of them spread over
+everyone, the rest on men of 16-60), Volhynia 1943, the Warsaw Uprising and
+the emptying of Warsaw; the Holocaust (about 95 % of the Jews who did not
+flee east); Wehrmacht losses and deaths in the flight of 1945; flight and
+expulsion of the Germans (62 % in 1945, most of the rest by 1950), the
+autochthons fleeing at lower rates and leaving later as Aussiedler (by
+rate, 1951-1992); the repatriation of Poles from the Soviet Union (1.5 M
+in 1945-47, 0.25 M in 1956-58) and from its interior; settlers from central
+Poland (2.5 M in 1945-50) into the vacated homes; the transfer of the
+Greek Catholic and Orthodox Ukrainian and Lemko speakers to the Soviet
+Union and Operation Vistula (selected by faith, as the authorities did,
+not by declared nationality); the Jewish emigration waves; and, after
+1989, the German minority and a Silesian identity declared again.
+
+**People's Poland.** Income per head follows Maddison's series (1990 GK$)
+from 1939 to 2019, then converges as elsewhere; a fertility period effect
+(war -20 %, post-war compensation +25-38 % in 1946-60, the pro-natalism of
+the 1970s-80s +12-18 %, the slump after 1990 -14-22 %); a socialist
+mortality regime (§4.1); emigration closed in 1940-45 and 1949-55,
+partly open in 1956-58 and the 1970s, open in the 1980s and after 2004;
+faster urbanisation at low income (forced industrialisation) that levels
+off at about 62 %; German banned, Ukrainian schools closed until 1956,
+stronger assimilation pressure.
+
+**Results against the censuses** (`outputs/history/historical_checks.csv`;
+updated with each build): see SCENARIOS, "Results: historical". The
+fertility and mortality settings of §4.1-4.2 come from this comparison.
+
+### 12.11 What the maps cannot show
 
 * Towns use their region's urban mix, tilted by the hinterland. Strongly
   Jewish shtetls (Pińsk, Brody) therefore appear more mixed than they were.

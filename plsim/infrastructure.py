@@ -42,7 +42,8 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import shortest_path
 from scipy.spatial import Delaunay
 
-from .data.network import NODES, PAVED_ROADS_1931, PROJECTS, RAIL_1931, RAIL_1931_BY, RAIL_1931_XK
+from .data.network import (GATEWAY_TOWNS, NODES, PAVED_ROADS_1931, PROJECTS, RAIL_1931, RAIL_1931_BY, RAIL_1931_WEST,
+                           RAIL_1931_XK, SUPERSEDED_WITH)
 from .economy import piecewise
 
 RAIL_CLASSES = ["nar", "sec", "main", "main_el", "hsr"]
@@ -132,7 +133,10 @@ class Network:
         # towns and gateways of Soviet Belarus exist only when it is part of the state
         self.with_by = any(c.startswith("BY_") for c in region_codes)
         self.with_xk = any(c.startswith(("LV_", "RU_")) for c in region_codes)
-        have = {k for k, on in (("BY", self.with_by), ("XK", self.with_xk)) if on}
+        # German, Danzig and Czechoslovak land (data.west): its towns exist when any of its regions is in the run
+        west = {c[:2] for c in region_codes if c[:3] in ("DE_", "DZ_", "CS_")}
+        have = {k for k, on in (("BY", self.with_by), ("XK", self.with_xk)) if on} | west
+        self.have = have
         self.dormant = np.array([not _exists(n.optional, have) for n in NODES])
         self.pop = np.array([0.0 if d else n.pop_1931 for n, d in zip(NODES, self.dormant)])  # thousands (urban)
         # one random stream per town (keyed by name), so towns added or left out elsewhere do not shift its draws
@@ -183,10 +187,25 @@ class Network:
             return False
         return True
 
+    def _town(self, name: str) -> int:
+        """Node of a town; a 1932 gateway that is a town of land in the run is that town."""
+        i = self.name_idx[name]
+        if self.dormant[i] and name in GATEWAY_TOWNS and not self.dormant[self.name_idx[GATEWAY_TOWNS[name]]]:
+            return self.name_idx[GATEWAY_TOWNS[name]]
+        return i
+
     def _build_initial(self):
-        for a, b, cls in RAIL_1931 + (RAIL_1931_BY if self.with_by else []) + (RAIL_1931_XK if self.with_xk else []):
-            ia, ib = self.name_idx[a], self.name_idx[b]
+        lines = RAIL_1931 + (RAIL_1931_BY if self.with_by else []) + (RAIL_1931_XK if self.with_xk else []) \
+            + (RAIL_1931_WEST if self.have & {"DE", "DZ", "CS"} else [])
+        seen = set()
+        for a, b, cls in lines:
+            if SUPERSEDED_WITH.get((a, b)) in self.have:
+                continue
+            ia, ib = self._town(a), self._town(b)
+            if ia == ib or (min(ia, ib), max(ia, ib)) in seen:
+                continue
             if self._edge_open(ia, ib):
+                seen.add((min(ia, ib), max(ia, ib)))
                 self._add_edge(ia, ib, "rail", cls)
         # Road skeleton: Delaunay triangulation (of the towns that exist), pruned by length.
         live = np.where(~self.dormant)[0]
@@ -197,7 +216,7 @@ class Network:
             for i in range(3):
                 a, b = int(live[s[i]]), int(live[s[(i + 1) % 3]])
                 pairs.add((min(a, b), max(a, b)))
-        paved = {tuple(sorted((self.name_idx[a], self.name_idx[b]))) for a, b in PAVED_ROADS_1931
+        paved = {tuple(sorted((self._town(a), self._town(b)))) for a, b in PAVED_ROADS_1931
                  if a in self.name_idx and b in self.name_idx}
         pairs |= paved
         self.delaunay_pairs = []
@@ -208,8 +227,9 @@ class Network:
             if not self._edge_open(a, b):
                 continue
             self.delaunay_pairs.append((a, b))
-            if (a, b) in paved:
-                cls = "paved"
+            if (a, b) in paved or (NODES[a].region[:3] in ("DE_", "DZ_") and NODES[b].region[:3] in ("DE_", "DZ_", "CS_")) \
+                    or (NODES[b].region[:3] in ("DE_", "DZ_") and NODES[a].region[:3] in ("DE_", "DZ_", "CS_")):
+                cls = "paved"           # the Prussian chaussées
             else:
                 regs = {NODES[a].region, NODES[b].region}
                 poor = regs & {"POL", "NOW", "WOL", "LT_NEA", "WIL", "BY_WIT", "BY_MIN", "BY_MOH", "BY_HOM"}
@@ -284,6 +304,11 @@ class Network:
     def demand(self, masses: np.ndarray, trips_per_capita: float, total_pop_k: float) -> np.ndarray:
         beta = self.p["gravity_beta"]
         K = np.outer(masses, masses) * np.exp(-beta * self.D)
+        f = self.p.get("cross_state_factor")
+        ns = getattr(self, "node_state", None)
+        if f is not None and ns is not None:            # trips between two states of the run (plsim.history)
+            cross = (ns[:, None] != ns[None, :]) & (ns[:, None] >= 0) & (ns[None, :] >= 0)
+            K = np.where(cross, K * f, K)
         np.fill_diagonal(K, 0.0)
         scale = trips_per_capita * total_pop_k * 1000.0 / K.sum()
         self.T = K * scale

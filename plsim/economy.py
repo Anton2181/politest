@@ -72,20 +72,51 @@ class Economy:
         self.y_state = np.array([self.y_nat])
         self.kappa_state: list = [None]
 
-    def set_states(self, state: np.ndarray, pop: np.ndarray, kappa: list | None = None) -> None:
+    def set_states(self, state: np.ndarray, pop: np.ndarray, kappa: list | None = None,
+                   names: list | None = None, n_states: int | None = None) -> None:
         """Give separate states (``state`` > 0) their own national income. Each
         starts at its regions' share of the 1931 income, so that regional
-        incomes are unchanged at the start."""
+        incomes are unchanged at the start. ``y0_1931`` is the income of
+        Poland and Lithuania: land from outside them (``data.west``) raises
+        or lowers its state's income by its own level."""
+        from .data.regions import NEW_COUNTRIES
         self.state = np.asarray(state, dtype=int)
-        S = int(self.state.max()) + 1
-        if S == 1:
-            return
+        S = max(int(self.state.max()) + 1, n_states or 0)
+        self.state_names = list(names or ["PL"] + [f"S{k}" for k in range(1, S)])
+        self.kappa_state = list(kappa or [None] * S) + [None] * max(0, S - len(kappa or []))
         pop = np.asarray(pop, float)
-        overall = (pop * self.rel0).sum() / pop.sum()
-        self.y_state = np.array([self.y_nat * (pop * self.rel0)[self.state == k].sum()
-                                 / max(pop[self.state == k].sum(), 1e-9) / overall for k in range(S)])
+        old = np.array([r.country not in NEW_COUNTRIES for r in self.regions])
+        w = np.where(old, pop, 0.0) if old.any() else pop
+        overall = (w * self.rel0).sum() / max(w.sum(), 1e-9)
+        if S == 1 and old.all():
+            return
+        y0 = self.y_nat
+        self.y_state = np.array([y0 * (pop * self.rel0)[self.state == k].sum()
+                                 / max(pop[self.state == k].sum(), 1e-9) / overall if (self.state == k).any() else y0
+                                 for k in range(S)])
         self.y_nat = float(self.y_state[0])
-        self.kappa_state = list(kappa or [None] * S)
+
+    def reassign(self, regions_idx, new_state: int, pop: np.ndarray) -> None:
+        """Move regions to another state (a border change): their income per
+        head is kept for the moment, re-expressed against the new state's
+        national income, and both states' relative incomes are renormalised."""
+        idx = np.asarray(regions_idx, dtype=int)
+        if not len(idx):
+            return
+        inc = self.region_income()[idx]
+        self.state = self.state.copy()
+        self.state[idx] = new_state
+        self.rel[idx] = inc / self.y_state[new_state]
+        self.rel0[idx] = self.rel[idx]
+        self._renormalise(np.asarray(pop, float))
+
+    def _renormalise(self, pop_by_region: np.ndarray) -> None:
+        for k in range(len(self.y_state)):
+            m = self.state == k
+            if not m.any() or pop_by_region[m].sum() <= 0:
+                continue
+            w = pop_by_region[m] / pop_by_region[m].sum()
+            self.rel[m] /= (w * self.rel[m]).sum()
 
     def y_of_region(self) -> np.ndarray:
         """National income of each region's state."""
@@ -136,6 +167,12 @@ class Economy:
             if self.rng.random() < p["crisis_prob"]:
                 g += p["crisis_size"]
         self.y_state = self.y_state * np.exp(g)
+        # states whose income follows a given path (``y_path``: {state name: [[year, GK$], ...]}),
+        # e.g. the historical scenario's Germany before 1945 and People's Poland
+        for name, path in (p.get("y_path") or {}).items():
+            names = getattr(self, "state_names", ["PL"])
+            if name in names and path[0][0] <= year <= path[-1][0]:
+                self.y_state[names.index(name)] = piecewise(year, path)
         self.y_nat = float(self.y_state[0])
         # Regional relative incomes.
         target = self.rel0 ** p["regional_persistence"]
@@ -153,10 +190,7 @@ class Economy:
         drel += eq * np.maximum(0, -np.log(self.rel))
         self.rel *= np.exp(drel + bonus)
         # Renormalise to population-weighted mean of one (within each state).
-        for k in range(len(self.y_state)):
-            m = self.state == k
-            w = pop_by_region[m] / pop_by_region[m].sum()
-            self.rel[m] /= (w * self.rel[m]).sum()
+        self._renormalise(pop_by_region)
         # Literacy / schooling (illiteracy closes at a fixed hazard + cohort replacement).
         lr = p["literacy_rate"]
         self.literacy += (1 - self.literacy) * lr

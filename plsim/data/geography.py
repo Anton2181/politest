@@ -294,19 +294,30 @@ def _dist_to_lines(lon, lat, lines) -> np.ndarray:
 
 
 def state_of(lat, lon, coast_km: float = 2.5) -> np.ndarray:
-    """'PL', 'LT', 'BY', 'XK' or '' for each point (1932 borders; see module
-    docstring; XK is the rest of the north-western governorates of 1897)."""
+    """'PL', 'LT', 'BY', 'XK', 'DE', 'DZ', 'CS' or '' for each point (1932
+    borders; see module docstring; XK is the rest of the north-western
+    governorates of 1897; DE, DZ and CS the German land Poland held after
+    1945, Danzig and the Czechoslovak plebiscite lands, ``data.west``)."""
     lat, lon = np.atleast_1d(np.asarray(lat, float)), np.atleast_1d(np.asarray(lon, float))
     b = load_borders()
     out = np.full(len(lat), "", dtype="<U2")
-    for st in ("PL", "LT", "BY", "XK"):
+    for st in ("PL", "LT", "BY", "XK", "DZ", "DE", "CS"):
         if st in b:
             out[(out == "") & _inside(b[st], lon, lat)] = st
-    for st in ("PL", "LT"):
+    for st in ("PL", "LT", "DZ", "DE"):
+        if st not in b.get("coast", {}):
+            continue
         free = np.where(out == "")[0]
         if len(free):
             out[free[_dist_to_lines(lon[free], lat[free], b["coast"][st]) < coast_km]] = st
     return out
+
+
+def inside_key(key: str, lat, lon) -> np.ndarray:
+    """Whether points lie inside the polygons stored under ``key`` of
+    ``borders_1932.json`` (e.g. ``PL1946``, Poland on its post-war borders)."""
+    lat, lon = np.atleast_1d(np.asarray(lat, float)), np.atleast_1d(np.asarray(lon, float))
+    return _inside(load_borders()[key], lon, lat)
 
 
 def haversine_matrix(lat1, lon1, lat2, lon2) -> np.ndarray:

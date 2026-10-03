@@ -66,6 +66,7 @@ h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--step-3
 .scen label, .panel-h { font-size: var(--step--1); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 select { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); padding: 8px 10px; width: 100%; }
 #scen-desc { margin: 0; font-size: var(--step--1); color: var(--ink2); min-height: 2.6em; }
+#scen-range { margin: 4px 0 0; font-size: var(--step--2, 0.75rem); color: var(--muted, #898781); }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px); gap: 24px 32px; align-items: start; }
 .plate { display: grid; gap: 10px; min-width: 0; justify-items: center; }
 .mapbox { position: relative; width: min(100%, max(380px, calc((100vh - 300px) * var(--inv-ar, 0.9)))); aspect-ratio: var(--ar-css, 1 / 1.1); background: var(--sea); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--rule); }
@@ -190,6 +191,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
       <label for="scenario">Scenario</label>
       <select id="scenario"></select>
       <p id="scen-desc"></p>
+      <p id="scen-range" class="hint" hidden></p>
     </div>
   </header>
 
@@ -368,9 +370,12 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     COL[i] = cb[2 * N + 2 * i] | (cb[2 * N + 2 * i + 1] << 8);
     REG[i] = cb[4 * N + i];
   }
-  // 1932 state of a region code and of each cell of the full grid: 0 Poland, 1 Lithuania, 2 Soviet Belarus
+  // 1932 state of a region code and of each cell of the full grid: 0 Poland, 1 Lithuania, 2 Soviet Belarus,
+  // 3 the rest of the 1897 krai, 4 German land held by Poland after 1945, 5 Danzig, 6 Czechoslovak plebiscite land
+  const ST_KEYS = ["PL", "LT", "BY", "XK", "DE", "DZ", "CS"];
   const stateOf = (code) => (code.startsWith("LT") ? 1 : code.startsWith("BY_") ? 2
-    : code.startsWith("LV_") || code.startsWith("RU_") ? 3 : 0);
+    : code.startsWith("LV_") || code.startsWith("RU_") ? 3 : code.startsWith("DE_") ? 4
+    : code.startsWith("DZ_") ? 5 : code.startsWith("CS_") ? 6 : 0);
   const CELL_ST = new Uint8Array(N);
   for (let i = 0; i < N; i++) CELL_ST[i] = stateOf(G.regions[REG[i]].code);
   const RIDX = new Int32Array(W * H).fill(-1);
@@ -473,9 +478,31 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     sc._cellreg = new Uint16Array(rb.length >> 1);
     for (let i = 0; i < sc._cellreg.length; i++) sc._cellreg[i] = rb[2 * i] | (rb[2 * i + 1] << 8);
     sc._netc = b64bytes(sc.net.c);
-    const labels = [...new Set(sc.geo.members)];
-    sc._member = sc.geo.members.map((m) => labels.indexOf(m));
+    const labels = [...new Set(sc.geo.members.concat((sc.geo.changes || []).map((c) => c.member)))];
+    sc._member0 = sc.geo.members.map((m) => labels.indexOf(m));
+    sc._member = sc._member0;
+    sc._labels = labels;
+    sc._epoch = -1;
     return sc;
+  }
+  // members of the regions at 1 January of ``year`` (border changes of the historical scenario)
+  function epochOf(sc, year) {
+    return (sc.geo.changes || []).filter((c) => c.year < year).length;
+  }
+  function membersAt(sc, epoch) {
+    const m = sc._member0.slice();
+    (sc.geo.changes || []).slice(0, epoch).forEach((c) => { const k = sc._labels.indexOf(c.member); c.idx.forEach((i) => { m[i] = k; }); });
+    return m;
+  }
+  function syncEpoch() {
+    const sc = scen();
+    if (!sc || !(sc.geo.changes || []).length) return false;
+    const e = epochOf(sc, state.year);
+    if (e === sc._epoch) return false;
+    sc._epoch = e;
+    sc._member = membersAt(sc, e);
+    computeBorders(); buildLayers();
+    return true;
   }
   const scen = () => scenByName[state.scen];
   function regionInfo(i) {
@@ -485,7 +512,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     const label = sc.geo.labels ? sc.geo.labels[k] : (code.startsWith("LT_") || code === "WAW" || code.includes(".") ? name : "woj. " + name);
     const offs = sc.geo.official ? sc.geo.official[k] : [sc.geo.dominant[k]];
     const official = offs.length > 6 ? "all languages" : offs.map((l) => LANG_NAME[l] || l).join(", ");
-    return { label, member: sc.geo.members[k], official, n: offs.length };
+    return { label, member: sc._labels ? sc._labels[sc._member[k]] : sc.geo.members[k], official, n: offs.length };
   }
   const frameFloor = (y) => { let f = 0; while (f < NF - 1 && FR[f + 1] <= y) f++; return f; };
 
@@ -628,7 +655,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     sc._hasLT = stc.includes(1);
     sc._hasBY = stc.includes(2);
     sc._hasXK = stc.includes(3);
-    sc._stOn = [true, sc._hasLT, sc._hasBY, sc._hasXK];
+    sc._stOn = ST_KEYS.map((_, k) => k === 0 || stc.includes(k));
     // reg: region of each pixel; -2 = land of the state left out of this scenario; -1 = abroad
     const reg = new Int16Array(W * H).fill(-1);
     for (let i = 0; i < N; i++) {
@@ -687,9 +714,10 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     });
     // 1932 state border: kept where the land inside is still part of the state
     const st = META.geo.states;
-    const key = ["PL"].concat(sc._hasLT ? ["LT"] : [], sc._hasBY ? ["BY"] : [], sc._hasXK ? ["XK"] : []).join("+");
+    const on = ST_KEYS.filter((_, k) => sc._stOn[k]);
+    const key = on.join("+");
     const outer = key === "PL+LT" ? st.outline : key === "PL" ? st.PL
-      : st.outlines[key] || st.PL.concat(sc._hasLT ? st.LT : [], sc._hasBY ? st.BY : [], sc._hasXK ? st.XK : []);
+      : st.outlines[key] || [].concat(...on.map((k) => st[k] || []));
     eachSeg(outer, (seg, a, b) => {
       if (Math.max(a, b) >= 0 || (a === -1 && b === -1)) segOuter.push(seg);
     });
@@ -702,6 +730,10 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     if (sc._hasLT) inter(st.plLt);
     if (sc._hasBY) inter(st.plBy);
     if (sc._hasXK) inter(st.byXk);
+    Object.entries(st.inner || {}).forEach(([pair, lines]) => {
+      const [a, b] = pair.split("|");
+      if (on.includes(a) && on.includes(b)) inter(lines);
+    });
   }
   function layer() {
     const c = document.createElement("canvas");
@@ -743,12 +775,13 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     segOuter.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
     x.stroke();
     clipPath = new Path2D();
-    st.PL.concat(sc0._hasLT ? st.LT : [], sc0._hasBY ? st.BY : [], sc0._hasXK ? st.XK : []).forEach((p) => {
+    const onKeys = ST_KEYS.filter((_, k) => (sc0._stOn || [true])[k]);
+    [].concat(...onKeys.map((k) => st[k] || [])).forEach((p) => {
       p.forEach((q, k) => (k ? clipPath.lineTo(px(q[0]), py(q[1])) : clipPath.moveTo(px(q[0]), py(q[1]))));
       clipPath.closePath();
     });
     clipPL = new Path2D();                // the Polish state without Lithuania (Curzon line)
-    st.PL.concat(sc0._hasBY ? st.BY : [], sc0._hasXK ? st.XK : []).forEach((p) => {
+    [].concat(...onKeys.filter((k) => k !== "LT").map((k) => st[k] || [])).forEach((p) => {
       p.forEach((q, k) => (k ? clipPL.lineTo(px(q[0]), py(q[1])) : clipPL.moveTo(px(q[0]), py(q[1]))));
       clipPL.closePath();
     });
@@ -911,6 +944,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   }
   function render() {
     if (!cur || !baseLayer) return;
+    syncEpoch();
     if (layersDirty) buildLayers();
     sample(state.year);
     paintRaster();
@@ -1432,10 +1466,19 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     }
     state.scen = name;
     prep(scenByName[name]);
+    scenByName[name]._epoch = -1;
     netYearShown = null;
     infraState.sel = null; infraState.shown = 60;
     cur = store[name];
     $("scen-desc").textContent = scenByName[name].description;
+    const rg = scenByName[name].ranges, rbox = $("scen-range");
+    rbox.hidden = !rg;
+    if (rg) {
+      const f = (k, d, u) => `${rg[k][0].toFixed(d)}–${rg[k][2].toFixed(d)}${u}`;
+      rbox.textContent = `${FR[NF - 1]}, across ${rg.pop_m[3]} runs with redrawn parameters and shocks (10–90 %): ` +
+        `population ${f("pop_m", 1, " M")}; Polish at home ${f("pl_pct", 1, " %")}, by identity ${f("pl_id_pct", 1, " %")}; ` +
+        `Ukrainian ${f("uk_pct", 1, " %")}; Belarusian ${f("be_pct", 1, " %")}; Yiddish ${f("yi_pct", 1, " %")}.`;
+    }
     selCache = null;
     const certBtn = $("modes").querySelector('[data-mode="certainty"]');
     certBtn.disabled = !scenByName[name].uncert;

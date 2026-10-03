@@ -35,7 +35,7 @@ CURZON = "#c4007f"          # the Curzon line: magenta, apart from borders and l
 # national identity, drawn with the colour of the matching language category
 IDCATS = ["pl", "uk", "jw", "be", "lt", "de", "loc", "reg", "oth"]
 IDCAT_LABEL = {"pl": "Polish", "uk": "Ukrainian", "jw": "Jewish", "be": "Belarusian", "lt": "Lithuanian",
-               "de": "German", "loc": "Local ('tutejszy')", "reg": "Kashubian, Lemko/Rusyn, Latvian", "oth": "Other (incl. Russian)"}
+               "de": "German", "loc": "Local ('tutejszy')", "reg": "Kashubian, Lemko/Rusyn, Latvian, Silesian", "oth": "Other (incl. Russian)"}
 REGIONAL = ["csb", "rue", "wym", "lv"]     # Latvian: the Latgalian speech of Latgale (include_krai_east)
 SEA = "#eef3f6"
 FOREIGN = "#efeee9"
@@ -44,6 +44,7 @@ BORDER = "#5d5c58"
 LAT0 = 52.0
 XLIM = (15.35, 29.0)        # fixed map extent, so scenarios with and without Lithuania align
 XLIM_BY = (15.35, 33.0)     # ... widened for scenarios with Soviet Belarus
+XLIM_WEST = 13.9            # ... and to the west for scenarios with German land (data.west)
 YLIM = (47.85, 56.85)
 YLIM_XK = (47.85, 57.55)    # ... raised for scenarios with Latgale (include_krai_east)
 LABEL_TOWNS = ["Warszawa", "Łódź", "Kraków", "Lwów", "Poznań", "Wilno", "Kaunas", "Lublin", "Białystok", "Mińsk",
@@ -80,9 +81,12 @@ class Canvas:
         # state borders (CShapes, 1932): Poland, plus Lithuania and Soviet Belarus when the grid has them
         b = load_borders()
         present = {state_of_code(c) for c in grid.region_codes} | {"PL"}
-        states = [s for s in ("PL", "LT", "BY", "XK") if s in present]
+        states = [s for s in ("PL", "LT", "BY", "XK", "DE", "DZ", "CS") if s in present]
         self.with_lt, self.with_by, self.with_xk = "LT" in states, "BY" in states, "XK" in states
+        self.with_west = bool({"DE", "DZ", "CS"} & set(states))
         self.xlim = XLIM_BY if self.with_by else XLIM
+        if self.with_west:
+            self.xlim = (XLIM_WEST, self.xlim[1])
         self.ylim = YLIM_XK if self.with_xk else YLIM
         rings = [r[0] for st in states for r in b[st]]
         self.clip = Path.make_compound_path(*[Path(np.array(r), closed=True) for r in rings])
@@ -100,7 +104,9 @@ class Canvas:
         self.outline = self._split_lines(lines, inner=False) + self._excluded_edges()
         self.borders = (self._borders() + (self._split_lines(b["PL_LT"], inner=True) if self.with_lt else [])
                         + (self._split_lines(b["PL_BY"], inner=True) if self.with_by else [])
-                        + (self._split_lines(b["BY_XK"], inner=True) if self.with_xk and "BY_XK" in b else []))
+                        + (self._split_lines(b["BY_XK"], inner=True) if self.with_xk and "BY_XK" in b else [])
+                        + [ln for pair, lines in b.get("inner", {}).items()
+                           if set(pair.split("|")) <= set(states) for ln in self._split_lines(lines, inner=True)])
 
     def _rc(self, g):
         return (np.round((g.lat - (BBOX[1] + g.dlat / 2)) / g.dlat).astype(int),
@@ -511,7 +517,7 @@ def identity_shares(I: np.ndarray) -> np.ndarray:
     out = np.zeros((len(I), len(IDCATS)))
     for k, c in enumerate(IDCATS[:7]):
         out[:, k] = I[:, idx[c]]
-    out[:, 7] = I[:, idx["csb"]] + I[:, idx["rue"]] + I[:, idx["lv"]]
+    out[:, 7] = I[:, idx["csb"]] + I[:, idx["rue"]] + I[:, idx["lv"]] + I[:, idx["sil"]]
     out[:, 8] = I.sum(axis=1) - out[:, :8].sum(axis=1)
     return np.clip(out / np.maximum(I.sum(axis=1, keepdims=True), 1e-9), 0, 1)
 

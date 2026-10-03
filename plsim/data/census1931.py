@@ -61,7 +61,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from . import bssr, krai_east
+from . import bssr, krai_east, west
 from .languages import COMMUNITIES, GROUP_INDEX, GROUPS, NG
 from .regions import REGIONS, Region
 
@@ -289,6 +289,8 @@ def build_region_shares(code: str, variant: str, lt_variant: str) -> dict[tuple[
         return bssr.region_groups(code)          # 1926 Soviet census (see data.bssr)
     if region.country == "XK":
         return krai_east.region_groups(code)     # 1897 census carried to 1931 (see data.krai_east)
+    if region.country in ("DE", "DZ", "CS"):
+        return west.region_groups(code)          # 1933 German, 1929 Danzig, 1930 Czechoslovak censuses (data.west)
     if region.country == "LT":
         shares = dict(LT_GROUPS_1923[code])
         if lt_variant in LT_EXTRA_POLISH:
@@ -347,7 +349,12 @@ URBAN_ODDS_LANG = {
 # markedly more urban than the Orthodox/Greek-Catholic peasantry.
 EAST_POLISH_URBAN_BOOST = {"WIL": 1.8, "NOW": 2.2, "POL": 3.0, "WOL": 2.5, "LWO": 1.5, "STA": 2.0,
                            "TAR": 1.4, "BIA": 1.3, "LUB": 1.2}
-REGION_SPECIFIC_ODDS = {("LOD", "de"): 2.2, ("SLA", "de"): 1.8, ("LT_KLA", "de"): 1.5}
+REGION_SPECIFIC_ODDS = {("LOD", "de"): 2.2, ("SLA", "de"): 1.8, ("LT_KLA", "de"): 1.5,
+                        # the west lands (data.west): Polish, Masurian and Kashubian speech was rural,
+                        # the towns German; in Cieszyn Silesia the Germans were townspeople
+                        ("DE_OPO", "pl"): 0.45, ("DE_WAR", "pl"): 0.4, ("DE_MAZ", "pl"): 0.35, ("DE_MAR", "pl"): 0.4,
+                        ("DE_GRZ", "pl"): 0.5, ("DE_KOS", "pl"): 0.4, ("DE_KOS", "csb"): 0.5, ("DE_WRO", "pl"): 0.6,
+                        ("DE_OPO", "cs"): 0.3, ("CS_CIE", "de"): 2.5, ("CS_CIE", "pl"): 0.8, ("CS_SPO", "de"): 3.0}
 
 
 def _urban_split(code: str, shares: dict, urban_target: float) -> dict:
@@ -453,9 +460,24 @@ BILINGUAL_0_EAST: dict[tuple[str, str], tuple[float, float]] = {
 }
 
 
+# In regions where German or Czech is dominant (the west lands before 1945,
+# ``data.west``): competence in it. Upper Silesians, Masurians and Kashubians
+# went through German schools and the army; the Goral villages of Orava much
+# less through Slovak/Czech ones.
+BILINGUAL_0_WEST: dict[tuple[str, str], tuple[float, float]] = {
+    ("RC", "pl"): (.80, .92), ("PR", "pl"): (.85, .95), ("RC", "csb"): (.85, .92), ("RC", "cs"): (.75, .90),
+    ("PR", "cs"): (.75, .90), ("JW", "de"): (1., 1.), ("JW", "yi"): (.6, .8), ("JH", "yi"): (.4, .5),
+    ("RC", "de"): (.7, .9), ("PR", "de"): (.7, .9), ("GC", "rue"): (.6, .7), ("RC", "oth"): (.8, .9),
+    ("OT", "oth"): (.6, .8),
+}
+
+
 def bilingual_share(group: tuple[str, str], dominant: str, urban: int) -> float:
     if group[1] == dominant:
         return 1.0
+    if dominant in ("de", "cs"):
+        rur, urb = BILINGUAL_0_WEST.get(group, (.5, .7))
+        return urb if urban else rur
     if dominant in ("uk", "be"):
         rur, urb = BILINGUAL_0_EAST.get(group, (.3, .3))
         return urb if urban else rur

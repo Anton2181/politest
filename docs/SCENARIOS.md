@@ -1,10 +1,10 @@
 # Scenarios
 
-Every scenario shares the premise: **no Second World War**. There is no
-German-Soviet partition, no Holocaust, no deportations, no post-1945 border
-shifts or population transfers (but for the hypothetical exchanges of
-`curzon_exchange` and `curzon_exchange_identity`), and no communist regime. Everything else that
-cannot be measured is a scenario choice. Scenarios are YAML files in
+Every scenario but one shares the premise: **no Second World War**. There is
+no German-Soviet partition, no Holocaust, no deportations, no post-1945
+border shifts or population transfers, and no communist regime. Everything
+else that cannot be measured is a scenario choice. The exception is
+`historical`, which replays the real century for calibration (below). Scenarios are YAML files in
 `scenarios/`. A scenario can `extends:` another one and overrides only the
 parameters it names. A mapping containing `_replace: true` replaces the parent
 mapping instead of being merged into it.
@@ -33,8 +33,6 @@ censuses and from the upper bound (see `docs/DATA_SOURCES.md`).
 | `no_official_language` | Poland with **no official language**, i.e. all languages official: equal status and schools in every language. Each county's working language is its largest of Polish, Ukrainian and Belarusian. Low assimilation pressure; no settlement. Lithuania as in the baseline, with Polish co-official. | A civic, linguistically neutral state (in the spirit of the 1921 March Constitution's minority clauses, taken much further). |
 | `nw_krai` | **Poland and the Northwestern Krai.** Poland without the lands of the six "north-western" governorates of the Russian Empire in their **borders of 1897** (Vilna, Kovno, Grodno, Minsk, Mogilev, Vitebsk), which form a **separate state** simulated in the same run, **with its own economy** (national income, emigration, transport budget). The krai holds Lithuania without Klaipėda (Prussian) and Palanga (Courland); the north-east of 1931 Poland; the whole BSSR; and the governorates' land outside the 1932 states: **Latgale** (Latvia), **Nevel, Sebezh and Velizh**, and the eastern edge of the Mogilev governorate (RSFSR), from the 1897 census. Counties that straddle a governorate border are cut along it. **Suvalkija** (Suwałki governorate, part of the Kingdom of Poland) **goes to Poland** with Suwałki and Augustów, Lithuanian co-official there. In the krai Lithuanian, Belarusian, Polish, Yiddish and Russian are official (and Latvian in Latgale); each county works in its largest of Lithuanian, Polish, Belarusian (with West Polesian), Latvian and Russian; pressure is low (0.6). Migration across the border is international (friction 0.03); Polish settlement goes to Volhynia only. | The Northwestern Krai (Северо-Западный край) of 1794-1915; the Belarusian and Lithuanian national projects of 1918-19, had they not been partitioned. |
 | `lit_bel` | **Poland and Lit-Bel.** The same, in the borders the Lithuanian-Belorussian republic claimed in 1919: the **five governorates of Vilna, Kovno, Grodno, Minsk and Suwałki** (1897 borders). Lit-Bel takes the Polish Suwałki and Augustów counties and the Minsk-governorate part of the BSSR (okrugs cut along the Minsk governorate's border); the Mogilev and Vitebsk lands are left out as Soviet territory, and so are Klaipėda and Palanga. Own economy, languages and policy as in `nw_krai`. | Litbel (February-July 1919), whose capital was Vilnius and whose five governorates were Vilna, Grodno, Kovno, Suwałki and Minsk. |
-| `curzon_exchange` | The baseline, plus a **population exchange on 1 January 1946 along that year's equal-exchange Curzon line**. Every Pole (Polish at home) beyond the line moves to the Polish side and every counted non-Pole on the Polish side moves to the other side. The line follows county borders, so whole counties move and the two flows are equal to within one county. Movers take the places of those who left, weighted towards counties of their own language. Jews, Germans, Kashubians and Wymysorys speakers do not move. Nothing else changes (METHODOLOGY §12.8, `plsim/exchange.py`). | A thought experiment on the transfers of 1944-46 (Poles and Jews west; Ukrainians, Belarusians and Lithuanians east), but along a line drawn on the population and without the war that drove them. |
-| `curzon_exchange_identity` | The same exchange **by declared nationality**: the line of 1946 is counted on national identity (Poles by Polish identity, whatever their home language), and every Pole by identity beyond it moves west and every counted non-Pole by identity on the Polish side moves east, each with home language and identity. Jews, Germans and Kashubians by identity do not move. | The agreements of 1944-46 went by nationality, not speech: Polish-identity speakers of Lithuanian or Belarusian were "Poles", and Ukrainian-identity speakers of Polish were "Ukrainians". |
 
 ## Counties, cantons and federal members
 
@@ -355,69 +353,6 @@ Home languages in the krai states:
   pair of runs, with slightly different county pieces, put it at 1.5 M the
   other way).
 
-### Results: `curzon_exchange` and `curzon_exchange_identity`
-
-On 1 January 1946 the equal-exchange line of that year moves **2.35 M Poles
-to the Polish side and 2.33 M others to the other side**; the line follows
-county borders, so the two flows differ by up to one county's worth. The
-Poles settle where the non-Poles left. The others (Ukrainian 1.31 M,
-Belarusian 0.59 M, Lemko 0.12 M, Lithuanian 0.10 M, Russian 0.09 M, West
-Polesian 0.04 M, Romani 0.03 M, 0.05 M of other languages and a few Czechs,
-Karaims and Latvians) settle where the Poles left, mostly in counties of
-their own language.
-
-In 1946 the line keeps on the Polish side all of Lublin, the Białystok
-lands but for Wołkowysk, the western Wilno lands (Wilno, Oszmiana,
-Święciany, Postawy) with Lida, Szczuczyn and Wołożyn, seventeen counties of
-lwowskie with Lwów, and five of Tarnopol's (Tarnopol, Trembowla,
-Przemyślany, Zborów, Kamionka Strumiłowa). Polesie, Volhynia, Stanisławów,
-the eastern Wilno and Nowogródek lands and Lithuania are on the other side.
-
-**By declared nationality** (`curzon_exchange_identity`). The agreements of
-1944-46 went by nationality, not language, and so does this variant
-(`curzon_count: identity`, `population_exchange.by: identity`): the line is
-drawn counting people of Polish identity as Poles, and those who move are
-the people of Polish identity on the other side and of the other
-identities on the Polish side; Jews, Germans and Kashubians stay. It moves
-**2.43 M to the Polish side** (1.96 M of them Polish-speaking, 0.27 M
-Ukrainian-speaking and 0.13 M Belarusian-speaking Poles: Latin-rite
-Ruthenian speakers and Catholic Belarusian speakers) and **2.56 M to the
-other side**: by identity 1.42 M Ukrainians, 0.40 M Belarusians, 0.34 M
-"locals" (tutejsi, mostly Polesians), 0.13 M Lithuanians, 0.12 M
-Russians and 0.08 M Lemkos (Rusyns). Among them are 95 k Polish speakers of
-another identity, Polish-speaking Lithuanians, Belarusians and Ukrainians,
-who move east, not west. The line keeps Wołkowysk, Sambor, Brzeżany,
-Podhajce and Złoczów on the Polish side as well.
-
-| | baseline 2032 | exchange by language | by nationality |
-|---|---|---|---|
-| Polish speakers | 31.04 M | 30.50 M | 30.70 M |
-| Ukrainian speakers | 6.85 M | 7.13 M | 7.04 M |
-| Belarusian speakers | 1.29 M | 1.37 M | 1.32 M |
-| Lithuanian speakers | 1.88 M | 1.92 M | 1.91 M |
-| Lwów voivodeship, Polish | 60 % | 70 % | 70 % |
-| Lublin voivodeship, Ukrainian | 12 % | 2 % | 3 % |
-| Volhynia, Polish | 33 % | 24 % | 24 % |
-| Lithuanian units: Polish speakers | 112 k | 15 k | 64 k |
-| of whom Lauda | 37 k | 3 k | 21 k |
-| Lithuanian units: Polish identity | 62 k | 28 k | 12 k |
-
-* **Clean lines, smaller assimilation.** After the exchange the minorities
-  live in compact areas where they are the majority, so fewer of their
-  children grow up as a scattered minority. By 2032 there are slightly
-  *more* minority speakers than without the exchange, and slightly fewer
-  Polish speakers. This is the opposite of the exchange's demographic
-  intention.
-* **Who counts as a Pole.** Counted by language, Polish-speaking
-  Lithuanians by identity, such as many Lauda gentry, move west with the
-  Poles (the Lauda Poles fall from 54 k to 3 k: all of Lithuania lies on the
-  other side). Counted by nationality, they stay: 64 k Polish speakers
-  remain in Lithuania (21 k of them in Lauda), but only 12 k people of
-  Polish identity. Conversely, the Latin-rite Ukrainian speakers and
-  Catholic Belarusian speakers of Polish identity move west, and the
-  exchange by nationality leaves slightly fewer minority speakers than the
-  exchange by language (Ukrainian 7.04 against 7.13 M in 2032).
-
 ## The equal-exchange Curzon line
 
 The atlas overlay "Curzon line" (magenta; method in METHODOLOGY §12.8)
@@ -447,16 +382,10 @@ states.
 | wakar_poland_belarus | 1.20 / 1.16 M | 3.01 / 3.01 M | 0.91 / 1.15 M | 3.32 / 2.27 M | 93 / 87 % |
 | nw_krai | 1.88 / 1.83 M | 4.28 / 4.28 M | 0.96 / 3.35 M | 2.27 / 6.45 M | 91 / 84 % |
 | lit_bel | 1.83 / 1.86 M | 4.17 / 4.19 M | 0.96 / 3.29 M | 2.29 / 6.31 M | 91 / 85 % |
-| curzon_exchange | 1.83 / 1.83 M | 3.06 / 3.04 M | 0.96 / 3.26 M | 1.60 / 7.30 M | 91 / 89 % |
-| curzon_exchange_identity (counted by identity) | 2.02 / 2.04 M | 3.31 / 2.95 M | 0.92 / 3.88 M | 1.94 / 6.97 M | 91 / 89 % |
 
 The two numbers of the computed line differ by the residual of whole
 counties: under 70 k in most frames, up to 0.17-0.18 M (Wakar's Poland and
-`federal_autonomy`, 2032) and 0.36 M (`curzon_exchange_identity`, 2032),
-where a large county lies on the line. `curzon_exchange_identity` counts
-Poles by identity (`curzon_count: identity`), so its row is not comparable
-with the others: more people count as Poles (Polish-identity speakers of
-Ukrainian, Belarusian and Lithuanian), and fewer as non-Poles. The historical columns count the same people on either side of the
+`federal_autonomy`, 2032), where a large county lies on the line. The historical columns count the same people on either side of the
 Curzon line of 1919-20 (line A in Galicia), which is not balanced: it leaves
 far more Poles east than non-Poles west, and more so as the east Polonises.
 In the scenarios with a Ukrainian autonomy, a Grand Duchy or no official

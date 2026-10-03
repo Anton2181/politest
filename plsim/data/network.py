@@ -56,7 +56,9 @@ class Node:
     terrain: str = "flat"
     capital: bool = False
     optional: bool | str = False   # True or "BY": only with Soviet Belarus; "XK": only with the rest of the
-                                   # north-western governorates; "-XK" / "BY-XK": not with them (superseded gateways)
+                                   # north-western governorates; "DE", "DZ", "CS": only with German, Danzig or
+                                   # Czechoslovak land (data.west); "-XK", "BY-XK", "-DE" ...: not with them
+                                   # (superseded gateways)
 
 
 # fmt: off
@@ -201,15 +203,15 @@ NODES: list[Node] = [
     Node("Klaipėda", "LT_KLA", 55.71, 21.13, 38), Node("Šilutė", "LT_KLA", 55.35, 21.48, 6),
     Node("Pagėgiai", "LT_KLA", 55.14, 21.91, 3),
     # --- foreign nodes (gateways)
-    Node("Gdańsk (Free City)", "EXT", 54.35, 18.65, 256), Node("Berlin via Frankfurt/O.", "EXT", 52.35, 14.55, 1500),
-    Node("Breslau", "EXT", 51.11, 17.03, 620), Node("Gleiwitz-Beuthen", "EXT", 50.30, 18.67, 300),
+    Node("Gdańsk (Free City)", "EXT", 54.35, 18.65, 256, optional="-DZ"), Node("Berlin via Frankfurt/O.", "EXT", 52.35, 14.55, 1500),
+    Node("Breslau", "EXT", 51.11, 17.03, 620, optional="-DE"), Node("Gleiwitz-Beuthen", "EXT", 50.30, 18.67, 300, optional="-DE"),
     Node("Königsberg", "EXT", 54.71, 20.51, 370), Node("Riga via Daugavpils", "EXT", 55.87, 26.54, 400, optional="-XK"),
     Node("Mińsk", "BY_MIN", 53.90, 27.56, 240), Node("Kyiv via Shepetivka", "EXT", 50.18, 27.06, 500),
     Node("Proskurov", "EXT", 49.42, 26.98, 100), Node("Chernivtsi", "EXT", 48.29, 25.94, 110),
     Node("Žilina", "EXT", 49.22, 18.74, 100), Node("Ostrava", "EXT", 49.84, 18.29, 200),
     Node("Mukachevo", "EXT", 48.44, 22.72, 60), Node("Tilsit", "EXT", 55.08, 21.88, 60),
     Node("Insterburg", "EXT", 54.63, 21.81, 50), Node("Liepāja", "EXT", 56.51, 21.01, 60),
-    Node("Jelgava-Riga", "EXT", 56.65, 23.72, 400), Node("Stettin", "EXT", 53.43, 14.55, 270),
+    Node("Jelgava-Riga", "EXT", 56.65, 23.72, 400), Node("Stettin", "EXT", 53.43, 14.55, 270, optional="-DE"),
     # --- Soviet Belarus (optional; 1926 census grown to 1931, thousands)
     Node("Witebsk", "BY_WIT", 55.19, 30.20, 106, optional=True), Node("Połock", "BY_WIT", 55.49, 28.79, 28, optional=True),
     Node("Orsza", "BY_WIT", 54.51, 30.42, 24, optional=True), Node("Lepel", "BY_WIT", 54.88, 28.70, 7, optional=True),
@@ -234,9 +236,73 @@ NODES: list[Node] = [
     Node("Wieliż", "RU_VIT", 55.60, 31.20, 12, optional="XK"), Node("Chisławicze", "RU_MOH", 54.19, 32.16, 3, optional="XK"),
     Node("Riga via Krustpils", "EXT", 56.51, 25.86, 400, optional="XK"),
     Node("Pskov via Ostrov", "EXT", 57.34, 28.35, 80, optional="XK"), Node("Velikiye Luki", "EXT", 56.34, 30.52, 40, optional="XK"),
+    # --- German land held by Poland after 1945, Danzig, Czechoslovak plebiscite lands (optional; data.west).
+    # Towns of the 1933 census (thousands), under their Polish names; a town whose region is not in the
+    # run is a foreign town (gateway) of the run.
+    Node("Wrocław", "DE_WRO", 51.11, 17.03, 625), Node("Wałbrzych", "DE_WRO", 50.77, 16.28, 64, "hill"),
+    Node("Świdnica", "DE_WRO", 50.84, 16.49, 39), Node("Brzeg", "DE_WRO", 50.86, 17.47, 31),
+    Node("Kłodzko", "DE_WRO", 50.44, 16.66, 18, "hill"), Node("Dzierżoniów", "DE_WRO", 50.73, 16.65, 17),
+    Node("Oleśnica", "DE_WRO", 51.21, 17.39, 17), Node("Oława", "DE_WRO", 50.95, 17.29, 13),
+    Node("Ząbkowice Śląskie", "DE_WRO", 50.59, 16.81, 11), Node("Namysłów", "DE_WRO", 51.08, 17.72, 9),
+    Node("Wołów", "DE_WRO", 51.34, 16.64, 6), Node("Nowa Ruda", "DE_WRO", 50.58, 16.50, 13, "hill"),
+    Node("Gliwice", "DE_OPO", 50.29, 18.67, 111), Node("Zabrze", "DE_OPO", 50.31, 18.78, 130),
+    Node("Bytom", "DE_OPO", 50.35, 18.92, 101), Node("Opole", "DE_OPO", 50.67, 17.93, 50),
+    Node("Racibórz", "DE_OPO", 50.09, 18.22, 50), Node("Nysa", "DE_OPO", 50.47, 17.33, 37),
+    Node("Kędzierzyn-Koźle", "DE_OPO", 50.35, 18.21, 15), Node("Strzelce Opolskie", "DE_OPO", 50.51, 18.30, 11),
+    Node("Kluczbork", "DE_OPO", 50.97, 18.22, 12), Node("Głubczyce", "DE_OPO", 50.20, 17.83, 13),
+    Node("Prudnik", "DE_OPO", 50.32, 17.58, 17), Node("Olesno", "DE_OPO", 50.88, 18.42, 7),
+    Node("Grodków", "DE_OPO", 50.70, 17.38, 5),
+    Node("Legnica", "DE_LEG", 51.21, 16.16, 76), Node("Jelenia Góra", "DE_LEG", 50.90, 15.73, 34, "hill"),
+    Node("Głogów", "DE_LEG", 51.66, 16.08, 33), Node("Zielona Góra", "DE_LEG", 51.94, 15.51, 26),
+    Node("Bolesławiec", "DE_LEG", 51.26, 15.57, 21), Node("Żagań", "DE_LEG", 51.62, 15.32, 18),
+    Node("Lubań", "DE_LEG", 51.12, 15.29, 17), Node("Kamienna Góra", "DE_LEG", 50.78, 16.03, 13, "hill"),
+    Node("Jawor", "DE_LEG", 51.05, 16.19, 13), Node("Nowa Sól", "DE_LEG", 51.80, 15.71, 17),
+    Node("Lubin", "DE_LEG", 51.40, 16.20, 10),
+    Node("Gorzów Wielkopolski", "DE_NMK", 52.73, 15.24, 48), Node("Kostrzyn", "DE_NMK", 52.59, 14.65, 18),
+    Node("Żary", "DE_NMK", 51.64, 15.14, 25), Node("Świebodzin", "DE_NMK", 52.25, 15.53, 10),
+    Node("Sulechów", "DE_NMK", 52.08, 15.63, 10), Node("Krosno Odrzańskie", "DE_NMK", 52.05, 15.10, 11),
+    Node("Choszczno", "DE_NMK", 53.17, 15.42, 13), Node("Myślibórz", "DE_NMK", 52.92, 14.87, 7),
+    Node("Piła", "DE_GRZ", 53.15, 16.74, 45), Node("Wałcz", "DE_GRZ", 53.27, 16.47, 15),
+    Node("Złotów", "DE_GRZ", 53.36, 17.04, 7), Node("Międzyrzecz", "DE_GRZ", 52.44, 15.58, 12),
+    Node("Krzyż", "DE_GRZ", 52.88, 16.01, 5), Node("Wschowa", "DE_GRZ", 51.80, 16.32, 8),
+    Node("Człuchów", "DE_GRZ", 53.67, 17.36, 6),
+    Node("Słupsk", "DE_KOS", 54.46, 17.03, 46), Node("Koszalin", "DE_KOS", 54.19, 16.17, 33),
+    Node("Kołobrzeg", "DE_KOS", 54.18, 15.58, 33), Node("Szczecinek", "DE_KOS", 53.71, 16.70, 19),
+    Node("Lębork", "DE_KOS", 54.54, 17.75, 19), Node("Białogard", "DE_KOS", 54.01, 15.99, 16),
+    Node("Sławno", "DE_KOS", 54.36, 16.68, 10), Node("Bytów", "DE_KOS", 54.17, 17.49, 10),
+    Node("Świdwin", "DE_KOS", 53.77, 15.78, 9), Node("Drawsko Pomorskie", "DE_KOS", 53.53, 15.81, 6),
+    Node("Szczecin", "DE_SZC", 53.43, 14.55, 271), Node("Stargard", "DE_SZC", 53.34, 15.05, 39),
+    Node("Świnoujście", "DE_SZC", 53.91, 14.25, 21), Node("Pyrzyce", "DE_SZC", 53.15, 14.89, 10),
+    Node("Goleniów", "DE_SZC", 53.56, 14.83, 10), Node("Nowogard", "DE_SZC", 53.67, 15.12, 8),
+    Node("Gryfice", "DE_SZC", 53.92, 15.20, 10), Node("Łobez", "DE_SZC", 53.64, 15.62, 6),
+    Node("Olsztyn", "DE_WAR", 53.78, 20.49, 50), Node("Braniewo", "DE_WAR", 54.38, 19.82, 21),
+    Node("Lidzbark Warmiński", "DE_WAR", 54.13, 20.58, 11), Node("Reszel", "DE_WAR", 54.05, 21.15, 4),
+    Node("Ełk", "DE_MAZ", 53.83, 22.36, 16), Node("Giżycko", "DE_MAZ", 54.04, 21.76, 15),
+    Node("Ostróda", "DE_MAZ", 53.70, 19.97, 17), Node("Szczytno", "DE_MAZ", 53.56, 21.00, 14),
+    Node("Mrągowo", "DE_MAZ", 53.86, 21.30, 7), Node("Pisz", "DE_MAZ", 53.63, 21.81, 5),
+    Node("Nidzica", "DE_MAZ", 53.36, 20.43, 9), Node("Olecko", "DE_MAZ", 54.04, 22.50, 7),
+    Node("Węgorzewo", "DE_MAZ", 54.21, 21.75, 10), Node("Gołdap", "DE_MAZ", 54.31, 22.30, 12),
+    Node("Elbląg", "DE_OBL", 54.16, 19.40, 72), Node("Kętrzyn", "DE_MAZ", 54.08, 21.38, 19),
+    Node("Bartoszyce", "DE_MAZ", 54.25, 20.81, 13), Node("Morąg", "DE_OBL", 53.92, 19.93, 7),
+    Node("Pasłęk", "DE_OBL", 54.06, 19.66, 7),
+    Node("Malbork", "DE_MAR", 54.04, 19.03, 25), Node("Kwidzyn", "DE_MAR", 53.73, 18.93, 19),
+    Node("Iława", "DE_MAR", 53.60, 19.57, 13), Node("Sztum", "DE_MAR", 53.92, 19.03, 5),
+    Node("Gdańsk", "DZ_GDA", 54.35, 18.65, 256), Node("Sopot", "DZ_GDA", 54.44, 18.56, 31),
+    Node("Nowy Dwór Gdański", "DZ_GDA", 54.21, 19.12, 4),
+    Node("Karwina", "CS_CIE", 49.86, 18.54, 40), Node("Bogumin", "CS_CIE", 49.90, 18.36, 15),
+    Node("Czeski Cieszyn", "CS_CIE", 49.75, 18.62, 10), Node("Trzyniec", "CS_CIE", 49.68, 18.67, 12, "hill"),
+    Node("Jabłonków", "CS_CIE", 49.58, 18.76, 4, "mountain"), Node("Frydek", "CS_CIE", 49.68, 18.35, 13),
+    Node("Trzciana", "CS_SPO", 49.36, 19.61, 3, "mountain"), Node("Namiestów", "CS_SPO", 49.41, 19.48, 2, "mountain"),
+    Node("Spiska Stara Wieś", "CS_SPO", 49.38, 20.37, 1.5, "mountain"),
+    Node("Görlitz-Dresden", "EXT", 51.15, 14.99, 94, optional="DE"), Node("Cottbus-Berlin", "EXT", 51.76, 14.33, 55, optional="DE"),
+    Node("Angermünde-Berlin", "EXT", 53.02, 14.00, 150, optional="DE"),
+    Node("Pasewalk-Stralsund", "EXT", 53.51, 13.99, 60, optional="DE"), Node("Opava", "EXT", 49.94, 17.90, 40, optional="DE"),
 ]
 # fmt: on
 
+for _n in NODES:                          # towns of the west lands exist only with that land
+    if _n.region[:3] in ("DE_", "DZ_", "CS_") and not _n.optional:
+        _n.optional = _n.region[:2]
 NODE_INDEX = {n.name: i for i, n in enumerate(NODES)}
 
 # ---------------------------------------------------------------------------------
@@ -390,6 +456,73 @@ RAIL_1931_XK: list[tuple[str, str, str]] = [
     ("Lucyn", "Siebież", _M), ("Siebież", "Velikiye Luki", _M), ("Newel", "Velikiye Luki", _S),
     ("Newel", "Połock", _S), ("Newel", "Witebsk", _S),
 ]
+
+# The west lands (``data.west``): main and secondary lines of c. 1931, only with them. Where a line
+# replaces a gateway of the 1932 network (Breslau, Gleiwitz-Beuthen, Stettin, Gdańsk), the old edge is
+# re-pointed to the town (``GATEWAY_TOWNS``) or dropped (``SUPERSEDED_WITH``).
+RAIL_1931_WEST: list[tuple[str, str, str]] = [
+    # Silesia
+    ("Wrocław", "Oława", _M), ("Oława", "Brzeg", _M), ("Brzeg", "Opole", _M), ("Opole", "Kędzierzyn-Koźle", _M),
+    ("Kędzierzyn-Koźle", "Gliwice", _M), ("Gliwice", "Zabrze", _M), ("Zabrze", "Bytom", _M), ("Zabrze", "Katowice", _M),
+    ("Bytom", "Chorzów", _S), ("Bytom", "Tarnowskie Góry", _S), ("Kędzierzyn-Koźle", "Racibórz", _M),
+    ("Racibórz", "Rybnik", _S), ("Racibórz", "Ostrava", _M), ("Racibórz", "Głubczyce", _S), ("Głubczyce", "Opava", _S),
+    ("Głubczyce", "Prudnik", _S), ("Prudnik", "Nysa", _S), ("Nysa", "Grodków", _S), ("Grodków", "Brzeg", _S),
+    ("Nysa", "Opole", _S), ("Nysa", "Kłodzko", _S), ("Opole", "Strzelce Opolskie", _S), ("Strzelce Opolskie", "Gliwice", _S),
+    ("Opole", "Kluczbork", _S), ("Kluczbork", "Olesno", _S), ("Olesno", "Lubliniec", _S), ("Kluczbork", "Namysłów", _S),
+    ("Namysłów", "Oleśnica", _S), ("Wrocław", "Oleśnica", _M), ("Oleśnica", "Kępno", _S),
+    ("Wrocław", "Legnica", _M), ("Legnica", "Bolesławiec", _M), ("Bolesławiec", "Görlitz-Dresden", _M),
+    ("Bolesławiec", "Żagań", _M), ("Żagań", "Żary", _M), ("Żary", "Cottbus-Berlin", _M),
+    ("Wrocław", "Świdnica", _M), ("Świdnica", "Wałbrzych", _M), ("Wałbrzych", "Jelenia Góra", _M),
+    ("Jelenia Góra", "Lubań", _M), ("Lubań", "Görlitz-Dresden", _M), ("Legnica", "Jawor", _S), ("Jawor", "Świdnica", _S),
+    ("Jelenia Góra", "Kamienna Góra", _S), ("Kamienna Góra", "Wałbrzych", _S), ("Wałbrzych", "Nowa Ruda", _S),
+    ("Nowa Ruda", "Kłodzko", _S), ("Kłodzko", "Ząbkowice Śląskie", _S), ("Ząbkowice Śląskie", "Wrocław", _S),
+    ("Świdnica", "Dzierżoniów", _S), ("Dzierżoniów", "Ząbkowice Śląskie", _S), ("Wrocław", "Wołów", _S),
+    ("Wołów", "Głogów", _S), ("Legnica", "Lubin", _S), ("Lubin", "Głogów", _S), ("Głogów", "Leszno", _M),
+    ("Głogów", "Nowa Sól", _S), ("Nowa Sól", "Zielona Góra", _S), ("Zielona Góra", "Żagań", _S),
+    ("Zielona Góra", "Sulechów", _S), ("Sulechów", "Świebodzin", _S), ("Zielona Góra", "Krosno Odrzańskie", _S),
+    ("Krosno Odrzańskie", "Berlin via Frankfurt/O.", _S), ("Głogów", "Wschowa", _S), ("Wschowa", "Leszno", _S),
+    # Neumark, Grenzmark, Pomerania
+    ("Berlin via Frankfurt/O.", "Świebodzin", _M), ("Świebodzin", "Zbąszyń", _M), ("Międzyrzecz", "Świebodzin", _S),
+    ("Międzyrzecz", "Zbąszyń", _S), ("Międzyrzecz", "Gorzów Wielkopolski", _S),
+    ("Berlin via Frankfurt/O.", "Kostrzyn", _M), ("Kostrzyn", "Gorzów Wielkopolski", _M), ("Gorzów Wielkopolski", "Krzyż", _M),
+    ("Krzyż", "Piła", _M), ("Piła", "Złotów", _M), ("Złotów", "Chojnice", _M), ("Krzyż", "Szamotuły", _M),
+    ("Krzyż", "Choszczno", _M), ("Choszczno", "Stargard", _M), ("Stargard", "Szczecin", _M),
+    ("Szczecin", "Angermünde-Berlin", _M), ("Szczecin", "Pasewalk-Stralsund", _M), ("Kostrzyn", "Myślibórz", _S),
+    ("Myślibórz", "Pyrzyce", _S), ("Pyrzyce", "Stargard", _S), ("Kostrzyn", "Szczecin", _S),
+    ("Piła", "Nakło", _M), ("Piła", "Chodzież", _S), ("Piła", "Wałcz", _S), ("Wałcz", "Szczecinek", _S),
+    ("Człuchów", "Chojnice", _S), ("Człuchów", "Szczecinek", _S),
+    ("Stargard", "Łobez", _M), ("Łobez", "Świdwin", _M), ("Świdwin", "Białogard", _M), ("Białogard", "Koszalin", _M),
+    ("Koszalin", "Sławno", _M), ("Sławno", "Słupsk", _M), ("Słupsk", "Lębork", _M), ("Lębork", "Wejherowo", _M),
+    ("Szczecinek", "Białogard", _M), ("Białogard", "Kołobrzeg", _S), ("Szczecinek", "Drawsko Pomorskie", _S),
+    ("Drawsko Pomorskie", "Świdwin", _S), ("Słupsk", "Bytów", _S), ("Bytów", "Kościerzyna", _S),
+    ("Szczecin", "Goleniów", _S), ("Goleniów", "Świnoujście", _S), ("Goleniów", "Nowogard", _S),
+    ("Nowogard", "Gryfice", _S), ("Gryfice", "Kołobrzeg", _S),
+    # Danzig, the Vistula, East Prussia
+    ("Gdańsk", "Sopot", _M), ("Sopot", "Gdynia", _M), ("Gdańsk", "Nowy Dwór Gdański", _N),
+    ("Tczew", "Malbork", _M), ("Malbork", "Elbląg", _M), ("Elbląg", "Braniewo", _M), ("Braniewo", "Königsberg", _M),
+    ("Malbork", "Iława", _M), ("Iława", "Działdowo", _M), ("Iława", "Ostróda", _M), ("Ostróda", "Olsztyn", _M),
+    ("Olsztyn", "Nidzica", _S), ("Nidzica", "Działdowo", _S), ("Olsztyn", "Szczytno", _S), ("Szczytno", "Pisz", _S),
+    ("Pisz", "Ełk", _S), ("Olsztyn", "Reszel", _S), ("Reszel", "Kętrzyn", _S), ("Olsztyn", "Lidzbark Warmiński", _S),
+    ("Lidzbark Warmiński", "Bartoszyce", _S), ("Olsztyn", "Morąg", _S), ("Morąg", "Pasłęk", _S), ("Pasłęk", "Elbląg", _S),
+    ("Olsztyn", "Braniewo", _S), ("Königsberg", "Bartoszyce", _M), ("Bartoszyce", "Kętrzyn", _M),
+    ("Kętrzyn", "Giżycko", _M), ("Giżycko", "Ełk", _M), ("Ełk", "Grajewo", _M), ("Ełk", "Olecko", _S),
+    ("Olecko", "Gołdap", _S), ("Gołdap", "Insterburg", _S), ("Kętrzyn", "Węgorzewo", _S), ("Węgorzewo", "Gołdap", _S),
+    ("Mrągowo", "Kętrzyn", _S), ("Mrągowo", "Pisz", _S), ("Kwidzyn", "Sztum", _S), ("Sztum", "Malbork", _S),
+    ("Kwidzyn", "Grudziądz", _S), ("Kwidzyn", "Iława", _S),
+    # Cieszyn Silesia, Orava
+    ("Bogumin", "Ostrava", _M), ("Bogumin", "Racibórz", _M), ("Bogumin", "Karwina", _M), ("Karwina", "Czeski Cieszyn", _M),
+    ("Czeski Cieszyn", "Cieszyn", _M), ("Czeski Cieszyn", "Trzyniec", _M), ("Trzyniec", "Jabłonków", _M),
+    ("Jabłonków", "Žilina", _M), ("Frydek", "Ostrava", _S), ("Frydek", "Czeski Cieszyn", _S),
+    ("Trzciana", "Nowy Targ", _S), ("Trzciana", "Žilina", _S),
+]
+# edges of the 1932 network that cross land of the west and are replaced by its lines
+SUPERSEDED_WITH: dict[tuple[str, str], str] = {
+    ("Szamotuły", "Stettin"): "DE", ("Zbąszyń", "Berlin via Frankfurt/O."): "DE", ("Działdowo", "Königsberg"): "DE",
+    ("Grajewo", "Königsberg"): "DE", ("Gdańsk (Free City)", "Gdynia"): "DZ", ("Cieszyn", "Ostrava"): "CS",
+}
+# 1932 gateways that are towns of the west lands: with that land, their edges go to the town
+GATEWAY_TOWNS = {"Breslau": "Wrocław", "Gleiwitz-Beuthen": "Gliwice", "Stettin": "Szczecin",
+                 "Gdańsk (Free City)": "Gdańsk"}
 
 # ---------------------------------------------------------------------------------
 # Dated projects: (a, b, mode, class, year_opened, label, status)
