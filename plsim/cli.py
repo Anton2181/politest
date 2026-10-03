@@ -59,6 +59,7 @@ def _code_fingerprint() -> str:
     here = os.path.dirname(os.path.abspath(__file__))
     for path in sorted(glob.glob(os.path.join(here, "**", "*.py"), recursive=True)
                        + glob.glob(os.path.join(here, "data", "*.json"))
+                       + glob.glob(os.path.join(here, "data", "*.csv"))
                        + glob.glob(os.path.join(here, "data", "*.geojson"))):
         if os.path.basename(path) in _NOT_IN_FINGERPRINT and os.path.dirname(path) == here:
             continue

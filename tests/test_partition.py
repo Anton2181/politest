@@ -159,7 +159,7 @@ def test_county_table_integrity():
     codes = [c.code for c in COUNTIES]
     assert len(codes) == len(set(codes))
     for c in COUNTIES:
-        if c.lang:
+        if c.lang and c.pop:
             assert sum(c.lang.values()) <= c.pop * 1.01, c.code      # summaries carry small slips
         east = c.parent.startswith(("BY_", "LV_", "RU_"))
         west = c.parent.startswith(("DE_", "DZ_", "CS_"))
@@ -167,12 +167,33 @@ def test_county_table_integrity():
             c.code
 
 
-@pytest.mark.parametrize("parent", ["TAR", "STA", "LWO", "WIL", "NOW", "BIA", "WOL", "POM", "BY_WIT", "BY_MIN", "BY_MOH",
-                                    "BY_HOM", "LV_LAT", "RU_VIT"])
+@pytest.mark.parametrize("parent", ["TAR", "STA", "LWO", "WIL", "NOW", "BIA", "WOL", "POM", "POL", "LUB", "KIE", "LOD",
+                                    "POZ", "SLA", "KRA", "BY_WIT", "BY_MIN", "BY_MOH", "BY_HOM", "LV_LAT", "RU_VIT"])
 def test_grade_a_counties_add_up_to_the_voivodeship(parent):
     """The county tables reproduce the 1931 voivodeship populations."""
-    tot = sum(c.pop for c in BY_PARENT[parent])
+    from plsim.data.counties import GROUPS
+    tot = sum(c.pop for c in BY_PARENT[parent] if c.pop)
+    tot += sum({m[0]: g for m, g in GROUPS.values() if m[0].split(".")[0] == parent}.values())
     assert tot == pytest.approx(REGION_POP[parent], rel=0.004)
+
+
+def test_census_1931_rows_add_up():
+    """Every row of the census table adds up to its printed total, and the
+    voivodeships read whole reproduce their census populations."""
+    import collections
+    import csv
+    import os
+    path = os.path.join(os.path.dirname(__file__), "..", "plsim", "data", "census1931_powiaty.csv")
+    cols = ["pl", "uk", "rue", "be", "ru", "cs", "lt", "de", "yi", "he", "oth", "pls", "unk"]
+    tot = collections.Counter()
+    with open(path, encoding="utf-8") as fh:
+        for r in csv.DictReader(l for l in fh if not l.startswith("#")):
+            assert sum(int(r[c] or 0) for c in cols) == int(r["pop"]), r["county"]
+            if not r["county"].endswith("*"):
+                tot[r["county"].split(".")[0]] += int(r["pop"])
+    for par in ("LOD", "KIE", "LUB", "NOW", "POL", "POZ", "SLA", "KRA"):
+        assert tot[par] == pytest.approx(REGION_POP[par], abs=50), par
+    assert REGION_POP["WAR"] - tot["WAR"] == 128144          # Płock with its city: the city's page is missing
 
 
 def test_tarnopol_counties_reproduce_declared_languages():

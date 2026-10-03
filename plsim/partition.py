@@ -35,7 +35,9 @@ pattern:
 
 Counties with only a population (grade B) use the downscaled language
 pattern at that population. Counties with neither (grade C) are fully
-downscaled.
+downscaled. Powiaty merged in 1932 have one census row for the group
+(``data.counties.GROUPS``): the group's population is split by the
+downscaled pattern, and each member takes the group's language shares.
 
 Income. A sub-region's income index is the parent's at the parent's urban
 and rural incomes per head, weighted by its own urban share: a city county
@@ -51,6 +53,7 @@ import numpy as np
 
 from .data import subregions
 from .data.counties import BY_CODE as COUNTY_BY_CODE
+from .data.counties import GROUPS as COUNTY_GROUPS
 from .data.census1931 import build_initial_composition
 from .data.geography import MODEL_DLAT, MODEL_DLON, build_grid, haversine_matrix
 from .data.languages import GROUPS, LANG_INDEX, NL
@@ -88,7 +91,10 @@ def _census_seed(cty, ds: np.ndarray, pop: float) -> np.ndarray:
     seed = np.zeros(NL)
     named = {"pl", "uk", "yi", "be", "pls", "ru", "lt", "de"}
     covered = set()
+    tot = sum(cty.lang.values())
+    f = pop / tot if cty.pop is None and tot > 0 else 1.0      # shares only (a 1932 group, a page missing)
     for key, n in cty.lang.items():
+        n = n * f
         if key == "bepr":
             idx = [_L["be"], _L["pls"], _L["ru"]]
             w = share[idx] + 1e-6
@@ -122,14 +128,27 @@ def _census_seed(cty, ds: np.ndarray, pop: float) -> np.ndarray:
     return seed
 
 
-def _fit_counties(parent_lang: np.ndarray, child_lang: dict, n_iter: int = 60) -> dict:
+def _fit_counties(parent_lang: np.ndarray, child_lang: dict, n_iter: int = 60, absorbed: dict | None = None) -> dict:
     """Replace the downscaled county pattern by the 1931 county tables where
-    known, fitted to the voivodeship's latent totals (see module docstring)."""
+    known, fitted to the voivodeship's latent totals (see module docstring).
+    ``absorbed`` {county: [counties without cells]}: a county that wins no
+    cell hands its census population and languages to its neighbour."""
     kids = list(child_lang)
+    absorbed = absorbed or {}
     ds = np.array([child_lang[k].sum(axis=0) for k in kids])                 # (K, NL)
     total = parent_lang.sum()
     known = {k: COUNTY_BY_CODE[k].pop for k in kids if k in COUNTY_BY_CODE and COUNTY_BY_CODE[k].pop}
+    for k, gone in absorbed.items():
+        extra = [COUNTY_BY_CODE[d].pop for d in gone if d in COUNTY_BY_CODE]
+        if k in known and all(extra):
+            known[k] += sum(extra)
     pops = ds.sum(axis=1).copy()
+    # powiaty merged in 1932: one census population, split by the downscaled pattern
+    for j, k in enumerate(kids):
+        if k in COUNTY_GROUPS and k not in known:
+            members, gpop = COUNTY_GROUPS[k]
+            idx = [kids.index(m) for m in members if m in kids]
+            known[k] = gpop * pops[j] / max(pops[idx].sum(), 1e-9)
     if known:
         kn = np.array([k in known for k in kids])
         given = np.array([known.get(k, 0.0) for k in kids])
@@ -139,9 +158,22 @@ def _fit_counties(parent_lang: np.ndarray, child_lang: dict, n_iter: int = 60) -
         else:
             pops = np.where(kn, given, pops)
     pops *= total / pops.sum()
-    seed = np.array([_census_seed(COUNTY_BY_CODE[k], ds[j], pops[j])
-                     if k in COUNTY_BY_CODE and COUNTY_BY_CODE[k].lang else ds[j] / max(ds[j].sum(), 1e-9) * pops[j]
-                     for j, k in enumerate(kids)])
+    def seed_of(k, j, pop):
+        if k in COUNTY_BY_CODE and COUNTY_BY_CODE[k].lang:
+            return _census_seed(COUNTY_BY_CODE[k], ds[j], pop)
+        return ds[j] / max(ds[j].sum(), 1e-9) * pop
+
+    seed = []
+    for j, k in enumerate(kids):
+        gone = [d for d in absorbed.get(k, []) if d in COUNTY_BY_CODE and COUNTY_BY_CODE[d].pop]
+        own = pops[j] - sum(COUNTY_BY_CODE[d].pop for d in gone) * pops[j] / max(known.get(k, pops[j]), 1e-9)
+        s_k = seed_of(k, j, max(own, 0.0))
+        for d in gone:
+            share = COUNTY_BY_CODE[d].pop * pops[j] / max(known.get(k, pops[j]), 1e-9)
+            s_k = s_k + (_census_seed(COUNTY_BY_CODE[d], ds[j], share) if COUNTY_BY_CODE[d].lang
+                         else ds[j] / max(ds[j].sum(), 1e-9) * share)
+        seed.append(s_k)
+    seed = np.array(seed)
     col = parent_lang.sum(axis=0)
     seed += 1e-4 * pops[:, None] * col[None, :] / total
     X = seed
@@ -256,15 +288,21 @@ def apply_partition(regions, params: dict):
             cell_child = subregions.assign(reg.code, g.lat[cells], g.lon[cells], kids)
             town_child = subregions.assign(reg.code, ds.town_lat[towns], ds.town_lon[towns], kids)
             seat = {c: (la, lo) for la, lo, c in subregions.seat_table(reg.code, kids)}
-            child_lang = {}
+            child_lang, gone = {}, []
             for k in kids:
                 mc = cells[cell_child == k]
                 mt = towns[town_child == k]
                 if not len(mc) and not len(mt):
-                    continue                     # a seat that wins neither land nor towns
+                    gone.append(k)               # a seat that wins neither land nor towns
+                    continue
                 child_lang[k] = np.stack([C[mc].sum(axis=0), C[Nc + mc].sum(axis=0) + C[2 * Nc + mt].sum(axis=0)])
             if mode == "county":
-                child_lang = _fit_counties(parent_lang, child_lang)
+                absorbed: dict = {}
+                for d in gone:                   # its people go to the nearest county
+                    la0, lo0 = seat[d]
+                    near = min(child_lang, key=lambda k: (seat[k][0] - la0) ** 2 + ((seat[k][1] - lo0) * 0.63) ** 2)
+                    absorbed.setdefault(near, []).append(d)
+                child_lang = _fit_counties(parent_lang, child_lang, absorbed=absorbed)
             units, base_of = [], {}
             for k, cl in child_lang.items():
                 mc, mt = cells[cell_child == k], towns[town_child == k]

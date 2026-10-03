@@ -2,27 +2,30 @@
 
 Sources and grades
 ------------------
-* **A**: 1931 census, population and declared mother tongue by powiat, as
-  tabulated in the Polish Wikipedia voivodeship articles (from "Drugi
-  Powszechny Spis Ludności", Statystyka Polski, seria C). For Nowogródek and
-  Polesie: the county table of the English Wikipedia article "Belarusians in
-  Poland", which merges Belarusian, "tutejszy" and Russian (``bepr``) and
-  gives Orthodox/Roman Catholic counts. Read through search summaries. The
-  rows were checked against the voivodeship totals: Tarnopol and
-  Stanisławów reproduce them exactly; Lwów, Wilno, Białystok and Volhynia
-  within 0.3 % of population.
+* **A**: 1931 census, population and declared mother tongue by powiat.
+  * Read from the census volumes themselves (``census1931_powiaty.csv``,
+    loaded at the end of this module): Tabl. 12 of the voivodeship volumes
+    of Statystyka Polski seria C for Łódź, Kielce, Kraków, Poznań, Silesia
+    and Pomorze, and the powiat pages of the short results (GUS, MBC
+    edition 14481) for the Warsaw voivodeship, Lublin, Nowogródek and
+    Polesie and the three large cities. Every row adds up to its printed
+    total, and each voivodeship read whole reproduces its census population.
+    The short results also give religion, and for Nowogródek and Polesie
+    they separate Belarusian, "tutejszy", Russian and Ukrainian.
+  * Tarnopol, Stanisławów, Lwów, Volhynia, Wilno and Białystok: the county
+    tables of the Polish Wikipedia voivodeship articles (from the same
+    census), read through search summaries; checked against the voivodeship
+    totals (Tarnopol and Stanisławów exactly; the others within 0.3 %).
 * **B**: population from the 1931 administrative tables (rounded), language
-  shares from the county anchors of ``data.geography``.
-* **C**: county seat only.  Population and languages are downscaled from the
-  voivodeship (``partition``), so they are estimates.
+  shares from the county anchors of ``data.geography`` (Rawa Ruska and one
+  Wilno county).
+* **C**: county seat only. Population and languages are downscaled from the
+  voivodeship (``partition``), so they are estimates. Only Lithuania's
+  apskritys are left at this grade.
 
-Coverage: grade A for the eight eastern voivodeships (Tarnopol, Stanisławów,
-Lwów, Volhynia, Wilno, Nowogródek, Białystok; Polesie in part) and for
-Pomorze (read from the census volume itself, Statystyka Polski seria C,
-zeszyt 75, tabl. 12; every row sums to its printed total). Grade B for
-Lublin. Grade C for the other central and western voivodeships and
-Lithuania; their county language tables were not reachable from this
-environment.
+Coverage: every Polish voivodeship but Warsaw city (one unit) at grade A;
+Płock's town page is missing from the scan, so powiat Płock has shares only
+and takes the remainder of the voivodeship (128,144 persons, town included).
 Soviet Belarus, when included, has its 12 okrugs of 1926 as grade-A
 counties (``data.bssr``). Latgale and the Nevel lands, when included, have
 their uezds as grade-E counties: estimates from the 1897 census
@@ -40,8 +43,14 @@ Conventions
 * ``lat``/``lon`` are county centres (the seat where it is central), used
   for the Voronoi assignment of grid cells.
 * ``lang`` keys: pl, uk (Ukrainian + Ruthenian), yi (Yiddish + Hebrew), be,
-  pls (tutejszy), ru, lt, de, oth, and ``bepr`` for the merged
-  Belarusian + tutejszy + Russian category.
+  pls (tutejszy), ru, lt, de, cs, oth, and ``bepr`` for the merged
+  Belarusian + tutejszy + Russian category (no longer used by any row).
+  ``rel`` (where read): rc, gc, or, ev, jw, orel (other or none).
+* Powiaty abolished in 1932 (Słupca, Oświęcim, Pleszew, Ostrzeszów,
+  Grodzisk, Odolanów) were printed with the powiat that absorbed them:
+  ``GROUPS`` holds the pair and its population, and the partition splits it
+  by the downscaled pattern. Rawa (Warsaw voivodeship in 1931) is a WAR
+  county.
 """
 from __future__ import annotations
 
@@ -242,7 +251,7 @@ COUNTIES: list[County] = [
     _c("LOD", "kolski", "Koło", 52.20, 18.64), _c("LOD", "koniński", "Konin", 52.22, 18.25),
     _c("LOD", "łaski", "Łask", 51.59, 19.13), _c("LOD", "łęczycki", "Łęczyca", 52.06, 19.20),
     _c("LOD", "łódzki", "Łódź", 51.77, 19.46), _c("LOD", "piotrkowski", "Piotrków", 51.41, 19.70),
-    _c("LOD", "radomszczański", "Radomsko", 51.07, 19.45), _c("LOD", "rawski", "Rawa Mazowiecka", 51.76, 20.25),
+    _c("LOD", "radomszczański", "Radomsko", 51.07, 19.45), _c("WAR", "rawski", "Rawa Mazowiecka", 51.76, 20.25),
     _c("LOD", "sieradzki", "Sieradz", 51.60, 18.73), _c("LOD", "słupecki", "Słupca", 52.29, 17.87),
     _c("LOD", "turecki", "Turek", 52.02, 18.50), _c("LOD", "wieluński", "Wieluń", 51.22, 18.57),
     # ---------------------------------------------------------------- Warsaw voivodeship (C)
@@ -328,6 +337,56 @@ COUNTIES += [_a(par, name, seat, lat, lon, round(_xk.unit_population(seat)), _xk
 # grade-E counties (data.west).
 COUNTIES += [_a(par, name, seat, lat, lon, round(_west.unit_population(seat)), _west.unit_languages(seat), grade="E")
              for seat, name, par, lat, lon, _, _ in _west.UNITS]
+
+# ---------------------------------------------------------------- the 1931 census by powiat (grade A)
+# plsim/data/census1931_powiaty.csv: mother tongue and religion read from the census volumes (Tabl. 12 of the
+# voivodeship volumes of Statystyka Polski seria C; the powiat pages of the short results, MBC 14481). They
+# replace the Wikipedia rows and the seat-only rows. "Ruthenian" is counted as Ukrainian and Hebrew as Yiddish,
+# as in the rows above; persons the census could not place ("unk") are shared pro rata. A county code with
+# "+" is a powiat of 1932 that absorbed another (GROUPS: one population for both, shares for each); a code
+# with "*" gives shares only (Płock without its city, whose page is missing from the scan).
+CENSUS_KEYS = {"pl": "pl", "uk": "uk", "rue": "uk", "be": "be", "ru": "ru", "cs": "cs", "lt": "lt", "de": "de",
+               "yi": "yi", "he": "yi", "oth": "oth", "pls": "pls"}
+RELIGION_KEYS = ("rc", "gc", "or", "ev", "jw", "orel")
+
+
+def census_1931_rows(path=None) -> dict:
+    """{county code or "a+b": (pop, {lang: persons}, {religion: persons}, shares_only, source)}."""
+    import csv
+    import os
+    path = path or os.path.join(os.path.dirname(__file__), "census1931_powiaty.csv")
+    out: dict = {}
+    with open(path, encoding="utf-8") as fh:
+        for r in csv.DictReader(l for l in fh if not l.startswith("#")):
+            code = r["county"].rstrip("*")
+            pop = int(r["pop"])
+            lang: dict = {}
+            for col, key in CENSUS_KEYS.items():
+                lang[key] = lang.get(key, 0) + int(r[col] or 0)
+            known = sum(lang.values())
+            lang = {k: v * pop / known for k, v in lang.items() if v > 0}       # unknown, pro rata
+            rel = {k: int(r[k] or 0) for k in RELIGION_KEYS if r.get(k)}
+            p0, l0, r0, so, src = out.get(code, (0, {}, {}, False, []))
+            for k, v in lang.items():
+                l0[k] = l0.get(k, 0) + v
+            for k, v in rel.items():
+                r0[k] = r0.get(k, 0) + v
+            out[code] = (p0 + pop, l0, r0, so or r["county"].endswith("*"), src + [r["source"]])
+    return out
+
+
+CENSUS_1931 = census_1931_rows()
+GROUPS: dict[str, tuple[tuple[str, ...], float]] = {}       # member -> (members, 1931 population of the group)
+_by = {c.code: i for i, c in enumerate(COUNTIES)}
+for _code, (_pop, _lang, _rel, _shares, _src) in CENSUS_1931.items():
+    _members = tuple(_code.split("+"))
+    for _m in _members:
+        _c = COUNTIES[_by[_m]]
+        _whole = len(_members) == 1 and not _shares
+        COUNTIES[_by[_m]] = County(_c.parent, _c.name, _c.seat, _c.lat, _c.lon, round(_pop) if _whole else None,
+                                   {k: round(v) for k, v in _lang.items()}, _rel, "A")
+        if len(_members) > 1:
+            GROUPS[_m] = (_members, float(_pop))
 
 BY_PARENT: dict[str, list[County]] = {}
 for _cty in COUNTIES:
