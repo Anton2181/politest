@@ -90,23 +90,6 @@ def _run_cached(name: str, p: dict, cache_dir: str | None, write: bool = True):
     return res, False
 
 
-def with_exchange_plan(p: dict, outroot: str) -> dict:
-    """Scenarios with a ``population_exchange``: compute who moves from the
-    equal-exchange line of the exchange year in the run of ``line_from``
-    (identical to this scenario's run up to that year)."""
-    ex = p.get("population_exchange")
-    if not ex or ex.get("plan"):
-        return p
-    base = load_scenario(ex["line_from"])
-    base["snapshot_years"] = p["snapshot_years"]
-    if p.get("seed") != base.get("seed"):
-        base["seed"] = p["seed"]
-    res, _ = _run_cached(ex["line_from"], base, os.path.join(outroot, ".runcache"), write=False)
-    sr = downscale(res, frame_years=[ex["year"]])
-    p["population_exchange"] = dict(ex, plan=curzon.exchange_plan(sr, res, ex["year"], ex.get("by", "language")))
-    return p
-
-
 def _pool(workers: int | None, n: int):
     """Process pool for scenario-level parallelism; one BLAS thread per worker."""
     w = max(1, min(workers or os.cpu_count() or 1, n))
@@ -122,7 +105,6 @@ def _report_job(args):
         p["seed"] = seed
     p["snapshot_years"] = sorted(set(p["snapshot_years"]) | set(webmap.FRAMES))    # same runs as the maps
     t = time.time()
-    p = with_exchange_plan(p, outroot)
     res, cached = _run_cached(name, p, os.path.join(outroot, ".runcache"))
     export_run(res, os.path.join(outroot, "runs", name))
     return res, f"  {name}: {time.time() - t:.1f}s" + (" (cached run)" if cached else "")
@@ -147,8 +129,6 @@ SCENARIO_TITLES = {
     "wakar_poland": "Wakar's Poland",
     "wakar_poland_belarus": "Wakar's Poland-Belarus",
     "no_official_language": "No official language",
-    "curzon_exchange": "Curzon-line population exchange",
-    "curzon_exchange_identity": "Curzon-line exchange by nationality",
     "nw_krai": "Poland and the Northwestern Krai",
     "lit_bel": "Poland and Lit-Bel",
 }
@@ -161,13 +141,9 @@ def _map_job(args):
     mapdir, atlasdir = os.path.join(outroot, "maps"), os.path.join(outroot, "atlas")
     p = load_scenario(name)
     p["snapshot_years"] = sorted(set(p["snapshot_years"]) | set(webmap.FRAMES))   # network frames
-    p = with_exchange_plan(p, outroot)
     res, cached = _run_cached(name, p, os.path.join(outroot, ".runcache"))
     # the baseline animations need every year; the others only the atlas frames
-    # (and the exchange year, for the before/after map)
-    ex_year = (p.get("population_exchange") or {}).get("year")
-    frames = sorted(set(webmap.FRAMES) | ({ex_year, ex_year + 1} if ex_year else set()))
-    sr = downscale(res, frame_years=None if name == "baseline" else frames)
+    sr = downscale(res, frame_years=None if name == "baseline" else sorted(webmap.FRAMES))
     full = webmap.full_grid()
     title = SCENARIO_TITLES.get(name, name)
     if name == "baseline":
@@ -181,11 +157,6 @@ def _map_job(args):
         mp.fig_curzon(sr, lines, os.path.join(mapdir, "map_curzon.png"), title="Equal-exchange Curzon line, baseline")
         mp.fig_identity(sr, res, os.path.join(mapdir, "map_identity.png"),
                         title="Home language (cells) and national identity (counties), baseline")
-    if name.startswith("curzon_exchange"):
-        mp.fig_plurality(sr, os.path.join(mapdir, f"{name}_before_after.png"),
-                         years=(1932, ex_year, ex_year + 1, 1970, 2000, 2032),
-                         title=f"Population exchange on 1 January {ex_year} along that year's equal-exchange line "
-                               f"({ex_year}: before, {ex_year + 1}: after)")
     # ensemble certainty (baseline): written by ``report`` when it ran the ensemble
     uncert, unc_meta = b"", None
     cells_path = os.path.join(outroot, "ensemble_baseline_cells.npz")
@@ -197,18 +168,13 @@ def _map_job(args):
             unc_meta = {"years": sorted(prob), "n": int(z["n"])}
     blob = webmap.encode_frames(sr, full, ident=webmap.identity_frames(res), uncert=uncert)
     webmap.write_data(atlasdir, name, blob)
+    webmap.write_json(atlasdir, f"{name}.infra.json", webmap.infra_payload(res))
     entry = {"name": name, "title": title, "description": p["meta"]["description"],
              "series": webmap.national_series(res), "towns": webmap.town_series(sr),
              "net": webmap.network_payload(res), "geo": webmap.geometry_payload(res, sr, full),
              "curzon": webmap.curzon_payload(lines, curzon.count_mode(res)), "ident": webmap.identity_series(res)}
     if unc_meta:
         entry["uncert"] = unc_meta
-    if getattr(res, "exchange", None):
-        ex = res.exchange
-        entry["exchange"] = {"year": ex["year"], "west": round(ex["to_polish_side"] / 1e3),
-                             "east": round(ex["to_other_side"] / 1e3),
-                             "byLang": {k: round(v / 1e3) for k, v in ex["by_language"].items()},
-                             "lines": ex["lines"]}
     return name, entry, last, f"  {name}: {time.time() - t:.1f}s" + (" (cached run)" if cached else "")
 
 
@@ -399,8 +365,7 @@ ID_SHOW = ["pl", "uk", "be", "lt", "jw", "de", "loc"]
 
 
 def write_extras(outroot, results):
-    """identity_summary.csv (national identity against home language, by
-    scenario) and exchange_summary.csv (scenarios with a population exchange)."""
+    """identity_summary.csv: national identity against home language, by scenario."""
     import csv
     from .identity import ID_INDEX
     rows = []
@@ -426,22 +391,6 @@ def write_extras(outroot, results):
         w.writerow(["scenario", "year"] + [f"identity_{k}_pct" for k in ID_SHOW]
                    + ["polish_speakers_pct", "lithuania_polish_speakers_k", "lithuania_polish_identity_k"])
         w.writerows(rows)
-    ex_rows = []
-    for n, res in results.items():
-        ex = getattr(res, "exchange", None)
-        if ex:
-            by = ex.get("by", "language")
-            for lang, v in sorted(ex["by_language"].items(), key=lambda kv: -kv[1]):
-                ex_rows.append([n, ex["year"], by, "to the other side", "home language", lang, round(v)])
-            for lang, v in sorted((ex.get("west_languages") or {"pl": ex["to_polish_side"]}).items(),
-                                  key=lambda kv: -kv[1]):
-                ex_rows.append([n, ex["year"], by, "to the Polish side", "home language", lang, round(v)])
-            for ident, v in sorted((ex.get("by_identity") or {}).items(), key=lambda kv: -kv[1]):
-                ex_rows.append([n, ex["year"], by, "to the other side", "identity", ident, round(v)])
-    with open(os.path.join(outroot, "exchange_summary.csv"), "w", newline="", encoding="utf-8") as fh:
-        w = csv.writer(fh)
-        w.writerow(["scenario", "year", "counted_by", "direction", "kind", "category", "persons"])
-        w.writerows(ex_rows)
 
 
 def write_checks(outroot, base):

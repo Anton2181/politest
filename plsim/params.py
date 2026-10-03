@@ -53,10 +53,6 @@ DEFAULTS: dict[str, Any] = {
     # Regions or counties left out of the state (codes, parent codes, wildcards
     # or region_groups names): their people, towns and land are foreign.
     "exclude": [],
-    # Population exchange along the equal-exchange Curzon line of a year
-    # (plsim/exchange.py): {year, line_from: scenario whose line is used};
-    # the CLI adds the plan (who moves, county by county) before the run.
-    "population_exchange": None,
     "snapshot_years": [1932, 1939, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020, 2032],
 
     # ------------------------------------------------------------------ demography

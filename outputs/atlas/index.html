@@ -105,7 +105,30 @@ button:focus-visible, select:focus-visible, input:focus-visible, .chip:focus-vis
 .overlays .panel-h { margin-right: 4px; }
 .curzon-note { margin: -4px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--ink2); }
 .curzon-note .hint { color: var(--muted); }
-.netbox { display: grid; gap: 10px; border-top: 1px solid var(--rule); padding-top: 14px; }
+.infra { display: grid; gap: 10px; border-top: 1px solid var(--rule); padding-top: 14px; }
+.infra .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.infra h2.panel-h { margin: 0; font-weight: 400; }
+.infra .clear { font: inherit; font-size: var(--step--1); border: 1px solid var(--rule); background: transparent; color: var(--ink2); border-radius: 4px; padding: 3px 8px; cursor: pointer; }
+.infra .clear[aria-pressed="true"] { background: var(--ctl-on); color: var(--ctl-on-ink); border-color: var(--ctl-on); }
+.infra .more { justify-self: start; }
+#proj-filter { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#kmchart { width: 100%; height: auto; display: block; }
+.proj-sum { font-size: var(--step--1); color: var(--muted); font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.projlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 340px; overflow-y: auto; }
+.projlist button { width: 100%; display: grid; grid-template-columns: 3.2rem minmax(0, 1fr) auto; gap: 8px; align-items: baseline; text-align: left; font: inherit; font-size: var(--step--1); color: var(--ink2); background: transparent; border: 0; border-radius: 4px; padding: 4px 6px; cursor: pointer; }
+.projlist button:hover { background: var(--ctl); }
+.projlist button[aria-pressed="true"] { background: var(--ctl-on); color: var(--ctl-on-ink); }
+.projlist .y { font-family: var(--font-data); color: var(--muted); font-variant-numeric: tabular-nums; }
+.projlist button[aria-pressed="true"] .y, .projlist button[aria-pressed="true"] .b { color: inherit; }
+.projlist .b { font-family: var(--font-data); color: var(--muted); font-variant-numeric: tabular-nums; }
+.projlist .soon { font-style: italic; }
+.projwhy { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 4px; font-size: var(--step--1); color: var(--ink2); }
+.projwhy h3 { margin: 0; font-size: var(--step-0); font-weight: 600; color: var(--ink); }
+.projwhy .meta { font-family: var(--font-data); color: var(--muted); font-variant-numeric: tabular-nums; }
+.projwhy p { margin: 0; }
+.projlist .hint, .projwhy .hint { color: var(--muted); font-size: var(--step--1); margin: 0; padding: 4px 6px; }
+.how summary { cursor: pointer; font-size: var(--step--1); color: var(--ink2); }
+.how p { margin: 6px 0 0; font-size: var(--step--1); color: var(--ink2); }
 .netkey { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; font-size: var(--step--1); color: var(--ink2); }
 .netkey span { display: flex; align-items: center; gap: 8px; }
 .netkey svg { width: 30px; height: 10px; flex: none; }
@@ -113,9 +136,6 @@ button:focus-visible, select:focus-visible, input:focus-visible, .chip:focus-vis
 .kmtab td { padding: 3px 0; border-bottom: 1px solid var(--rule); }
 .kmtab td.n { text-align: right; font-family: var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink); }
 .kmtab td.sub { padding-left: 12px; color: var(--ink2); }
-.netlog { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: var(--step--1); color: var(--ink2); }
-.netlog li { display: grid; grid-template-columns: 3.2rem minmax(0, 1fr); gap: 8px; }
-.netlog .y { font-family: var(--font-data); color: var(--muted); font-variant-numeric: tabular-nums; }
 .legend-row { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: var(--step--1); padding: 3px 4px; border-radius: 4px; border: 0; background: transparent; color: var(--ink); text-align: left; font-family: inherit; cursor: pointer; }
 button.legend-row:hover { background: var(--ctl); }
 .legend-row .sw { width: 14px; height: 14px; border-radius: 3px; }
@@ -242,13 +262,31 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
         <figcaption id="chart-cap">Home languages of the whole population, 1932–2032 (share of residents)</figcaption>
         <svg id="chart" viewBox="0 0 360 170" role="img" aria-label="Stacked area chart of national home-language shares"></svg>
       </figure>
-      <div class="netbox">
-        <div class="panel-h">Transport network · <span id="net-year">1932</span></div>
-        <div class="netkey" id="netkey"></div>
+      <section class="infra" id="infra" aria-labelledby="infra-h">
+        <div class="row"><h2 class="panel-h" id="infra-h">Infrastructure · <span id="net-year">1932</span></h2>
+          <button type="button" class="clear" id="infra-show" aria-pressed="false">Show on map</button></div>
         <table class="kmtab" id="kmtab"></table>
-        <div class="panel-h">Recent openings and closures</div>
-        <ol class="netlog" id="netlog"></ol>
-      </div>
+        <figure>
+          <figcaption>Kilometres of the fast network, 1932–2032</figcaption>
+          <svg id="kmchart" viewBox="0 0 360 118" role="img" aria-label="Kilometres of expressway and motorway, and of electrified and high-speed railway, by year"></svg>
+        </figure>
+        <div class="netkey" id="netkey"></div>
+        <div class="row"><span class="panel-h">Projects</span><span class="proj-sum" id="proj-sum"></span></div>
+        <div class="seg" role="radiogroup" aria-label="Show projects" id="proj-filter">
+          <button type="button" role="radio" data-f="all" aria-checked="true">All</button>
+          <button type="button" role="radio" data-f="rail" aria-checked="false">Rail</button>
+          <button type="button" role="radio" data-f="road" aria-checked="false">Roads</button>
+          <button type="button" role="radio" data-f="closure" aria-checked="false">Closures</button>
+        </div>
+        <label class="check" for="proj-minor"><input type="checkbox" id="proj-minor"> Include the surfacing of local roads</label>
+        <div class="projwhy" id="projwhy" aria-live="polite"></div>
+        <ol class="projlist" id="projlist"></ol>
+        <button type="button" class="clear more" id="proj-more" hidden>Show more</button>
+        <details class="how">
+          <summary>How the network grows</summary>
+          <p>Every two years the rail and road programmes each put their share of the infrastructure budget (0.4 % of national income in 1931, rising to about 1.2 %) into an account that may hold up to six years of spending. Every possible upgrade of an existing link, and a list of new lines, is then appraised. The benefits are the travel time saved on trips between towns (a gravity model of demand, valued at a wage that grows with income and weighted towards poorer regions, with an allowance for freight), and for roads also the local traffic of the villages along the link. The costs are construction plus operation and maintenance over 40 years, discounted at 5 %. Projects are taken in order of their benefit–cost ratio while the account lasts and the ratio clears the bar. The projects really built in 1932–39 and those on the plans of 1938–39 are added at their dates. Once most households have a car, lightly used branch lines beside a paved road close. Money is in millions of 1990 international dollars.</p>
+        </details>
+      </section>
     </aside>
   </main>
 
@@ -893,7 +931,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     ctx.restore();
     ctx.drawImage(topLayer, 0, 0);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    drawNetwork(); drawCurzon(); drawSelection(); drawRegionLabels(drawTowns()); drawHover(); drawScale();
+    drawNetwork(); drawProject(); drawCurzon(); drawSelection(); drawRegionLabels(drawTowns()); drawHover(); drawScale();
     updateReadouts();
   }
   let pending = false;
@@ -964,24 +1002,148 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
   const KIND = { new: "New", dated: "Opened", closure: "Closed", upgrade: "Upgraded to" };
   const CLS_NAME = { nar: "narrow-gauge line", sec: "branch line", main: "main line", main_el: "electrified main line",
     hsr: "high-speed line", dirt: "dirt road", gravel: "gravel road", paved: "paved road", express: "expressway", motorway: "motorway" };
+  const MINOR_CLS = new Set(["gravel", "paved", "dirt"]);
+  const infraStore = {};
+  const infraState = { filter: "all", minor: false, sel: null, shown: 60, key: null };
+  async function loadInfra(name) {
+    if (infraStore[name]) return infraStore[name];
+    infraStore[name] = { p: [], loading: true };
+    try {
+      const r = await fetch(`data/${name}.infra.json`);
+      if (!r.ok) throw new Error(String(r.status));
+      infraStore[name] = await r.json();
+    } catch (e) {
+      infraStore[name] = { p: [], failed: true };
+    }
+    if (state.scen === name) { netYearShown = null; updateNet(); }
+    return infraStore[name];
+  }
+  const fmtInt = (v) => Math.round(v).toLocaleString("en-GB");
+  const fmtM = (v) => `${fmtInt(v)} M$`;
+  const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
+  function projTitle(r) {
+    const what = r.k === "closure" ? `Closed ${CLS_NAME[r.c] || r.c}` : r.k === "new" ? `New ${CLS_NAME[r.c] || r.c}`
+      : r.k === "upgrade" ? `Upgrade to ${CLS_NAME[r.c] || r.c}` : `${CLS_NAME[r.c] || r.c}`;
+    return `${what.charAt(0).toUpperCase() + what.slice(1)}: ${r.f}–${r.t}`;
+  }
+  function whyText(r) {
+    const w = r.w || {}, nm = CLS_NAME[r.c] || r.c;
+    if (r.s === "appraisal" && !r.w) return `<p>Chosen in ${r.y} by cost–benefit appraisal (benefit–cost ratio ${(r.bcr || 0).toFixed(2)}); it opens in ${r.o}.</p>`;
+    if (r.s === "appraisal") {
+      const parts = [];
+      if (w.net_M > 0) parts.push(`${fmtM(w.net_M)} of travel time saved across the network, by about ${fmtInt(w.trips_k)} thousand trips a year that become faster (${Math.round(w.dt_min)} minutes saved on this link itself)`);
+      if (w.local_M > 0) parts.push(`${fmtM(w.local_M)} for the local traffic of the villages along it`);
+      const cost = `${fmtM(r.cost)} to build` + (w.om_M ? ` and ${fmtM(w.om_M)} to run and maintain` : "");
+      const who = w.state ? " (this state's own programme)" : "";
+      return `<p>Chosen in ${r.y} by cost–benefit appraisal${who}; it opens in ${r.o}. Over 40 years, discounted at 5 %, it brings ${parts.join(", and ") || "small benefits"}, against ${cost}: a benefit–cost ratio of ${r.bcr.toFixed(2)}, where ${w.threshold.toFixed(1)} is the bar.</p>` +
+        `<p>It ranked ${ord(w.rank)} of the ${w.passed} ${r.m} projects that cleared the bar in that round (${w.candidates} were appraised), and the ${r.m} account held ${fmtM(w.account_M)} when the round began.</p>`;
+    }
+    if (r.s === "historical") return `<p>Built as in history: ${r.label}.</p>`;
+    if (r.s === "planned") return `<p>On the plans of 1938–39 (${r.label}). Without the war it opens on schedule.</p>`;
+    if (r.s === "federation") return `<p>Opened because Poland and Lithuania are in a union (${r.label}). In history the link stayed cut until 1939.</p>`;
+    if (r.k === "closure") {
+      const t = w.towns_k || [0, 0];
+      return `<p>Closed in ${r.y}: a lightly used ${nm} between towns of ${t[0]} and ${t[1]} thousand people, with a ${CLS_NAME[w.road] || "paved road"} alongside, once motorisation had passed ${fmtInt(w.vehicles || 0)} vehicles per 1,000 people.</p>`;
+    }
+    return "";
+  }
+  function projMatches(r) {
+    const f = infraState.filter;
+    if (f === "closure") return r.k === "closure";
+    if (f === "rail" && r.m !== "rail") return false;
+    if (f === "road" && r.m !== "road") return false;
+    if (!infraState.minor && r.m === "road" && MINOR_CLS.has(r.c) && r.s === "appraisal") return false;
+    return true;
+  }
+  function showProject(r) {
+    const box = $("projwhy");
+    if (!r) {
+      box.innerHTML = `<h3>Why was it built?</h3><p class="hint">Pick a project below to see what the appraisal weighed, and where it lies on the map.</p>`;
+      return;
+    }
+    const meta = [r.k === "closure" ? `closed ${r.o}` : (r.y !== r.o ? `decided ${r.y} · opened ${r.o}` : `opened ${r.o}`),
+      r.km ? `${fmtInt(r.km)} km` : "", r.cost ? fmtM(r.cost) : ""].filter(Boolean).join(" · ");
+    box.innerHTML = `<h3>${projTitle(r)}</h3><div class="meta">${meta}</div>${whyText(r)}`;
+  }
+  function drawProject() {
+    const r = infraState.sel;
+    if (!r || r.a < 0 || r.b < 0) return;
+    const nodes = META.nodes, A = nodes[r.a], B = nodes[r.b];
+    if (!A || !B) return;
+    const xa = px(A[1]), ya = py(A[0]), xb = px(B[1]), yb = py(B[0]);
+    ctx.lineCap = "round";
+    ctx.strokeStyle = T.halo; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(xa, ya); ctx.lineTo(xb, yb); ctx.stroke();
+    ctx.strokeStyle = T.curzon; ctx.lineWidth = 4.5;
+    if (r.k === "closure") ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(xa, ya); ctx.lineTo(xb, yb); ctx.stroke(); ctx.setLineDash([]);
+    for (const [x, y] of [[xa, ya], [xb, yb]]) {
+      ctx.fillStyle = T.curzon; ctx.strokeStyle = T.halo; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    }
+  }
+  function buildKmChart() {
+    const sc = scen(), svg = $("kmchart"), km = sc.net.km;
+    const fast = km.map((v) => v[8] + v[9]), el = km.map((v) => v[3] + v[4]);
+    const top = Math.max(1000, ...fast, ...el) * 1.08;
+    const X = (i) => 34 + (i / (NF - 1)) * 316, Y = (v) => 100 - (v / top) * 88;
+    const line = (arr) => arr.map((v, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join("");
+    const ticks = [0, top / 2.16, top / 1.08].map((v) => Math.round(v / 1000) * 1000);
+    let g = ticks.map((v) => `<line x1="34" x2="350" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--rule)"/><text x="30" y="${Y(v) + 3.5}" text-anchor="end" font-size="9.5" fill="var(--muted)" font-family="var(--font-data)">${v ? (v / 1000) + "k" : "0"}</text>`).join("");
+    g += [0, Math.floor((NF - 1) / 2), NF - 1].map((i) => `<text x="${X(i)}" y="114" text-anchor="middle" font-size="9.5" fill="var(--muted)" font-family="var(--font-data)">${FR[i]}</text>`).join("");
+    g += `<path d="${line(el)}" fill="none" stroke="var(--rail)" stroke-width="1.8"/>`;
+    g += `<path d="${line(fast)}" fill="none" stroke="var(--road-case)" stroke-width="1.8" stroke-dasharray="5 3"/>`;
+    g += `<text x="${X(NF - 1)}" y="${Y(el[NF - 1]) - 5}" text-anchor="end" font-size="9.5" fill="var(--ink2)">electrified rail</text>`;
+    g += `<text x="${X(NF - 1)}" y="${Y(fast[NF - 1]) + 12}" text-anchor="end" font-size="9.5" fill="var(--ink2)">motorways + expressways</text>`;
+    g += `<line id="kmchart-now" x1="0" x2="0" y1="10" y2="100" stroke="var(--ink)" stroke-width="1" opacity="0.5"/>`;
+    svg.innerHTML = g;
+    svg.dataset.scen = state.scen;
+  }
   let netYearShown = null;
   function updateNet() {
     const sc = scen(), y = Math.floor(state.year);
-    if (netYearShown === `${state.scen}:${y}`) return;
-    netYearShown = `${state.scen}:${y}`;
+    const key = `${state.scen}:${y}:${infraState.filter}:${infraState.minor}:${infraState.shown}`;
+    if (netYearShown === key) return;
+    netYearShown = key;
     $("net-year").textContent = y;
     const [f, t] = frameAt(state.year), a = sc.net.km[f], b = sc.net.km[f + 1];
     const km = a.map((v, k) => v + (b[k] - v) * t);
-    const fmt = (v) => Math.round(v).toLocaleString("en-GB");
     const rows = [
       ["Railways", km[0] + km[1] + km[2] + km[3] + km[4], ""],
       ["electrified", km[3] + km[4], "sub"], ["high-speed", km[4], "sub"],
       ["Paved roads", km[7] + km[8] + km[9], ""], ["expressways", km[8], "sub"], ["motorways", km[9], "sub"],
     ];
-    $("kmtab").innerHTML = rows.map((r) => `<tr><td class="${r[2]}">${r[0]}</td><td class="n">${fmt(r[1])} km</td></tr>`).join("");
-    const recent = sc.net.log.filter((r) => r[0] <= y).slice(-6).reverse();
-    $("netlog").innerHTML = recent.length ? recent.map((r) => `<li><span class="y">${r[0]}</span><span>${KIND[r[1]] || r[1]} ${CLS_NAME[r[3]] || r[3]}: ${r[4]}–${r[5]}</span></li>`).join("")
-      : `<li><span class="y"></span><span>Nothing yet.</span></li>`;
+    $("kmtab").innerHTML = rows.map((r) => `<tr><td class="${r[2]}">${r[0]}</td><td class="n">${fmtInt(r[1])} km</td></tr>`).join("");
+    if ($("kmchart").dataset.scen !== state.scen) buildKmChart();
+    const now = $("kmchart-now");
+    if (now) { const xx = 34 + ((state.year - Y0) / (Y1 - Y0)) * 316; now.setAttribute("x1", xx); now.setAttribute("x2", xx); }
+    const data = infraStore[state.scen];
+    if (!data) { loadInfra(state.scen); }
+    const list = $("projlist");
+    if (!data || data.loading) { list.innerHTML = `<li class="hint">Loading the projects…</li>`; return; }
+    if (data.failed) { list.innerHTML = `<li class="hint">The project list could not be loaded.</li>`; $("proj-sum").textContent = ""; return; }
+    const upto = data.p.filter((r) => r.y <= y);
+    const done = upto.filter((r) => r.o <= y && r.k !== "closure");
+    const spent = done.reduce((s, r) => s + (r.cost || 0), 0);
+    $("proj-sum").textContent = `${fmtInt(done.length)} built · ${fmtM(spent)}`;
+    const shown = upto.filter(projMatches).sort((p, q) => (q.o - p.o) || (q.y - p.y)).slice(0, infraState.shown);
+    const nMatch = upto.filter(projMatches).length;
+    list.innerHTML = shown.length ? shown.map((r) => {
+      const i = data.p.indexOf(r), soon = r.o > y;
+      const tag = r.k === "closure" ? "closed" : r.bcr ? `BCR ${r.bcr.toFixed(1)}` : r.s === "planned" ? "1939 plan" : r.s === "federation" ? "union" : "dated";
+      return `<li><button type="button" data-i="${i}" aria-pressed="${infraState.sel === r}"><span class="y">${soon ? r.y : r.o}</span><span class="${soon ? "soon" : ""}">${projTitle(r)}${soon ? ` (building, opens ${r.o})` : ""}</span><span class="b">${tag}</span></button></li>`;
+    }).join("") : `<li class="hint">Nothing yet.</li>`;
+    $("proj-more").hidden = nMatch <= infraState.shown;
+    showProject(infraState.sel);
+  }
+  function selectProject(i) {
+    const data = infraStore[state.scen];
+    const r = data && data.p[i];
+    infraState.sel = infraState.sel === r ? null : r;
+    if (infraState.sel && !state.rail && !state.road) {
+      state[r.m === "rail" ? "rail" : "road"] = true;
+      $(r.m === "rail" ? "show-rail" : "show-road").checked = true;
+    }
+    netYearShown = null; updateNet(); schedule();
   }
   function buildNetKey() {
     const sw = (inner) => `<svg viewBox="0 0 30 10" aria-hidden="true">${inner}</svg>`;
@@ -1275,6 +1437,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     state.scen = name;
     prep(scenByName[name]);
     netYearShown = null;
+    infraState.sel = null; infraState.shown = 60;
     cur = store[name];
     $("scen-desc").textContent = scenByName[name].description;
     selCache = null;
@@ -1428,12 +1591,29 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     }
   });
   $("change").addEventListener("change", (e) => { state.change = e.target.checked; buildLegend(); schedule(); });
-  $("show-rail").addEventListener("change", (e) => { state.rail = e.target.checked; schedule(); });
+  $("show-rail").addEventListener("change", (e) => { state.rail = e.target.checked; syncInfraShow(); schedule(); });
   $("show-curzon").addEventListener("change", (e) => { state.curzon = e.target.checked; schedule(); });
   $("show-hist").addEventListener("change", (e) => { state.hist = e.target.checked; schedule(); });
   $("sel-levels").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => setSelLevel(b.dataset.level)));
   $("sel-clear").addEventListener("click", () => { state.sel = null; selCache = null; buildChart(); schedule(); });
-  $("show-road").addEventListener("change", (e) => { state.road = e.target.checked; schedule(); });
+  $("show-road").addEventListener("change", (e) => { state.road = e.target.checked; syncInfraShow(); schedule(); });
+  function syncInfraShow() { $("infra-show").setAttribute("aria-pressed", String(state.rail && state.road)); }
+  $("infra-show").addEventListener("click", () => {
+    const on = !(state.rail && state.road);
+    state.rail = state.road = on; $("show-rail").checked = $("show-road").checked = on;
+    syncInfraShow(); schedule();
+  });
+  $("proj-filter").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+    infraState.filter = b.dataset.f; infraState.shown = 60;
+    $("proj-filter").querySelectorAll("button").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+    netYearShown = null; updateNet();
+  }));
+  $("proj-minor").addEventListener("change", (e) => { infraState.minor = e.target.checked; infraState.shown = 60; netYearShown = null; updateNet(); });
+  $("proj-more").addEventListener("click", () => { infraState.shown += 60; netYearShown = null; updateNet(); });
+  $("projlist").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-i]");
+    if (btn) selectProject(+btn.dataset.i);
+  });
   const sel = $("scenario");
   sel.innerHTML = META.scenarios.map((s) => `<option value="${s.name}">${s.title}</option>`).join("");
   sel.addEventListener("change", () => loadScenario(sel.value));

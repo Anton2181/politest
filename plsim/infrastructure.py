@@ -116,7 +116,8 @@ def _exists(optional, have: set) -> bool:
 
 
 class Network:
-    def __init__(self, params: dict, region_codes: list[str], federation: bool, rng: np.random.Generator):
+    def __init__(self, params: dict, region_codes: list[str], federation: bool, rng: np.random.Generator,
+                 town_rngs=None):
         self.p = params
         self.rng = rng
         self.region_codes = region_codes
@@ -134,6 +135,8 @@ class Network:
         have = {k for k, on in (("BY", self.with_by), ("XK", self.with_xk)) if on}
         self.dormant = np.array([not _exists(n.optional, have) for n in NODES])
         self.pop = np.array([0.0 if d else n.pop_1931 for n, d in zip(NODES, self.dormant)])  # thousands (urban)
+        # one random stream per town (keyed by name), so towns added or left out elsewhere do not shift its draws
+        self._town_rngs = town_rngs(self.names) if town_rngs else None
         self.base_pop = self.pop.copy()
         self.terrain = np.array([TERRAIN_COST.get(n.terrain, 1.0) for n in NODES])
         self.federation = federation
@@ -337,7 +340,8 @@ class Network:
         return pr.length / max(v, vs)
 
     def appraise(self, projects: list[Project], year: int, vehicles: float, vot: np.ndarray,
-                 equity: np.ndarray, hinterland: np.ndarray | None = None) -> np.ndarray:
+                 equity: np.ndarray, hinterland: np.ndarray | None = None,
+                 details: list | None = None) -> np.ndarray:
         """Benefit-cost ratios.
 
         Network benefit: rule-of-half consumer surplus of gravity trips whose
@@ -349,7 +353,11 @@ class Network:
         motorways only the share of local traffic that leaves the old road.
         Costs: construction plus the present value of operation and
         maintenance (``om_share`` of the capital cost per year).
-        vot: (N,) value of time per hour at nodes; equity: (N,) welfare weights."""
+        vot: (N,) value of time per hour at nodes; equity: (N,) welfare weights.
+        With ``details`` (a list), one dict per project is appended: the
+        present values (million $) of the network and local benefits, of the
+        construction and of operation, the minutes saved on the link, and the
+        trips a year whose route gets faster."""
         D = self.D.astype(np.float32)
         np.fill_diagonal(D, 0.0)       # true path lengths (the 0.3 h self-time is for demand only)
         T = self.T
@@ -369,12 +377,16 @@ class Network:
             a, b = pr.a, pr.b
             cur = D[a, b]
             local = 0.0
+            net_b, trips = 0.0, 0.0
+            dt_link = (cur_t[pr.edge] - w_new) if pr.edge >= 0 else (cur - w_new)
             if pr.mode == "road" and pr.edge >= 0 and hinterland is not None:
                 dt_edge = max(cur_t[pr.edge] - w_new, 0.0)
                 local = local_rate * (hinterland[a] + hinterland[b]) * 0.5 * dt_edge * \
                     0.5 * (vot[a] * equity[a] + vot[b] * equity[b]) * \
                     (local_limited.get(pr.new_class, 0.0) if pr.new_class in LIMITED_ACCESS else 1.0)
             if w_new >= cur - 1e-6 and local <= 0:
+                if details is not None:
+                    details.append(None)
                 continue
             benefit = local
             if w_new < cur - 1e-6:
@@ -383,9 +395,17 @@ class Network:
                 saving = D - via
                 np.maximum(saving, 0.0, out=saving)
                 induced = np.exp(beta * saving)
-                benefit += float((W * saving * 0.5 * (1 + induced)).sum()) * freight
+                net_b = float((W * saving * 0.5 * (1 + induced)).sum()) * freight
+                benefit += net_b
+                if details is not None:
+                    trips = float(T[saving > 0].sum())
             cost = pr.cost * (1 + om.get(pr.new_class, 0.0) * annuity)
             bcr[k] = benefit * annuity * growth / max(cost * 1e6, 1.0)
+            if details is not None:
+                pv = annuity * growth / 1e6
+                details.append({"net": net_b * pv, "local": local * pv, "build": float(pr.cost),
+                                "om": float(pr.cost) * om.get(pr.new_class, 0.0) * annuity,
+                                "dt_min": max(float(dt_link), 0.0) * 60.0, "trips": trips})
         return bcr
 
     def invest(self, year: int, budget: float, vehicles: float, vot: np.ndarray, equity: np.ndarray,
@@ -408,8 +428,11 @@ class Network:
             acc = min(acc + budget * share, budget * share * self.p["account_cap_years"])
             cands = [c for c in all_cands if c.mode == mode]
             if cands:
-                bcr = self.appraise(cands, year, vehicles, vot, equity, hinterland)
+                det: list = []
+                bcr = self.appraise(cands, year, vehicles, vot, equity, hinterland, details=det)
                 order = np.argsort(-bcr)
+                n_pass = int((bcr >= threshold).sum())
+                acc0 = acc
                 used_edges = set()
                 used_pairs = set()
                 for k in order:
@@ -431,10 +454,18 @@ class Network:
                         used_edges.add(pr.edge)
                     used_pairs.add((pr.a, pr.b))
                     chosen.append(pr)
+                    d = det[k] or {}
+                    rank = int(np.where(order == k)[0][0]) + 1
                     self.log.append({"year": year, "open": year + build, "kind": pr.kind, "mode": pr.mode,
                                      "from": self.names[pr.a], "to": self.names[pr.b], "class": pr.new_class,
                                      "km": round(pr.length, 1), "cost_M": round(float(pr.cost), 1),
-                                     "bcr": round(float(bcr[k]), 2), "source": "appraisal"})
+                                     "bcr": round(float(bcr[k]), 2), "source": "appraisal",
+                                     "why": {"net_M": round(d.get("net", 0.0), 1), "local_M": round(d.get("local", 0.0), 1),
+                                             "om_M": round(d.get("om", 0.0), 1), "dt_min": round(d.get("dt_min", 0.0), 1),
+                                             "trips_k": round(d.get("trips", 0.0) / 1e3), "rank": rank,
+                                             "passed": n_pass, "candidates": len(cands),
+                                             "account_M": round(acc0 / 1e6), "threshold": threshold,
+                                             "state": key}})
             self.accounts[mode_key] = acc
         self.account = sum(self.accounts.values())
         return chosen
@@ -507,7 +538,10 @@ class Network:
                 closed += 1
                 self.log.append({"year": year, "open": year, "kind": "closure", "mode": "rail",
                                  "from": self.names[a], "to": self.names[b], "class": self.ecls[e],
-                                 "km": round(self.elen[e], 1), "cost_M": None, "bcr": None, "source": "rationalisation"})
+                                 "km": round(self.elen[e], 1), "cost_M": None, "bcr": None, "source": "rationalisation",
+                                 "why": {"vehicles": round(float(vehicles)), "towns_k": [round(float(self.pop[a])),
+                                                                                         round(float(self.pop[b]))],
+                                         "road": ROAD_CLASSES[road_best.get(k, 0)]}})
         return closed
 
     # ------------------------------------------------------------------ towns
@@ -521,7 +555,11 @@ class Network:
             lma = np.zeros(self.N)
         # one draw per town that exists (dormant towns of Soviet Belarus take none)
         noise = np.zeros(self.N)
-        noise[~self.dormant] = self.rng.normal(0, self.p["town_noise"], int((~self.dormant).sum()))
+        if self._town_rngs is not None:
+            for i in np.where(~self.dormant)[0]:
+                noise[i] = self._town_rngs[self.names[i]].normal(0, self.p["town_noise"])
+        else:
+            noise[~self.dormant] = self.rng.normal(0, self.p["town_noise"], int((~self.dormant).sum()))
         bonus = np.zeros(self.N)
         for name, sched in self.p.get("town_bonus", {}).items():
             if name in self.name_idx:

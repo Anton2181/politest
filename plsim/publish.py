@@ -30,9 +30,6 @@ SCENARIO_NOTES = {
     "wakar_poland_belarus": "Wakar's Poland-Belarus: Wakar's Poland together with all of Soviet Belarus; Polish and "
                             "Belarusian co-official",
     "no_official_language": "Poland with no official language (all languages equal); Lithuania as in the baseline",
-    "curzon_exchange": "Baseline with an equal population exchange in 1946 along that year's computed Curzon line",
-    "curzon_exchange_identity": "The same exchange by declared nationality (as in the agreements of 1944-46), along "
-                                "a line counted on national identity",
     "nw_krai": "Poland without the Northwestern Krai (the Vilna, Kovno, Grodno, Minsk, Mogilev and Vitebsk "
                "governorates of 1897, with Latgale and the Nevel lands), a separate state with its own economy and "
                "Lithuanian, Belarusian, Polish, Yiddish and Russian official",
@@ -233,7 +230,6 @@ def _extra_sections(outroot: str, end: int) -> dict:
 </section>"""
     # Curzon line
     cz = _csv_or_none(os.path.join(mapdir, "baseline_curzon.csv"))
-    ex = _csv_or_none(os.path.join(outroot, "exchange_summary.csv"))
     if cz and "hist_west_others" in cz[0]:
         h = cz[0]
         ix = {k: h.index(k) for k in h if k != "line_lon_lat"}
@@ -248,19 +244,9 @@ def _extra_sections(outroot: str, end: int) -> dict:
                        "Poles east (M)", "non-Poles east (M)"], crows,
                       "Baseline: people on the 'wrong' side of the computed equal-exchange line and of the historical "
                       "Curzon line (Kashubians, Wymysorys speakers, Germans and Jews not counted)")
-        etab = ""
-        if ex and len(ex) > 1 and "counted_by" in ex[0]:
-            # columns: scenario, year, counted_by, direction, kind, category, persons
-            def name(kind, cat):
-                return (ID_NAMES if kind == "identity" else LANG_NAMES).get(cat, cat)
-            erows = [[r[0], r[3], ("identity: " if r[4] == "identity" else "") + name(r[4], r[5]),
-                      f"{int(float(r[6])):,}"] for r in ex[1:] if float(r[6]) >= 1000]
-            etab = _table(["Scenario", "Moves", "Home language (or identity)", "Persons"], erows,
-                          f"Population exchanges of 1 January {ex[1][1]} along the computed line, by home language "
-                          f"(curzon_exchange) and by declared nationality (curzon_exchange_identity)")
         out["curzon"] = f"""
 <section>
-  <h2>The Curzon line: computed, historical, and an exchange</h2>
+  <h2>The Curzon line: computed and historical</h2>
   <p class="prose">The equal-exchange line splits the state so that as many non-Poles stay on its Polish side as Poles
   on the other side, with the most Poles on the Polish side. It follows county borders, so the two numbers match to
   within a county. The
@@ -268,14 +254,6 @@ def _extra_sections(outroot: str, end: int) -> dict:
   same people on the wrong side of each.</p>
   {_fig(mapdir, "map_curzon.png", "Curzon line", "The computed equal-exchange line in 1932, 1982 and 2032.")}
   {ctab}
-  <p class="prose">The scenario <b>curzon_exchange</b> carries out the exchange on 1 January 1946. Every Pole beyond that
-  year's line moves to the Polish side, and every counted non-Pole on the Polish side moves to the other side. Each
-  takes the place of someone who left, weighted towards counties of their own language. The economy and policy are
-  untouched. The scenario <b>curzon_exchange_identity</b> does the same by declared nationality, as the agreements of
-  1944-46 did: the line is counted on national identity, and Poles by identity move west whatever their home
-  language.</p>
-  {_fig(mapdir, "curzon_exchange_before_after.png", "Exchange", "Most widely spoken home language before and after the exchange.")}
-  {etab}
 </section>"""
     return out
 

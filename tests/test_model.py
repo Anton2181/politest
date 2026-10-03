@@ -52,3 +52,19 @@ def test_county_run_accounts_and_back_validates(county_run):
         assert abs(tot[i] - expected) / tot[i] < 1e-6
     failed = [c.row() for c in historical_checks(county_run) if not c.ok]
     assert not failed, "\n".join(failed)
+
+
+def test_region_streams_do_not_depend_on_the_other_regions():
+    """Each region draws its noise from its own stream, keyed by its code, so
+    adding a region (or a state) to a run leaves the draws of the others as
+    they were."""
+    from plsim.model import keyed_rngs
+    a = keyed_rngs(7, 1, ["PL_WAR", "PL_KRA"])
+    b = keyed_rngs(7, 1, ["LT_KAU", "PL_KRA", "PL_WAR", "BY_MIN"])
+    for k in ("PL_WAR", "PL_KRA"):
+        assert np.array_equal(a[k].normal(size=5), b[k].normal(size=5))
+    c = keyed_rngs(7, 2, ["PL_WAR"])
+    d = keyed_rngs(8, 1, ["PL_WAR"])
+    x = keyed_rngs(7, 1, ["PL_WAR"])["PL_WAR"].normal(size=5)
+    assert not np.array_equal(x, c["PL_WAR"].normal(size=5))
+    assert not np.array_equal(x, d["PL_WAR"].normal(size=5))

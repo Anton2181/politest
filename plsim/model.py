@@ -19,6 +19,7 @@ Order of events within year t (state at 1 Jan t -> 1 Jan t+1):
 from __future__ import annotations
 
 import copy
+import zlib
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -79,6 +80,13 @@ def _official(params: dict, regions, dominant: list[str]) -> list[list[str]]:
     return out
 
 
+def keyed_rngs(seed: int, component: int, keys) -> dict:
+    """One random stream per key (a region or town name): a key's draws do not
+    depend on which other keys exist, so scenarios that add or cut units keep
+    the same shocks everywhere else."""
+    return {k: np.random.default_rng([int(seed), component, zlib.crc32(k.encode("utf-8"))]) for k in keys}
+
+
 BILING_AGE = np.ones(101)
 BILING_AGE[:7] = 0.25
 BILING_AGE[7:15] = 0.9
@@ -123,7 +131,6 @@ class Results:
     members: list = field(default_factory=list)      # federal member state of each region
     dominant: list = field(default_factory=list)     # contact language of each region
     official: list = field(default_factory=list)     # official languages of each region
-    exchange: dict = field(default_factory=dict)     # population exchange (plsim.exchange), if any
     identity: list = field(default_factory=list)     # (R,NI) national identity per year (plsim.identity)
     identity0: np.ndarray | None = None              # (R,NI) at the start
     identity_lang: dict = field(default_factory=dict)  # snapshot year -> (R,NL,NI) identity by home language
@@ -169,10 +176,15 @@ class Simulation:
         self.R = len(self.regions)
         # Regional noise is drawn per 1931 voivodeship and shared by its
         # sub-regions, so a county run uses the same random numbers as the
-        # voivodeship run (and the national shocks stay in step).
+        # voivodeship run (and the national shocks stay in step). Each
+        # voivodeship has its own stream, keyed by its code: adding or cutting
+        # regions elsewhere does not change its draws.
         parents = list(dict.fromkeys(c.split(".")[0] for c in self.codes))
         self.parent_idx = np.array([parents.index(c.split(".")[0]) for c in self.codes])
         self.n_parent = len(parents)
+        self.parents = parents
+        self._mort_rngs = keyed_rngs(p.get("seed", 0), 1, parents)
+        self._fert_rngs = keyed_rngs(p.get("seed", 0), 2, parents)
         self.dominant = _dominant(p, self.regions, self._comp)
         self.official = _official(p, self.regions, self.dominant)
         self.dom_idx = np.array([LANG_INDEX[d] for d in self.dominant])
@@ -194,7 +206,8 @@ class Simulation:
         infra_p = copy.deepcopy(p["infrastructure"])
         infra_p["node_region"] = node_region
         infra_p["region_seats"] = [(r.lat, r.lon) for r in self.regions]
-        self.net = Network(infra_p, self.codes, federation=p["federation"] and p["include_lithuania"], rng=self.net_rng)
+        self.net = Network(infra_p, self.codes, federation=p["federation"] and p["include_lithuania"], rng=self.net_rng,
+                           town_rngs=lambda names: keyed_rngs(p.get("seed", 0), 3, names))
         self._init_population()
         self.ident = IdentityModel(p["identity"], self.codes, self.dominant, self.P.sum(axis=(3, 4, 5)))
         if len({c.split(".")[0] for c in self.codes}) < self.R:
@@ -375,7 +388,7 @@ class Simulation:
         target = front - gap[:, :, None] + self.e0_adj0 * decay
         lam = catchup_rate(year, mp["catchup_pre"], mp["catchup_post"])
         shock = self.rng.normal(0, mp["shock_sd"])
-        noise = self.rng.normal(0, 0.1, (self.n_parent,) + self.e0f.shape[1:])[self.parent_idx]
+        noise = np.stack([self._mort_rngs[c].normal(0, 0.1, self.e0f.shape[1:]) for c in self.parents])[self.parent_idx]
         self.e0f += lam * (target - self.e0f) + shock + noise
         self.e0f = np.minimum(self.e0f, front + 1.0)
 
@@ -390,7 +403,8 @@ class Simulation:
         self.phase3 |= enter
         mu = np.broadcast_to(self.mu3[None, None, :], self.tfr.shape)
         rho = fp["phase3_rho"]
-        noise = self.rng.normal(0, fp["phase3_sd"], (self.n_parent,) + self.tfr.shape[1:])[self.parent_idx]
+        noise = np.stack([self._fert_rngs[c].normal(0, fp["phase3_sd"], self.tfr.shape[1:])
+                          for c in self.parents])[self.parent_idx]
         ph3 = mu + rho * (self.tfr - mu) + noise
         self.tfr = np.where(self.phase3 & ~enter, ph3, f2)
         # Haredi: slow drift towards their own long-run mean instead of the Alkema curve
@@ -411,17 +425,6 @@ class Simulation:
         year = self.year
         p = self.params
         R = self.R
-        ex = p.get("population_exchange") or {}
-        if ex.get("plan") and year == ex["year"]:
-            from .exchange import apply_exchange, apply_exchange_identity
-            if ex["plan"].get("by") == "identity":          # identity moves with its people
-                self.res.exchange = apply_exchange_identity(self.P, self.ident.I, self.codes, ex["plan"])
-                self.mig.reset_competence(self.P)
-            else:
-                before_x = self.P.sum(axis=(3, 4, 5))
-                self.res.exchange = apply_exchange(self.P, self.codes, ex["plan"])
-                self.mig.reset_competence(self.P)
-                self.ident.reconcile(before_x, self.P.sum(axis=(3, 4, 5)))
         P = self.P
         pop_r = self.region_pop()
         self.econ.step(year, self._d_log_ma, pop_r)

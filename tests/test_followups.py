@@ -75,64 +75,6 @@ def test_state_pull_moves_identity_before_language():
     assert im.I.sum() == pytest.approx(2000.0)
 
 
-# ---------------------------------------------------------------- exchange
-def test_exchange_moves_people_and_conserves_them():
-    from plsim.exchange import apply_exchange
-    R = 2
-    P = np.zeros((R, 2, NG, 2, 2, 101))
-    pl, uk = GROUP_INDEX[("RC", "pl")], GROUP_INDEX[("GC", "uk")]
-    P[0, :, pl, 1, :, 20:60] = 10.0          # west: Poles and some Ukrainians
-    P[0, :, uk, 0, :, 20:60] = 2.0
-    P[1, :, pl, 1, :, 20:60] = 3.0           # east: Ukrainians and some Poles
-    P[1, :, uk, 0, :, 20:60] = 10.0
-    tot = P.sum()
-    plan = {"year": 1946, "east_poles": {"E": 1.0}, "west_others": {"W": {"uk": 1.0}}}
-    info = apply_exchange(P, ["W", "E"], plan)
-    assert P.sum() == pytest.approx(tot)
-    assert P[1, :, pl].sum() == pytest.approx(0.0)
-    assert P[0, :, uk].sum() == pytest.approx(0.0)
-    assert info["to_polish_side"] == pytest.approx(3.0 * 2 * 2 * 40)
-
-
-def test_exchange_by_identity_moves_nationality_not_language():
-    """Polish-identity Lithuanian speakers (the Lauda) go west with their
-    language; Lithuanian-identity Polish speakers go east with theirs."""
-    from plsim.exchange import apply_exchange_identity
-    from plsim.identity import ID_INDEX, IDENTITIES
-    R = 2
-    P = np.zeros((R, 2, NG, 2, 2, 101))
-    I = np.zeros((R, 2, NG, len(IDENTITIES)))
-    pl, lt = GROUP_INDEX[("RC", "pl")], GROUP_INDEX[("RC", "lt")]
-    P[0, 0, pl, 1, :, 20:60] = 10.0                     # west: Polish speakers, a quarter Lithuanian by identity
-    I[0, 0, pl, ID_INDEX["pl"]] = 600.0
-    I[0, 0, pl, ID_INDEX["lt"]] = 200.0
-    P[1, 0, lt, 0, :, 20:60] = 10.0                     # east: Lithuanian speakers, a tenth Polish by identity
-    I[1, 0, lt, ID_INDEX["lt"]] = 720.0
-    I[1, 0, lt, ID_INDEX["pl"]] = 80.0
-    totP, totI = P.sum(), I.sum()
-    plan = {"year": 1946, "by": "identity", "east_poles": {"E": 1.0}, "west_others": {"W": {"lt": 1.0}}}
-    info = apply_exchange_identity(P, I, ["W", "E"], plan)
-    assert P.sum() == pytest.approx(totP) and I.sum() == pytest.approx(totI)
-    assert np.allclose(I.sum(axis=3), P.sum(axis=(3, 4, 5)))
-    assert info["to_polish_side"] == pytest.approx(80.0) and info["to_other_side"] == pytest.approx(200.0)
-    assert P[0, :, lt].sum() == pytest.approx(80.0)          # the Lauda Poles arrive speaking Lithuanian
-    assert I[1, :, :, ID_INDEX["pl"]].sum() == pytest.approx(0.0)
-    assert I[1, :, pl, ID_INDEX["lt"]].sum() == pytest.approx(200.0)
-
-
-def test_exchange_scenario_runs_with_a_plan():
-    from plsim.model import Simulation
-    from plsim.params import load_scenario
-    p = load_scenario("curzon_exchange")
-    p["partition"] = []
-    p["end_year"] = 1934
-    p["population_exchange"] = {"year": 1933, "plan": {"year": 1933, "east_poles": {"WOL": 0.5},
-                                                     "west_others": {"KRA": {"uk": 1.0}}}}
-    res = Simulation(p).run()
-    assert res.exchange["to_polish_side"] > 0 and res.exchange["to_other_side"] > 0
-    assert np.allclose(np.asarray(res.identity[-1]).sum(axis=1), np.asarray(res.pop[-1]).sum(axis=(1, 2)), rtol=1e-6)
-
-
 # ---------------------------------------------------------------- Curzon line of 1919-20
 def test_historical_curzon_line_sides():
     from plsim.curzon import historical_side

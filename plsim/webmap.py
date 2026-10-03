@@ -214,14 +214,12 @@ MEMBER_LABELS = {"PL": "Poland", "LT": "Lithuania", "UA": "Ukrainian autonomy",
                  "GD-L": "Grand Duchy: Lithuanian canton", "GD-P": "Grand Duchy: Polish canton",
                  "GD-B": "Grand Duchy: Belarusian canton", "GD": "Grand Duchy of Lithuania (autonomous)",
                  "NWK": "Northwestern Krai (separate state)", "LB": "Lit-Bel (separate state)"}
-LOG_KINDS = {"new", "dated", "closure"}
-LOG_UPGRADES = {"hsr", "motorway"}
 
 
 def network_payload(res, frames=FRAMES) -> dict:
     """Edges active in any frame, their class in each frame (0 = absent;
-    rail 1-5, road 1-5 in ``RAIL_CLS``/``ROAD_CLS`` order), km by class, and the
-    notable openings and closures."""
+    rail 1-5, road 1-5 in ``RAIL_CLS``/``ROAD_CLS`` order) and km by class; the
+    projects themselves are in ``infra_payload``."""
     snaps = res.network_snapshots
     years = sorted(snaps)
     key_idx, edges = {}, []
@@ -243,12 +241,41 @@ def network_payload(res, frames=FRAMES) -> dict:
         j = min(range(len(ry)), key=lambda i: abs(ry[i] - y))
         d = res.km[j]
         km.append([round(d[f"rail_{c}"]) for c in RAIL_CLS] + [round(d[f"road_{c}"]) for c in ROAD_CLS])
-    log = []
+    return {"e": edges, "c": base64.b64encode(cls_arr.tobytes()).decode(), "km": km}
+
+
+def infra_payload(res) -> dict:
+    """Every project of a run, with the reasons it was built or closed, for the
+    atlas's infrastructure panel (loaded on demand from ``data/<name>.infra.json``).
+    Rows: y (year decided), o (year opened), k (new | upgrade | dated |
+    closure), m (rail | road), c (class built), a, b (node indices), f, t
+    (town names), s (appraisal | historical | planned | federation |
+    rationalisation), km, cost (million 1990 $), bcr, label (dated projects)
+    and w (the appraisal or closure details logged by ``plsim.infrastructure``)."""
+    idx = {n: i for i, n in enumerate(res.node_names)}
+    rows = []
     for p in res.project_log:
-        if p["kind"] in LOG_KINDS or (p["kind"] == "upgrade" and p["class"] in LOG_UPGRADES):
-            log.append([int(p["open"]), p["kind"], p["mode"], p["class"], p["from"], p["to"]])
-    log.sort(key=lambda r: r[0])
-    return {"e": edges, "c": base64.b64encode(cls_arr.tobytes()).decode(), "km": km, "log": log}
+        src, _, label = p["source"].partition(": ")
+        r = {"y": int(p["year"]), "o": int(p["open"]), "k": p["kind"], "m": p["mode"], "c": p["class"],
+             "a": idx.get(p["from"], -1), "b": idx.get(p["to"], -1), "f": p["from"], "t": p["to"], "s": src}
+        for k_out, k_in in (("km", "km"), ("cost", "cost_M"), ("bcr", "bcr")):
+            if p.get(k_in) is not None:
+                r[k_out] = p[k_in]
+        if label:
+            r["label"] = label
+        if p.get("why"):
+            r["w"] = p["why"]
+        rows.append(r)
+    rows.sort(key=lambda r: (r["o"], r["y"]))
+    return {"p": rows}
+
+
+def write_json(outdir: str, name: str, obj) -> str:
+    os.makedirs(os.path.join(outdir, "data"), exist_ok=True)
+    path = os.path.join(outdir, "data", name)
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(dumps(obj))
+    return path
 
 
 def geometry_payload(res, sr, full) -> dict:
