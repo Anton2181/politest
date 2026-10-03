@@ -209,7 +209,20 @@ CELL_DLAT = 0.03125
 CELL_DLON = 0.05
 MODEL_DLAT = 0.0625
 MODEL_DLON = 0.10
-BBOX = (13.5, 47.3, 33.0, 57.2)
+BBOX = (13.5, 47.3, 33.0, 57.5)          # north to 57.5 for northern Latgale (include_krai_east)
+
+
+# Governorates of 1897 (``data.governorates`` letters) that each 1931 region
+# held, where its borders followed theirs: the formerly Russian voivodeships
+# west of the Bug were the Kingdom of Poland ('x'), the north-east the
+# Vilna, Grodno and Minsk governorates, Suvalkija the Suwałki governorate.
+# Regions not listed are unconstrained.
+GOV_ALLOWED = {
+    "WIL": "VKM", "NOW": "VMG", "POL": "GMx", "BIA": "GSx", "WOL": "x", "LUB": "x", "WAR": "x", "WAW": "x",
+    "LOD": "x", "KIE": "x", "KRA": "x", "LWO": "x", "STA": "x", "TAR": "x", "POZ": "x", "POM": "x", "SLA": "x",
+    "LT_SUV": "SV", "LT_NEA": "KV", "LT_LAU": "K", "LT_ZEM": "Kx", "LT_KAU": "KS", "LT_KLA": "x",
+    "BY_WIT": "TVO", "BY_MIN": "MVx", "BY_MOH": "OMx", "BY_HOM": "OMx", "LV_LAT": "Tx", "RU_VIT": "Tx", "RU_MOH": "Ox",
+}
 
 
 def load_base_geography() -> dict:
@@ -260,12 +273,14 @@ def _dist_to_lines(lon, lat, lines) -> np.ndarray:
 
 
 def state_of(lat, lon, coast_km: float = 2.5) -> np.ndarray:
-    """'PL', 'LT', 'BY' or '' for each point (1932 borders; see module docstring)."""
+    """'PL', 'LT', 'BY', 'XK' or '' for each point (1932 borders; see module
+    docstring; XK is the rest of the north-western governorates of 1897)."""
     lat, lon = np.atleast_1d(np.asarray(lat, float)), np.atleast_1d(np.asarray(lon, float))
     b = load_borders()
     out = np.full(len(lat), "", dtype="<U2")
-    for st in ("PL", "LT", "BY"):
-        out[(out == "") & _inside(b[st], lon, lat)] = st
+    for st in ("PL", "LT", "BY", "XK"):
+        if st in b:
+            out[(out == "") & _inside(b[st], lon, lat)] = st
     for st in ("PL", "LT"):
         free = np.where(out == "")[0]
         if len(free):
@@ -331,23 +346,55 @@ def build_grid(region_codes: list[str], dlat: float = CELL_DLAT, dlon: float = C
     if codes == list(full):
         return base
     from .counties import BY_CODE as COUNTY_CODES
+    from .governorates import split_code
     from .subregions import assign, children
     idx = {c: i for i, c in enumerate(codes)}
     region = np.full(len(base.lat), -1)
     for pi, pc in enumerate(full):
         m = base.region == pi
-        if pc in idx:
+        kids = [c for c in codes if c.split(".")[0] == pc]
+        if pc in idx and len(kids) == 1:
             region[m] = idx[pc]
             continue
-        kids = [c for c in codes if c.split(".")[0] == pc]
         if not kids:
             continue                                    # left out of the state
-        mode = "county" if any(k in COUNTY_CODES for k in kids) else "named"
-        every = [k for k in children(pc, mode)]
-        region[m] = [idx.get(k, -1) for k in assign(pc, base.lat[m], base.lon[m], every)]
+        if all(split_code(k)[0] == pc for k in kids):
+            unit = np.full(int(m.sum()), pc, dtype=object)     # an undivided voivodeship, cut into pieces
+        else:
+            mode = "county" if any(split_code(k)[0] in COUNTY_CODES for k in kids) else "named"
+            every = [k for k in children(pc, mode)]
+            unit = assign(pc, base.lat[m], base.lon[m], every).astype(object)
+        region[m] = _pieces(unit, base.lat[m], base.lon[m], idx)
     keep = region >= 0
     return replace(base, lat=base.lat[keep], lon=base.lon[keep], region=region[keep], terrain=base.terrain[keep],
                    cell_km2=base.cell_km2[keep], region_codes=codes)
+
+
+def _pieces(unit, lat, lon, idx: dict) -> np.ndarray:
+    """Index of each place's unit, or of the piece of it that covers the
+    place's governorate (``data.governorates``: pieces are coded
+    ``UNIT~letters``, and the pieces of a unit cover all letters)."""
+    from .governorates import split_code
+    out = np.array([idx.get(u, -1) for u in unit])
+    cut = {}
+    for c in idx:
+        if "~" in c:
+            base, lets = split_code(c)
+            cut.setdefault(base, []).append((lets, idx[c]))
+    if not cut:
+        return out
+    from .governorates import letter
+    hit = np.isin(unit.astype(str), list(cut))
+    if hit.any():
+        let = letter(lat[hit], lon[hit])
+        sub = out[hit]
+        for j, (u, l) in enumerate(zip(unit[hit], let)):
+            for lets, k in cut[u]:
+                if l in lets:
+                    sub[j] = k
+                    break
+        out[hit] = sub
+    return out
 
 
 _GRIDS: dict = {}
@@ -371,6 +418,8 @@ def _build_base_grid(region_codes: list[str], dlat: float, dlon: float) -> Grid:
     land = np.zeros(len(la), dtype=bool)
     for poly in geo["land"]:
         land |= Path(np.array(poly)).contains_points(pts)
+    if "XK" in load_borders():            # northern Latgale reaches past the base map (57.2 N)
+        land |= (la > 57.15) & _inside(load_borders()["XK"], lo, la)
     for poly in geo["lakes"]:
         land &= ~Path(np.array(poly)).contains_points(pts)
     reg_idx = {c: i for i, c in enumerate(region_codes)}
@@ -397,6 +446,15 @@ def _build_base_grid(region_codes: list[str], dlat: float, dlon: float) -> Grid:
     # a cell can only go to a town (and region) of its own state
     Dk = haversine_matrix(la, lo, nlat, nlon)
     Dk[cell_state[:, None] != reg_state[dreg][None, :]] = np.inf
+    # ... and, where the 1931 borders followed those of the 1897 governorates
+    # (the Bug, the Biebrza, the Niemen ...), to a region of the cell's governorate
+    from .governorates import letter
+    gi = np.array(["VKGMOTSx".index(g) for g in letter(la, lo)])
+    allowed = [GOV_ALLOWED.get(c, "VKGMOTSx") for c in region_codes]
+    bad = np.array([[g not in allowed[r] for r in dreg] for g in "VKGMOTSx"])     # (8, towns)
+    D2 = np.where(bad[gi], np.inf, Dk)
+    ok = np.isfinite(D2).any(axis=1)
+    Dk[ok] = D2[ok]
     km2 = (dlat * 111.2) * (dlon * 111.2 * np.cos(np.radians(la)))
     # multiplicatively weighted Voronoi: region weights calibrated so that
     # cell areas match the official region areas
@@ -407,6 +465,7 @@ def _build_base_grid(region_codes: list[str], dlat: float, dlon: float) -> Grid:
         region = dreg[(Dk / w[dreg][None, :]).argmin(axis=1)]
         area = np.bincount(region, weights=km2, minlength=len(region_codes))
         w *= np.clip(target / np.maximum(area, 1.0), 0.5, 2.0) ** 0.25
-    terrain = np.where(cell_state == "BY", _terrain_factor_by(la, lo), _terrain_factor(la, lo))
+    terrain = np.where(cell_state == "BY", _terrain_factor_by(la, lo),
+                       np.where(cell_state == "XK", 1.0, _terrain_factor(la, lo)))
     return Grid(lat=la, lon=lo, region=region, terrain=terrain, region_codes=list(region_codes),
                 cell_km2=km2, dlat=dlat, dlon=dlon)

@@ -20,6 +20,12 @@ DEFAULTS: dict[str, Any] = {
     "include_lithuania": True,
     "federation": True,          # Lithuania joined in a federal union (reopened Vilnius-Kaunas links etc.)
     "include_belarus": False,    # Soviet Belarus (BSSR of 1926) as part of Poland (data/bssr.py)
+    "include_krai_east": False,  # Latgale, Nevel-Sebezh-Velizh, east Mogilev: the rest of the 1897 north-western
+                                 # governorates (data/krai_east.py)
+    "governorates": {},          # {group: [governorate, ...]}: members drawn on the 1897 borders (data/governorates.py)
+    "governorates_keep_outside": ["PL"],   # 1932 states whose land outside every group stays in the run
+    "separate_states": [],       # members that are sovereign states beside Poland: own economy (plsim/economy.py)
+    "curzon_count": "language",  # who is a Pole for the equal-exchange line: "language" or "identity" (plsim/curzon.py)
     # 1931 starting point (see plsim/data/census1931.py and docs/DATA_SOURCES.md):
     # religion_corrected = Tomaszewski (1985), the mainstream scholarly correction
     # of the census; official = the census as printed; vernacular = upper bound
@@ -61,8 +67,11 @@ DEFAULTS: dict[str, Any] = {
         "pretransition_U": 5.2,          # U: TFR level at which decline starts (Alkema); max(U, current)
         "d_max": 0.62,                   # max 5-year decrement (Alkema 2011 world medians ~0.5-1.0)
         "D1": 1.2, "D3": 1.2, "D4": 1.75, "phase3_entry_margin": 0.12,
-        "pace_M0": 0.20, "pace_M1": 0.75, "pace_min": 0.40, "pace_max": 1.00,
-        "community_pace": {"RC": 1.0, "GC": 0.9, "OR": 0.85, "JW": 1.1, "JH": 0.12, "PR": 1.05, "OT": 1.0},
+        # pace_min 0.55 (was 0.40) and Orthodox pace 1.0 (was 0.85): the poorest eastern lands start
+        # their decline sooner, matching rural eastern Poland of 1960-90 (2.9 children in 1970, 2.4-2.6
+        # in 1990) and the Orthodox of Podlasie, who had fewer children than their Catholic neighbours
+        "pace_M0": 0.20, "pace_M1": 0.75, "pace_min": 0.55, "pace_max": 1.00,
+        "community_pace": {"RC": 1.0, "GC": 0.9, "OR": 1.0, "JW": 1.1, "JH": 0.12, "PR": 1.05, "OT": 1.0},
         "phase3_mu": {"default": 1.45, "JH": 2.8, "JW": 1.60, "PR": 1.50},
         "phase3_rho": 0.93,
         "phase3_sd": 0.025,
@@ -159,7 +168,11 @@ DEFAULTS: dict[str, Any] = {
         "settlement": {
             "per_year": [[1931, 8000], [1939, 12000], [1955, 12000], [1965, 0]],
             "origins": {"KRA": 1.0, "KIE": 1.0, "LUB": 0.6, "WAR": 0.6, "LWO": 0.5},
-            "destinations": {"WOL": 1.0, "POL": 1.0, "NOW": 0.5, "WIL": 0.4},
+            # the military settlers of 1921-39 by voivodeship (households): Wołyń 41.5 %,
+            # Nowogródek 21.7, Wilno 13.3, Polesie 12.6, Białystok 10.9 (in its Grodno-
+            # governorate east, on the Grodno and Wołkowysk estates)
+            "destinations": {"WOL": 0.415, "NOW": 0.217, "WIL": 0.133, "POL": 0.126,
+                             "BIA.grodno": 0.055, "BIA.wolkowysk": 0.054},
         },
         # international
         "emigration_base": {"default": 0.0025, "RC:pl": 0.0032, "RC:lt": 0.0035, "GC": 0.0028,
@@ -291,11 +304,14 @@ UNCERTAINTY: dict[str, tuple[str, float, float]] = {
 
 
 def _specificity(code: str, pattern: str) -> int:
-    """0 = no match; 1 = wildcard; 2 = parent region; 3 = exact.
+    """0 = no match; 1 = wildcard; 2 = parent region; 3 = the county a piece
+    was cut from (``data.governorates``); 4 = exact.
 
     Sub-regions are named ``PARENT.CHILD`` (e.g. ``WIL.E``) and inherit any
     setting given for their parent unless a more specific key overrides it."""
     if pattern == code:
+        return 4
+    if "~" in code and pattern == code.split("~")[0].rstrip("."):
         return 3
     if pattern == code.split(".")[0]:
         return 2
@@ -365,6 +381,46 @@ def expand_region_groups(params: dict) -> dict:
                     d.setdefault(m, copy.deepcopy(val))
     excl = params.get("exclude") or []
     params["exclude"] = [m for e in excl for m in (groups.get(e, [e]))]
+    return params
+
+
+def resolve_governorates(params: dict, labels: dict) -> dict:
+    """Turn the groups of ``governorates`` into the units they hold, once the
+    partition has cut the units (``labels``: unit -> group, or None).
+
+    * A setting keyed by a group name applies to each of its units, as for
+      ``region_groups`` (a key for the unit, its county or its voivodeship
+      still wins).
+    * Units in no group are left out of the state (``exclude``), unless their
+      1932 state is in ``governorates_keep_outside`` (Poland by default):
+      the Klaipėda region, Palanga, the BSSR's slivers of other governorates.
+    * ``exclude`` may name a group."""
+    from .data.regions import state_of_code
+    groups = params.get("governorates") or {}
+    members = {g: [c for c, lab in labels.items() if lab == g] for g in groups}
+    for path in REGION_KEYED:
+        d = params
+        for k in path:
+            d = d.get(k) if isinstance(d, dict) else None
+            if d is None:
+                break
+        if not isinstance(d, dict):
+            continue
+        for g, units in members.items():
+            if g in d:
+                val = d.pop(g)
+                own = [k for k in d if k != "default" and k not in groups]
+                for u in units:
+                    # a key naming the unit, its county or its voivodeship wins over the group
+                    if not any(_specificity(u, k) >= 2 for k in own):
+                        d[u] = copy.deepcopy(val)
+    keep = set(params.get("governorates_keep_outside", ["PL"]))
+    excl = []
+    for e in params.get("exclude") or []:
+        excl += members.get(e, [e])
+    excl += [c for c, lab in labels.items() if lab is None and state_of_code(c) not in keep and c not in excl]
+    params["exclude"] = excl
+    params["governorate_units"] = {g: sorted(u) for g, u in members.items()}
     return params
 
 

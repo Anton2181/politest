@@ -42,7 +42,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import shortest_path
 from scipy.spatial import Delaunay
 
-from .data.network import NODES, PAVED_ROADS_1931, PROJECTS, RAIL_1931, RAIL_1931_BY
+from .data.network import NODES, PAVED_ROADS_1931, PROJECTS, RAIL_1931, RAIL_1931_BY, RAIL_1931_XK
 from .economy import piecewise
 
 RAIL_CLASSES = ["nar", "sec", "main", "main_el", "hsr"]
@@ -106,6 +106,15 @@ class Project:
     label: str = ""
 
 
+def _exists(optional, have: set) -> bool:
+    """Whether an optional town exists in a run with the optional lands ``have``
+    (see ``data.network.Node.optional``)."""
+    if not optional:
+        return True
+    need, _, unless = ("BY" if optional is True else optional).partition("-")
+    return (not need or need in have) and (not unless or unless not in have)
+
+
 class Network:
     def __init__(self, params: dict, region_codes: list[str], federation: bool, rng: np.random.Generator):
         self.p = params
@@ -121,7 +130,9 @@ class Network:
         self.foreign = self.region < 0
         # towns and gateways of Soviet Belarus exist only when it is part of the state
         self.with_by = any(c.startswith("BY_") for c in region_codes)
-        self.dormant = np.array([n.optional and not self.with_by for n in NODES])
+        self.with_xk = any(c.startswith(("LV_", "RU_")) for c in region_codes)
+        have = {k for k, on in (("BY", self.with_by), ("XK", self.with_xk)) if on}
+        self.dormant = np.array([not _exists(n.optional, have) for n in NODES])
         self.pop = np.array([0.0 if d else n.pop_1931 for n, d in zip(NODES, self.dormant)])  # thousands (urban)
         self.base_pop = self.pop.copy()
         self.terrain = np.array([TERRAIN_COST.get(n.terrain, 1.0) for n in NODES])
@@ -170,7 +181,7 @@ class Network:
         return True
 
     def _build_initial(self):
-        for a, b, cls in RAIL_1931 + (RAIL_1931_BY if self.with_by else []):
+        for a, b, cls in RAIL_1931 + (RAIL_1931_BY if self.with_by else []) + (RAIL_1931_XK if self.with_xk else []):
             ia, ib = self.name_idx[a], self.name_idx[b]
             if self._edge_open(ia, ib):
                 self._add_edge(ia, ib, "rail", cls)
@@ -378,14 +389,22 @@ class Network:
         return bcr
 
     def invest(self, year: int, budget: float, vehicles: float, vot: np.ndarray, equity: np.ndarray,
-               threshold: float, hinterland: np.ndarray | None = None) -> list[Project]:
+               threshold: float, hinterland: np.ndarray | None = None, nodes: set | None = None,
+               key: int = 0) -> list[Project]:
         """Separate rail and road programmes (as with PKP vs. the 1931 Road
-        Fund), each with a capped multi-year account; greedy by BCR."""
+        Fund), each with a capped multi-year account; greedy by BCR. With
+        ``nodes`` (the towns of one of several states in the run), only links
+        within that state (or to a foreign gateway) are built, from its own
+        accounts (``key``)."""
         rail_share = piecewise(year, self.p["rail_budget_share"])
         chosen: list[Project] = []
         all_cands = self.candidates(year)
+        if nodes is not None:
+            all_cands = [c for c in all_cands if (c.a in nodes or c.b in nodes)
+                         and all(x in nodes or self.foreign[x] for x in (c.a, c.b))]
         for mode, share in (("rail", rail_share), ("road", 1 - rail_share)):
-            acc = self.accounts.get(mode, 0.0)
+            mode_key = mode if not key else f"{key}:{mode}"
+            acc = self.accounts.get(mode_key, 0.0)
             acc = min(acc + budget * share, budget * share * self.p["account_cap_years"])
             cands = [c for c in all_cands if c.mode == mode]
             if cands:
@@ -416,7 +435,7 @@ class Network:
                                      "from": self.names[pr.a], "to": self.names[pr.b], "class": pr.new_class,
                                      "km": round(pr.length, 1), "cost_M": round(float(pr.cost), 1),
                                      "bcr": round(float(bcr[k]), 2), "source": "appraisal"})
-            self.accounts[mode] = acc
+            self.accounts[mode_key] = acc
         self.account = sum(self.accounts.values())
         return chosen
 

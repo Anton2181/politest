@@ -331,7 +331,8 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     REG[i] = cb[4 * N + i];
   }
   // 1932 state of a region code and of each cell of the full grid: 0 Poland, 1 Lithuania, 2 Soviet Belarus
-  const stateOf = (code) => (code.startsWith("LT") ? 1 : code.startsWith("BY_") ? 2 : 0);
+  const stateOf = (code) => (code.startsWith("LT") ? 1 : code.startsWith("BY_") ? 2
+    : code.startsWith("LV_") || code.startsWith("RU_") ? 3 : 0);
   const CELL_ST = new Uint8Array(N);
   for (let i = 0; i < N; i++) CELL_ST[i] = stateOf(G.regions[REG[i]].code);
   const RIDX = new Int32Array(W * H).fill(-1);
@@ -588,7 +589,8 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     const stc = codes.map(stateOf);
     sc._hasLT = stc.includes(1);
     sc._hasBY = stc.includes(2);
-    sc._stOn = [true, sc._hasLT, sc._hasBY];
+    sc._hasXK = stc.includes(3);
+    sc._stOn = [true, sc._hasLT, sc._hasBY, sc._hasXK];
     // reg: region of each pixel; -2 = land of the state left out of this scenario; -1 = abroad
     const reg = new Int16Array(W * H).fill(-1);
     for (let i = 0; i < N; i++) {
@@ -647,7 +649,9 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     });
     // 1932 state border: kept where the land inside is still part of the state
     const st = META.geo.states;
-    const outer = sc._hasBY ? st.outlines["PL+BY"] : sc._hasLT ? st.outline : st.PL;
+    const key = ["PL"].concat(sc._hasLT ? ["LT"] : [], sc._hasBY ? ["BY"] : [], sc._hasXK ? ["XK"] : []).join("+");
+    const outer = key === "PL+LT" ? st.outline : key === "PL" ? st.PL
+      : st.outlines[key] || st.PL.concat(sc._hasLT ? st.LT : [], sc._hasBY ? st.BY : [], sc._hasXK ? st.XK : []);
     eachSeg(outer, (seg, a, b) => {
       if (Math.max(a, b) >= 0 || (a === -1 && b === -1)) segOuter.push(seg);
     });
@@ -659,6 +663,7 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     });
     if (sc._hasLT) inter(st.plLt);
     if (sc._hasBY) inter(st.plBy);
+    if (sc._hasXK) inter(st.byXk);
   }
   function layer() {
     const c = document.createElement("canvas");
@@ -700,12 +705,12 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     segOuter.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
     x.stroke();
     clipPath = new Path2D();
-    st.PL.concat(sc0._hasLT ? st.LT : [], sc0._hasBY ? st.BY : []).forEach((p) => {
+    st.PL.concat(sc0._hasLT ? st.LT : [], sc0._hasBY ? st.BY : [], sc0._hasXK ? st.XK : []).forEach((p) => {
       p.forEach((q, k) => (k ? clipPath.lineTo(px(q[0]), py(q[1])) : clipPath.moveTo(px(q[0]), py(q[1]))));
       clipPath.closePath();
     });
     clipPL = new Path2D();                // the Polish state without Lithuania (Curzon line)
-    st.PL.concat(sc0._hasBY ? st.BY : []).forEach((p) => {
+    st.PL.concat(sc0._hasBY ? st.BY : [], sc0._hasXK ? st.XK : []).forEach((p) => {
       p.forEach((q, k) => (k ? clipPL.lineTo(px(q[0]), py(q[1])) : clipPL.moveTo(px(q[0]), py(q[1]))));
       clipPL.closePath();
     });

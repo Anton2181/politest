@@ -39,19 +39,25 @@ from the 1926 Soviet census grown to 1931 (``data.bssr``). Their areas are
 estimates (okrug centres on the 1932 territory); urban shares, incomes,
 vital rates and literacy are set like those of the neighbouring Polish
 north-east (Wilno, Nowogródek, Polesie).
+
+The rest of the north-western governorates of 1897 (``country`` XK) enters
+only scenarios drawn on the old imperial borders (``include_krai_east``):
+Latgale, the Nevel-Sebezh-Velizh lands and the eastern edge of the Mogilev
+governorate, from the 1897 census carried to 1931 (``data.krai_east``).
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 from .bssr import region_population as _by_pop
+from .krai_east import region_population as _xk_pop
 
 
 @dataclass(frozen=True)
 class Region:
     code: str
     name: str
-    country: str          # 'PL', 'LT' or 'BY' (Soviet Belarus, optional)
+    country: str          # 'PL', 'LT', 'BY' (Soviet Belarus) or 'XK' (rest of the krai), the last two optional
     partition: str        # 'RU', 'AT', 'DE'
     area_km2: float
     pop_1931: float
@@ -106,6 +112,13 @@ REGIONS: list[Region] = [
            notes="okrugs of Mohylew, Kalinin (Klimowicze), Bobrujsk (1926 census)"),
     Region("BY_HOM", "homelskie", "BY", "RU", 33_480, _by_pop("BY_HOM"), 0.17, 0.58, 4.90, 2.90, 49.0, 0.55, 52.25, 29.70,
            notes="okrugs of Homel, Rzeczyca, Mozyrz (1926 census)"),
+    # --- the rest of the north-western governorates, only with include_krai_east --------
+    Region("LV_LAT", "łatgalskie (Inflanty)", "XK", "RU", 14_211, _xk_pop("LV_LAT"), 0.14, 0.70, 4.10, 2.40, 54.0, 0.70,
+           56.40, 27.30, notes="Dvinsk, Rezhitsa and Lyutsin uezds (Latvia 1920-40); 1897 census carried to 1931"),
+    Region("RU_VIT", "newelsko-wieliskie", "XK", "RU", 12_409, _xk_pop("RU_VIT"), 0.09, 0.55, 4.80, 2.90, 48.5, 0.50,
+           56.00, 29.90, notes="Nevel, Sebezh and Velizh uezds (RSFSR from 1924); 1897 census carried to 1931"),
+    Region("RU_MOH", "mohylewskie (wschód)", "XK", "RU", 4_583, _xk_pop("RU_MOH"), 0.04, 0.52, 4.90, 3.00, 48.0, 0.48,
+           54.20, 31.90, notes="edge of the Mogilev governorate left in the RSFSR; estimate"),
 ]
 
 REGION_INDEX: dict[str, int] = {r.code: i for i, r in enumerate(REGIONS)}
@@ -116,13 +129,22 @@ POLAND_B_EAST = ["WIL", "NOW", "POL", "WOL", "LWO", "STA", "TAR", "BIA", "LUB"]
 KRESY = ["WIL", "NOW", "POL", "WOL", "LWO", "STA", "TAR"]
 LITHUANIA = [r.code for r in REGIONS if r.country == "LT"]
 BELARUS = [r.code for r in REGIONS if r.country == "BY"]
+KRAI_EAST = [r.code for r in REGIONS if r.country == "XK"]
 CARPATHIAN = ["KRA", "LWO", "STA"]
 
 
 def state_of_code(code: str) -> str:
-    """1932 state of a region, county or sub-region code: 'PL', 'LT' or 'BY'."""
-    return "LT" if code.startswith("LT") else ("BY" if code.startswith("BY_") else "PL")
+    """1932 state of a region, county or sub-region code: 'PL', 'LT', 'BY' or 'XK'."""
+    if code.startswith("LT"):
+        return "LT"
+    if code.startswith("BY_"):
+        return "BY"
+    if code.startswith(("LV_", "RU_")):
+        return "XK"
+    return "PL"
 
 
-def select_regions(include_lithuania: bool = True, include_belarus: bool = False) -> list[Region]:
-    return [r for r in REGIONS if (include_lithuania or r.country != "LT") and (include_belarus or r.country != "BY")]
+def select_regions(include_lithuania: bool = True, include_belarus: bool = False,
+                   include_krai_east: bool = False) -> list[Region]:
+    return [r for r in REGIONS if (include_lithuania or r.country != "LT") and (include_belarus or r.country != "BY")
+            and (include_krai_east or r.country != "XK")]

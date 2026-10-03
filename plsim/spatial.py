@@ -266,8 +266,9 @@ class Downscaler:
         F = self._anchor_seed()
         share_r = T[:, 0] / np.maximum(T[:, 0].sum(axis=1, keepdims=True), 1e-30)
         uni = share_r[g.region]
-        dom = np.array([LANG_INDEX["lt" if c.startswith("LT") else ("be" if c.startswith("BY_") else "pl")]
-                        for c in self.codes])[g.region]
+        home = (lambda c: "lt" if c.startswith("LT") else "be" if c.startswith(("BY_", "RU_"))
+                else "lv" if c.startswith("LV_") else "pl")
+        dom = np.array([LANG_INDEX[home(c)] for c in self.codes])[g.region]
         seed = np.where(np.isnan(F), uni, F)
         seed[np.arange(Nc), dom] = 0.0
         seed[np.arange(Nc), dom] = np.maximum(0.02, 1.0 - seed.sum(axis=1))

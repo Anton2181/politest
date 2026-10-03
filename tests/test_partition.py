@@ -27,7 +27,7 @@ def split():
 
 
 def test_children_add_up_to_parents(split):
-    regions, (new, comp, nodes), p = split
+    regions, (new, comp, nodes, _), p = split
     from plsim.data.census1931 import build_initial_composition
     old = build_initial_composition(regions, p["census_variant"], p["lt_variant"]).pop
     codes = [r.code for r in new]
@@ -40,7 +40,7 @@ def test_children_add_up_to_parents(split):
 
 
 def test_children_areas_and_languages(split):
-    _, (new, comp, _), _ = split
+    _, (new, comp, _, _), _ = split
     by = {r.code: (r, c) for r, c in zip(new, comp)}
     assert sum(by[c][0].area_km2 for c in ("WIL.W", "WIL.E")) == pytest.approx(29011, rel=1e-6)
     from plsim.spatial import lang_totals
@@ -116,7 +116,7 @@ def test_excluded_territory():
 
 
 def test_units_nest_counties_within_members(split):
-    _, (new, _, _), _ = split
+    _, (new, _, _, _), _ = split
     codes = [r.code for r in new]
     m = MigrationModel(load_scenario("baseline")["migration"], new, ["pl"] * len(new))
     m.member = np.array(["GD-B" if c == "WIL.E" else ("LT" if c.startswith("LT") else "PL") for c in codes])
@@ -161,10 +161,12 @@ def test_county_table_integrity():
     for c in COUNTIES:
         if c.lang:
             assert sum(c.lang.values()) <= c.pop * 1.01, c.code      # summaries carry small slips
-        assert 47.5 < c.lat < 56.6 and 15.5 < c.lon < (33.0 if c.parent.startswith("BY_") else 28.5), c.code
+        east = c.parent.startswith(("BY_", "LV_", "RU_"))
+        assert 47.5 < c.lat < (57.5 if east else 56.6) and 15.5 < c.lon < (33.0 if east else 28.5), c.code
 
 
-@pytest.mark.parametrize("parent", ["TAR", "STA", "LWO", "WIL", "NOW", "BIA", "WOL", "BY_WIT", "BY_MIN", "BY_MOH", "BY_HOM"])
+@pytest.mark.parametrize("parent", ["TAR", "STA", "LWO", "WIL", "NOW", "BIA", "WOL", "POM", "BY_WIT", "BY_MIN", "BY_MOH",
+                                    "BY_HOM", "LV_LAT", "RU_VIT"])
 def test_grade_a_counties_add_up_to_the_voivodeship(parent):
     """The county tables reproduce the 1931 voivodeship populations."""
     tot = sum(c.pop for c in BY_PARENT[parent])
@@ -189,7 +191,7 @@ def county_split():
 
 
 def test_counties_add_up_and_follow_the_census(county_split):
-    regions, (new, comp, nodes), p = county_split
+    regions, (new, comp, nodes, _), p = county_split
     from plsim.data.census1931 import build_initial_composition
     from plsim.data.languages import LANG_INDEX
     from plsim.spatial import lang_totals

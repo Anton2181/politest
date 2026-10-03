@@ -50,7 +50,7 @@ import numpy as np
 
 from .data.languages import COMMUNITIES, GROUPS, LANG_INDEX, LANGUAGES, NG
 from .economy import piecewise
-from .params import region_lookup
+from .params import matching_patterns
 
 AGES = np.arange(101)
 
@@ -66,9 +66,9 @@ def normalised_schedule(**kw) -> np.ndarray:
     return s / s[:65].mean()
 
 
-def hump(z: float, z_star: float, shape: float) -> float:
-    """Migration hump, 1 at z = z_star."""
-    z = max(z, 1e-3)
+def hump(z, z_star: float, shape: float):
+    """Migration hump, 1 at z = z_star (``z`` a number or an array)."""
+    z = np.maximum(z, 1e-3)
     return (z / z_star) ** shape * np.exp(shape * (1 - z / z_star))
 
 
@@ -241,18 +241,21 @@ class MigrationModel:
             return
         from .data.languages import GROUP_INDEX
         g = GROUP_INDEX[("RC", "pl")]
-        orig = np.array([region_lookup(s["origins"], c, 0.0) for c in self.codes], dtype=float)
-        dest = np.array([region_lookup(s["destinations"], c, 0.0) for c in self.codes], dtype=float)
+        rural = P[:, 0].sum(axis=(1, 2, 3, 4))
+
+        def weights(spec):
+            # a key's weight is shared, by rural population, among the units that take it
+            # from that key (a voivodeship's among its counties; a county's is its own)
+            keys = [(matching_patterns(spec, c) or ["default"])[-1] for c in self.codes]
+            w = np.array([float(spec.get(k, 0.0) or 0.0) for k in keys])
+            for k in set(keys):
+                m = np.array([kk == k for kk in keys])
+                if m.sum() > 1:
+                    w[m] *= rural[m] / max(rural[m].sum(), 1e-9)
+            return w
+        orig, dest = weights(s["origins"]), weights(s["destinations"])
         if orig.sum() <= 0 or dest.sum() <= 0:
             return
-        # a voivodeship's weight is shared among its sub-regions by rural population
-        rural = P[:, 0].sum(axis=(1, 2, 3, 4))
-        for par in set(self.parent):
-            m = self.parent == par
-            if m.sum() > 1:
-                share = rural[m] / max(rural[m].sum(), 1e-9)
-                orig[m] *= share
-                dest[m] *= share
         orig /= orig.sum()
         dest /= dest.sum()
         fam = np.zeros(101)
@@ -271,22 +274,30 @@ class MigrationModel:
                     P[d, 0, g, 1] += moved * dest[d]
 
     # ---------------------------------------------------------------- international
-    def international(self, P: np.ndarray, year: int, y_nat: float, y_frontier: float,
-                      y_reg: np.ndarray) -> dict:
+    def international(self, P: np.ndarray, year: int, y_nat, y_frontier: float,
+                      y_reg: np.ndarray, state: np.ndarray | None = None) -> dict:
+        """Net emigration and immigration. ``y_nat`` is the national income, or
+        (R,) the income of each region's state when the run holds separate
+        states (``state``: index of each region's state); each state then has
+        its own migration hump and its own immigrants."""
         p = self.p
-        z = y_nat / y_frontier
+        state = np.zeros(self.R, dtype=int) if state is None else np.asarray(state)
+        z_r = np.broadcast_to(np.asarray(y_nat, float), (self.R,)) / y_frontier       # (R,)
         openness = piecewise(year, p["openness"])
-        h = hump(z, p["hump_peak"], p["hump_shape"])
+        h = hump(z_r, p["hump_peak"], p["hump_shape"])
         # net emigration fades to zero near the immigration threshold
-        fade = 1 / (1 + np.exp((z - p["immigration_threshold"]) / 0.04))
-        ybar = (y_reg * P.sum(axis=(1, 2, 3, 4, 5))).sum() / P.sum()
+        fade = 1 / (1 + np.exp((z_r - p["immigration_threshold"]) / 0.04))
+        pop_r = P.sum(axis=(1, 2, 3, 4, 5))
+        ybar_s = np.array([(y_reg * pop_r)[state == k].sum() / max(pop_r[state == k].sum(), 1e-9)
+                           for k in range(state.max() + 1)])
+        ybar = ybar_s[state]                                          # (R,) mean income of the state
         push = (ybar / y_reg) ** p["emig_push_elasticity"]           # (R,)
-        rate_g = self.emig_base * h * openness * fade                # (G,)
+        rate_g = self.emig_base[None, :] * (h * openness * fade)[:, None]   # (R,G)
         jew = piecewise(year, p["jewish_channel"])
         ger = piecewise(year, p["german_channel"])
         extra = np.where(self.is_jewish, jew * np.where(self.is_haredi, p["haredi_channel_factor"], 1.0), 0.0)
         extra = extra + np.where(self.is_german, ger, 0.0)
-        rate = (rate_g[None, :] * push[:, None] + extra[None, :])    # (R,G)
+        rate = (rate_g * push[:, None] + extra[None, :])             # (R,G)
         # Lithuania's own openness (e.g. emigration to Latin America in the 1920s)
         lt_mask = self.country == "LT"
         rate[lt_mask] *= p["lithuania_emig_factor"]
@@ -294,16 +305,21 @@ class MigrationModel:
         E = np.minimum(E, P * 0.2)
         P -= E
         emigrants = E.sum(axis=(1, 3, 4, 5))                          # (R,G)
-        # net immigration once income is high
-        imm_rate = p["immigration_max"] / (1 + np.exp(-(z - p["immigration_threshold"]) / 0.04))
-        total = P.sum()
-        imm = imm_rate * total
+        # net immigration once income is high (each state its own)
         immigrants = np.zeros((self.R, NG))
+        urb = P[:, 1].sum(axis=(1, 2, 3, 4))
+        imm_w = np.zeros(self.R)
+        for k in range(state.max() + 1):
+            m = state == k
+            zk = z_r[m][0]
+            imm_k = p["immigration_max"] / (1 + np.exp(-(zk - p["immigration_threshold"]) / 0.04)) * P[m].sum()
+            wk = urb[m] * (y_reg[m] / ybar_s[k]) ** 2
+            imm_w[m] = imm_k * wk / max(wk.sum(), 1e-30)
+        imm = imm_w.sum()
+        z = float(z_r[state == 0][0])
         if imm > 0:
             from .data.languages import GROUP_INDEX
-            urb = P[:, 1].sum(axis=(1, 2, 3, 4))
-            w = urb * (y_reg / ybar) ** 2
-            w = w / w.sum()
+            w = imm_w / imm
             age = self.sched_emig / self.sched_emig.sum()
             comp = p["immigrant_composition"]
             for key, share in comp.items():

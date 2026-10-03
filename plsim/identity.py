@@ -122,13 +122,17 @@ INITIAL = {
     "PR:lt": {"de": .50, "lt": .30, "oth": .20},       # Memellanders
     "OT:be": {"be": .70, "loc": .30},
 }
-# Overrides by region prefix: the Lithuanian member, Soviet Belarus
+# Overrides by region prefix: the Lithuanian member, Soviet Belarus, Latgale and the Russian lands
 INITIAL_REGIONS = {
     "LT_": {"RC:pl": {"pl": .42, "lt": .58}, "RC:lt": {"lt": .998, "pl": .002},
             "RC:be": {"pl": .50, "be": .20, "lt": .30}, "JW:yi": {"jw": .97, "lt": .03}},
     "BY_": {"RC:pl": {"pl": .97, "be": .03}, "RC:be": {"be": .55, "pl": .45},
             "OR:be": {"be": .92, "ru": .05, "loc": .03}, "OR:ru": {"ru": .75, "be": .25},
             "JW:yi": {"jw": .99, "be": .01}},
+    "LV_": {"RC:lv": {"lv": .97, "loc": .03}, "PR:lv": {"lv": 1.0}, "RC:be": {"be": .40, "pl": .35, "loc": .25},
+            "OR:be": {"be": .60, "ru": .30, "loc": .10}, "OR:ru": {"ru": .97, "loc": .03}, "RC:pl": {"pl": .95, "lv": .05}},
+    "RU_": {"OR:be": {"be": .70, "ru": .25, "loc": .05}, "OR:ru": {"ru": .80, "be": .20}, "RC:pl": {"pl": .95, "be": .05},
+            "JW:yi": {"jw": .99, "ru": .01}},
 }
 # state identity of a region: the identity of its contact language
 STATE_IDENTITY = {"pl": "pl", "lt": "lt", "uk": "uk", "be": "be", "de": "de", "ru": "ru", "cs": "cs", "lv": "lv"}

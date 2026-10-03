@@ -55,7 +55,8 @@ class Node:
     pop_1931: float   # thousands (urban population of the town)
     terrain: str = "flat"
     capital: bool = False
-    optional: bool = False   # only in scenarios with Soviet Belarus
+    optional: bool | str = False   # True or "BY": only with Soviet Belarus; "XK": only with the rest of the
+                                   # north-western governorates; "-XK" / "BY-XK": not with them (superseded gateways)
 
 
 # fmt: off
@@ -202,7 +203,7 @@ NODES: list[Node] = [
     # --- foreign nodes (gateways)
     Node("Gdańsk (Free City)", "EXT", 54.35, 18.65, 256), Node("Berlin via Frankfurt/O.", "EXT", 52.35, 14.55, 1500),
     Node("Breslau", "EXT", 51.11, 17.03, 620), Node("Gleiwitz-Beuthen", "EXT", 50.30, 18.67, 300),
-    Node("Königsberg", "EXT", 54.71, 20.51, 370), Node("Riga via Daugavpils", "EXT", 55.87, 26.54, 400),
+    Node("Königsberg", "EXT", 54.71, 20.51, 370), Node("Riga via Daugavpils", "EXT", 55.87, 26.54, 400, optional="-XK"),
     Node("Mińsk", "BY_MIN", 53.90, 27.56, 240), Node("Kyiv via Shepetivka", "EXT", 50.18, 27.06, 500),
     Node("Proskurov", "EXT", 49.42, 26.98, 100), Node("Chernivtsi", "EXT", 48.29, 25.94, 110),
     Node("Žilina", "EXT", 49.22, 18.74, 100), Node("Ostrava", "EXT", 49.84, 18.29, 200),
@@ -222,9 +223,17 @@ NODES: list[Node] = [
     Node("Homel", "BY_HOM", 52.44, 30.98, 93, optional=True), Node("Rzeczyca", "BY_HOM", 52.36, 30.39, 17, optional=True),
     Node("Mozyrz", "BY_HOM", 52.05, 29.25, 15, optional=True), Node("Kalinkowicze", "BY_HOM", 52.13, 29.33, 8, optional=True),
     Node("Żłobin", "BY_HOM", 52.89, 30.03, 12, optional=True), Node("Żytkowicze", "BY_HOM", 52.24, 27.86, 3, "marsh", optional=True),
-    Node("Smolensk", "EXT", 54.78, 32.05, 150, optional=True), Node("Nevel-Velikiye Luki", "EXT", 56.02, 29.92, 60, optional=True),
+    Node("Smolensk", "EXT", 54.78, 32.05, 150, optional=True), Node("Nevel-Velikiye Luki", "EXT", 56.02, 29.92, 60, optional="BY-XK"),
     Node("Unecha-Bryansk", "EXT", 52.85, 32.69, 100, optional=True), Node("Bakhmach-Chernihiv", "EXT", 51.50, 31.30, 80, optional=True),
     Node("Kyiv via Ovruch", "EXT", 51.32, 28.80, 300, optional=True),
+    # --- Latgale and the Russian lands of the Vitebsk and Mogilev governorates (optional, "XK")
+    Node("Dyneburg", "LV_LAT", 55.87, 26.54, 43, optional="XK"), Node("Rzeżyca", "LV_LAT", 56.51, 27.33, 13, optional="XK"),
+    Node("Lucyn", "LV_LAT", 56.55, 27.72, 5.5, optional="XK"), Node("Krasław", "LV_LAT", 55.90, 27.17, 4.5, optional="XK"),
+    Node("Prele", "LV_LAT", 56.29, 26.73, 3.5, optional="XK"), Node("Mariampol (Viļaka)", "LV_LAT", 57.18, 27.68, 1.5, optional="XK"),
+    Node("Newel", "RU_VIT", 56.02, 29.92, 15, optional="XK"), Node("Siebież", "RU_VIT", 56.29, 28.48, 5, optional="XK"),
+    Node("Wieliż", "RU_VIT", 55.60, 31.20, 12, optional="XK"), Node("Chisławicze", "RU_MOH", 54.19, 32.16, 3, optional="XK"),
+    Node("Riga via Krustpils", "EXT", 56.51, 25.86, 400, optional="XK"),
+    Node("Pskov via Ostrov", "EXT", 57.34, 28.35, 80, optional="XK"), Node("Velikiye Luki", "EXT", 56.34, 30.52, 40, optional="XK"),
 ]
 # fmt: on
 
@@ -368,6 +377,18 @@ RAIL_1931_BY: list[tuple[str, str, str]] = [
     ("Łuniniec", "Żytkowicze", _S), ("Żytkowicze", "Kalinkowicze", _S), ("Kalinkowicze", "Rzeczyca", _S),
     ("Rzeczyca", "Homel", _S), ("Homel", "Unecha-Bryansk", _M), ("Głębokie", "Połock", _S),
     ("Orsza", "Krzyczew", _S), ("Krzyczew", "Unecha-Bryansk", _S), ("Osipowicze", "Słuck", _S),
+]
+
+# Latgale and the Nevel lands: lines of c. 1931, only with them ("XK"):
+# Riga-Orel (Krustpils-Dyneburg-Krasław-Dryssa), Petersburg-Warsaw (Pskov-
+# Rzeżyca-Dyneburg-Święciany), Moscow-Windau (Krustpils-Rzeżyca-Lucyn-
+# Siebież-Novosokolniki), Radviliškis-Dyneburg, Bologoye-Polotsk (Newel).
+RAIL_1931_XK: list[tuple[str, str, str]] = [
+    ("Dyneburg", "Riga via Krustpils", _M), ("Dyneburg", "Krasław", _M), ("Krasław", "Dryssa", _M),
+    ("Święciany", "Dyneburg", _M), ("Rokiškis", "Dyneburg", _S), ("Dyneburg", "Rzeżyca", _M),
+    ("Rzeżyca", "Pskov via Ostrov", _M), ("Riga via Krustpils", "Rzeżyca", _M), ("Rzeżyca", "Lucyn", _M),
+    ("Lucyn", "Siebież", _M), ("Siebież", "Velikiye Luki", _M), ("Newel", "Velikiye Luki", _S),
+    ("Newel", "Połock", _S), ("Newel", "Witebsk", _S),
 ]
 
 # ---------------------------------------------------------------------------------

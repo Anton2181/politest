@@ -36,7 +36,7 @@ import os
 import numpy as np
 from matplotlib.path import Path
 
-from .geography import ANCHORS, haversine_matrix
+from .geography import ANCHORS, GOV_ALLOWED, haversine_matrix
 
 POWIAT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "powiaty_1931.geojson")
 _POLYS: dict | None = None
@@ -60,6 +60,12 @@ def county_polygons() -> dict:
                     geom.get("coordinates", []) if geom.get("type") == "MultiPolygon" else []
                 for poly in polys:
                     _POLYS.setdefault(code, []).append([Path(np.asarray(r, float)[:, :2]) for r in poly])
+        # the uezds of Latgale and the Nevel lands are their counties' borders (data.krai_east)
+        from .geography import load_borders
+        for piece in load_borders().get("XK_units", []):
+            if "." in piece["unit"]:
+                for poly in piece["rings"]:
+                    _POLYS.setdefault(piece["unit"], []).append([Path(np.asarray(r, float)) for r in poly])
     return _POLYS
 
 SPLITS: dict[str, dict] = {
@@ -147,6 +153,18 @@ def assign(parent: str, lat, lon, child_codes=None) -> np.ndarray:
     anc = seat_table(parent, child_codes)
     lat, lon = np.atleast_1d(np.asarray(lat, float)), np.atleast_1d(np.asarray(lon, float))
     D = haversine_matrix(lat, lon, np.array([a[0] for a in anc]), np.array([a[1] for a in anc]))
+    named = parent in SPLITS and (child_codes is None or set(child_codes) <= set(children(parent)))
+    if (len(GOV_ALLOWED.get(parent, "x")) > 1 and not named and len(lat)
+            and not parent.startswith(("LT", "BY_", "LV_", "RU_"))):
+        # the 1931 powiaty of the formerly Russian north-east kept the uezd
+        # borders of 1897: a place goes to a county of its own governorate
+        # (Lithuanian apskritys and Soviet okrugs did cross them, and are cut)
+        from .governorates import letter
+        gl = letter(lat, lon)
+        sl = letter([a[0] for a in anc], [a[1] for a in anc])
+        D2 = np.where(gl[:, None] != sl[None, :], np.inf, D)
+        ok = np.isfinite(D2).any(axis=1)
+        D[ok] = D2[ok]
     out = np.array([anc[k][2] for k in D.argmin(axis=1)], dtype=object)
     polys = county_polygons()
     if polys:

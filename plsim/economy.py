@@ -21,6 +21,13 @@ reduced-form growth model supplies those drivers:
   and are used by the migration module (Lewis 1954 / Harris-Todaro 1970 logic:
   rural-urban moves respond to the urban-rural income gap).
 
+Separate states. A scenario may hold two states in one run (``separate_states``:
+the members that are sovereign, e.g. the Northwestern Krai beside Poland).
+Each then has its own national income, starting from its regions' 1931
+income level and converging to its own ``kappa`` (by default the same) with
+the same shocks; relative incomes are normalised within each state, and each
+state has its own infrastructure budget (``infra_budgets``).
+
 All money is in 1990 Geary-Khamis dollars (Maddison convention).
 """
 from __future__ import annotations
@@ -61,10 +68,32 @@ class Economy:
         self.urban_rural_ratio = piecewise(1931, params["urban_rural_ratio"])
         self.history: dict[str, list] = {"y_nat": [], "y_frontier": [], "vehicles": []}
         self.program_bonus = np.zeros(R)
+        self.state = np.zeros(R, dtype=int)          # 0: the main state; 1, 2 ...: separate states
+        self.y_state = np.array([self.y_nat])
+        self.kappa_state: list = [None]
+
+    def set_states(self, state: np.ndarray, pop: np.ndarray, kappa: list | None = None) -> None:
+        """Give separate states (``state`` > 0) their own national income. Each
+        starts at its regions' share of the 1931 income, so that regional
+        incomes are unchanged at the start."""
+        self.state = np.asarray(state, dtype=int)
+        S = int(self.state.max()) + 1
+        if S == 1:
+            return
+        pop = np.asarray(pop, float)
+        overall = (pop * self.rel0).sum() / pop.sum()
+        self.y_state = np.array([self.y_nat * (pop * self.rel0)[self.state == k].sum()
+                                 / max(pop[self.state == k].sum(), 1e-9) / overall for k in range(S)])
+        self.y_nat = float(self.y_state[0])
+        self.kappa_state = list(kappa or [None] * S)
+
+    def y_of_region(self) -> np.ndarray:
+        """National income of each region's state."""
+        return self.y_state[self.state] if len(self.y_state) > 1 else np.full(len(self.rel), self.y_nat)
 
     # ------------------------------------------------------------------ incomes
     def region_income(self) -> np.ndarray:
-        return self.y_nat * self.rel
+        return self.y_of_region() * self.rel
 
     def cell_income(self, urban_share: np.ndarray) -> np.ndarray:
         """(R, 2) income per head for rural / urban parts."""
@@ -96,17 +125,18 @@ class Economy:
         # National income.
         hist = p.get("historical_growth", {})
         if str(year) in hist or year in hist:
-            g = hist.get(str(year), hist.get(year))
+            g = np.full(len(self.y_state), hist.get(str(year), hist.get(year)))
         else:
-            kappa = piecewise(year, p["kappa"])
             beta = p["convergence_beta"]
-            g = gF + beta * np.log(kappa * self.y_frontier / self.y_nat)
-            g += self.rng.normal(0, p["shock_sd"])
+            kappa = np.array([piecewise(year, k if k is not None else p["kappa"]) for k in self.kappa_state])
+            g = gF + beta * np.log(kappa * self.y_frontier / self.y_state)
+            g += self.rng.normal(0, p["shock_sd"])                       # one shock for all states
             # crises shift timing, not the long-run level: mean-corrected
             g -= p["crisis_prob"] * p["crisis_size"]
             if self.rng.random() < p["crisis_prob"]:
                 g += p["crisis_size"]
-        self.y_nat *= np.exp(g)
+        self.y_state = self.y_state * np.exp(g)
+        self.y_nat = float(self.y_state[0])
         # Regional relative incomes.
         target = self.rel0 ** p["regional_persistence"]
         drel = -p["regional_beta"] * (np.log(self.rel) - np.log(target))
@@ -122,9 +152,11 @@ class Economy:
         eq = piecewise(year, p["equalisation"])
         drel += eq * np.maximum(0, -np.log(self.rel))
         self.rel *= np.exp(drel + bonus)
-        # Renormalise to population-weighted mean of one.
-        w = pop_by_region / pop_by_region.sum()
-        self.rel /= (w * self.rel).sum()
+        # Renormalise to population-weighted mean of one (within each state).
+        for k in range(len(self.y_state)):
+            m = self.state == k
+            w = pop_by_region[m] / pop_by_region[m].sum()
+            self.rel[m] /= (w * self.rel[m]).sum()
         # Literacy / schooling (illiteracy closes at a fixed hazard + cohort replacement).
         lr = p["literacy_rate"]
         self.literacy += (1 - self.literacy) * lr
@@ -135,9 +167,16 @@ class Economy:
         self.vehicles_per_1000 += g_["adjust"] * (vstar - self.vehicles_per_1000)
         self.urban_rural_ratio = piecewise(year, p["urban_rural_ratio"])
         self.history["y_nat"].append(self.y_nat)
+        self.history.setdefault("y_state", []).append(self.y_state.copy())
         self.history["y_frontier"].append(self.y_frontier)
         self.history["vehicles"].append(self.vehicles_per_1000)
 
     def infra_budget(self, year: int, total_pop: float) -> float:
         share = piecewise(year, self.p["infra_share_gdp"])
         return share * self.y_nat * total_pop
+
+    def infra_budgets(self, year: int, pop_by_region: np.ndarray) -> np.ndarray:
+        """Infrastructure budget of each state (its own GDP)."""
+        share = piecewise(year, self.p["infra_share_gdp"])
+        return np.array([share * self.y_state[k] * pop_by_region[self.state == k].sum()
+                         for k in range(len(self.y_state))])

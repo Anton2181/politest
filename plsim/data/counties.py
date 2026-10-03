@@ -17,11 +17,16 @@ Sources and grades
   voivodeship (``partition``), so they are estimates.
 
 Coverage: grade A for the eight eastern voivodeships (Tarnopol, Stanisławów,
-Lwów, Volhynia, Wilno, Nowogródek, Białystok; Polesie in part). Grade B for
-Lublin. Grade C for the central and western voivodeships and Lithuania;
-their county language tables were not reachable from this environment.
+Lwów, Volhynia, Wilno, Nowogródek, Białystok; Polesie in part) and for
+Pomorze (read from the census volume itself, Statystyka Polski seria C,
+zeszyt 75, tabl. 12; every row sums to its printed total). Grade B for
+Lublin. Grade C for the other central and western voivodeships and
+Lithuania; their county language tables were not reachable from this
+environment.
 Soviet Belarus, when included, has its 12 okrugs of 1926 as grade-A
-counties (``data.bssr``).
+counties (``data.bssr``). Latgale and the Nevel lands, when included, have
+their uezds as grade-E counties: estimates from the 1897 census
+(``data.krai_east``).
 
 Conventions
 -----------
@@ -41,6 +46,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from . import bssr as _bssr
+from . import krai_east as _xk
 
 _TR = str.maketrans("ąćęłńóśźżĄĆĘŁŃÓŚŹŻėęįšųūžčĖĮŠŲŪŽČ", "acelnoszzACELNOSZZeeisuuzcEISUUZC")
 
@@ -265,15 +271,24 @@ COUNTIES: list[County] = [
     _c("POZ", "śremski", "Śrem", 52.09, 17.02), _c("POZ", "wągrowiecki", "Wągrowiec", 52.81, 17.20),
     _c("POZ", "wrzesiński", "Września", 52.33, 17.57), _c("POZ", "wyrzyski", "Wyrzysk", 53.15, 17.27),
     _c("POZ", "żniński", "Żnin", 52.85, 17.72),
-    # ---------------------------------------------------------------- Pomorze (C)
-    _c("POM", "brodnicki", "Brodnica", 53.26, 19.40), _c("POM", "chełmiński", "Chełmno", 53.35, 18.43),
-    _c("POM", "chojnicki", "Chojnice", 53.70, 17.56), _c("POM", "działdowski", "Działdowo", 53.23, 20.18),
-    _c("POM", "grudziądzki", "Grudziądz", 53.48, 18.75), _c("POM", "kartuski", "Kartuzy", 54.33, 18.20),
-    _c("POM", "kościerski", "Kościerzyna", 54.12, 17.98), _c("POM", "lubawski", "Lubawa", 53.50, 19.75),
-    _c("POM", "morski", "Wejherowo", 54.65, 18.30), _c("POM", "sępoleński", "Sępólno Krajeńskie", 53.45, 17.53),
-    _c("POM", "starogardzki", "Starogard", 53.97, 18.53), _c("POM", "świecki", "Świecie", 53.41, 18.45),
-    _c("POM", "tczewski", "Tczew", 54.09, 18.78), _c("POM", "toruński", "Toruń", 53.01, 18.60),
-    _c("POM", "tucholski", "Tuchola", 53.59, 17.86), _c("POM", "wąbrzeski", "Wąbrzeźno", 53.28, 18.95),
+    # ---------------------------------------------------------------- Pomorze (A; Statystyka Polski C 75, tabl. 12;
+    # Gdynia into morski, Grudziądz and Toruń into their powiaty; Kashubians are inside "pl")
+    _a("POM", "brodnicki", "Brodnica", 53.26, 19.40, 56287, {"pl": 50990, "uk": 8, "yi": 96, "be": 3, "ru": 9, "lt": 2, "de": 5100, "oth": 79}),
+    _a("POM", "chełmiński", "Chełmno", 53.35, 18.43, 52765, {"pl": 44700, "uk": 5, "yi": 23, "be": 1, "ru": 10, "lt": 3, "de": 7930, "oth": 93}),
+    _a("POM", "chojnicki", "Chojnice", 53.70, 17.56, 76935, {"pl": 68999, "uk": 23, "yi": 8, "be": 3, "ru": 3, "lt": 8, "de": 7631, "oth": 260}),
+    _a("POM", "działdowski", "Działdowo", 53.23, 20.18, 42716, {"pl": 39645, "uk": 11, "yi": 117, "be": 4, "ru": 10, "lt": 1, "de": 2862, "oth": 66}),
+    _a("POM", "grudziądzki", "Grudziądz", 53.48, 18.75, 96815, {"pl": 84538, "uk": 75, "yi": 454, "be": 144, "ru": 63, "lt": 8, "de": 11368, "oth": 165}),
+    _a("POM", "kartuski", "Kartuzy", 54.33, 18.20, 68674, {"pl": 64103, "uk": 8, "yi": 19, "be": 2, "ru": 1, "lt": 3, "de": 4445, "oth": 93}),
+    _a("POM", "kościerski", "Kościerzyna", 54.12, 17.98, 51716, {"pl": 45658, "uk": 8, "be": 2, "ru": 4, "lt": 4, "de": 5978, "oth": 62}),
+    _a("POM", "lubawski", "Lubawa", 53.50, 19.75, 53621, {"pl": 51812, "uk": 7, "yi": 65, "ru": 8, "lt": 1, "de": 1612, "oth": 116}),
+    _a("POM", "morski", "Wejherowo", 54.65, 18.30, 118512, {"pl": 112212, "uk": 51, "yi": 128, "be": 11, "ru": 87, "lt": 3, "de": 5542, "oth": 478}),
+    _a("POM", "sępoleński", "Sępólno Krajeńskie", 53.45, 17.53, 29563, {"pl": 17538, "uk": 10, "yi": 31, "be": 1, "ru": 11, "lt": 1, "de": 11942, "oth": 29}),
+    _a("POM", "starogardzki", "Starogard", 53.97, 18.53, 71829, {"pl": 67937, "uk": 22, "yi": 258, "be": 6, "ru": 13, "lt": 1, "de": 3433, "oth": 159}),
+    _a("POM", "świecki", "Świecie", 53.41, 18.45, 87998, {"pl": 74171, "uk": 25, "yi": 129, "be": 10, "ru": 30, "lt": 8, "de": 13422, "oth": 203}),
+    _a("POM", "tczewski", "Tczew", 54.09, 18.78, 67399, {"pl": 62832, "uk": 21, "yi": 64, "be": 3, "ru": 11, "lt": 2, "de": 4359, "oth": 107}),
+    _a("POM", "toruński", "Toruń", 53.01, 18.60, 114207, {"pl": 103915, "uk": 83, "yi": 311, "be": 14, "ru": 152, "lt": 10, "de": 9574, "oth": 148}),
+    _a("POM", "tucholski", "Tuchola", 53.59, 17.86, 41249, {"pl": 37990, "uk": 14, "yi": 3, "be": 2, "ru": 7, "lt": 1, "de": 3151, "oth": 81}),
+    _a("POM", "wąbrzeski", "Wąbrzeźno", 53.28, 18.95, 49852, {"pl": 42346, "uk": 31, "yi": 259, "be": 3, "ru": 18, "lt": 5, "de": 7051, "oth": 139}),
     # ---------------------------------------------------------------- Silesia (C)
     _c("SLA", "bielski", "Bielsko", 49.82, 19.00), _c("SLA", "cieszyński", "Cieszyn", 49.75, 18.63),
     _c("SLA", "katowicki", "Katowice", 50.26, 19.02), _c("SLA", "lubliniecki", "Lubliniec", 50.67, 18.69),
@@ -300,6 +315,11 @@ COUNTIES: list[County] = [
 # as counties, at their okrug centres, grown to 1931 (grade A; see data.bssr).
 COUNTIES += [_a(par, name, seat, lat, lon, round(pop * _bssr.GROWTH_1926_1931), _bssr.okrug_languages(seat))
              for name, seat, par, lat, lon, pop, _ in _bssr.OKRUGS]
+# The rest of the north-western governorates (only with include_krai_east):
+# Latgale and the Nevel-Sebezh-Velizh lands by uezd (grade E: the 1897 census
+# carried to 1931; see data.krai_east). The Mogilev edge is a single unit.
+COUNTIES += [_a(par, name, seat, lat, lon, round(_xk.unit_population(seat)), _xk.unit_languages(seat), grade="E")
+             for seat, name, par, lat, lon, _, _ in _xk.UNITS if par != "RU_MOH"]
 
 BY_PARENT: dict[str, list[County]] = {}
 for _cty in COUNTIES:

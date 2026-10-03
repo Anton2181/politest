@@ -3,35 +3,42 @@
 # Vitebsk), which form a state of their own, simulated alongside it.
 #
 # * Premise: in 1919-21 the old Northwestern Krai is not partitioned between
-#   Poland, Lithuania and Soviet Russia but survives as one state of the
-#   Lithuanian and Belarusian lands. Poland keeps the rest of its 1931
+#   Poland, Lithuania, Latvia and Soviet Russia but survives as one state of
+#   the Lithuanian and Belarusian lands. Poland keeps the rest of its 1931
 #   territory (with Volhynia and Galicia); there is no Polish-Lithuanian union.
-# * The krai, by 1931 counties (governorates of 1897 in brackets): Lithuania
-#   without Klaipėda (Kovno; Suvalkija, which was Suwałki governorate, stays
-#   with the Lithuanian lands); the whole of wileńskie and nowogródzkie
-#   (Vilna, Minsk, Grodno); Białystok, Bielsk, Sokółka, Grodno and Wołkowysk
-#   (Grodno); Polesie except Kamień Koszyrski, which was Volhynia (Grodno,
-#   Minsk); and all of Soviet Belarus (Minsk, Mogilev, Vitebsk). Klaipėda,
-#   German Memelland until 1923, is left out.
+# * Borders: the governorates of 1897 (RISTAT GIS; data/governorates.py), not
+#   the 1931 counties. Counties that straddle a governorate border are cut
+#   along it (Białystok, Augustów, Kaunas ...). The krai holds Lithuania
+#   without Klaipėda (Prussian before 1920) and Palanga (Courland); the
+#   north-east of 1931 Poland; the whole BSSR of 1926; and the land of the
+#   Vitebsk and Mogilev governorates that lay outside all three in 1932:
+#   Latgale (Latvia), Nevel, Sebezh and Velizh, and the eastern edge of the
+#   Mogilev governorate (RSFSR), from the 1897 census (data/krai_east.py).
+# * The Suwałki governorate belonged to the Kingdom of Poland, not to the krai:
+#   Suvalkija (Marijampolė, Vilkaviškis, Šakiai, Lazdijai, the west bank at
+#   Alytus and Kaunas) goes to Poland with Suwałki and Augustów, with
+#   Lithuanian co-official there.
 # * Two states in one run. The krai has its own official languages and policy;
 #   migration across the Polish-krai border is an international flow
 #   (friction 0.03, against 0.10 between federal members), and Polish
-#   settlement goes to Volhynia only. Both share one growth path and one
-#   transport budget, a simplification.
+#   settlement goes to Volhynia only. Each state has its own economy: its
+#   own national income (from its regions' 1931 level, converging at the same
+#   rate to the same target), emigration and transport budget.
 # * Languages of the krai: Lithuanian, Belarusian, Polish, Yiddish and Russian
-#   are all official (status, schools, open to shift). Each county works in
-#   whichever of Lithuanian, Polish and Belarusian (with West Polesian) had
-#   the most speakers in 1931. Assimilation pressure is low (0.6).
+#   are all official (status, schools, open to shift), and Latvian in
+#   Latgale. Each county works in whichever of Lithuanian, Polish,
+#   Belarusian (with West Polesian), Latvian and Russian had the most speakers
+#   in 1931. Assimilation pressure is low (0.6).
 extends: baseline
 meta:
   name: nw_krai
-  description: "Poland without the Northwestern Krai (Vilna, Kovno, Grodno, Minsk, Mogilev, Vitebsk governorates), a separate state with five official languages"
+  description: "Poland without the Northwestern Krai (Vilna, Kovno, Grodno, Minsk, Mogilev, Vitebsk governorates of 1897), a separate state with five official languages"
 include_belarus: true
-region_groups:
-  KRAI: [WIL, NOW, BIA.bialystok, BIA.bielskpodlaski, BIA.sokolka, BIA.grodno, BIA.wolkowysk,
-         POL.brzesc, POL.drohiczyn, POL.kobryn, POL.kosowpoleski, POL.luniniec, POL.pinsk, POL.pruzana, POL.stolin,
-         LT_KAU, LT_LAU, LT_NEA, LT_SUV, LT_ZEM, BY_WIT, BY_MIN, BY_MOH, BY_HOM]
-exclude: [LT_KLA]
+include_krai_east: true
+governorates:
+  KRAI: [Vilna, Kovno, Grodno, Minsk, Mogilev, Vitebsk]
+  SUW: [Suwałki]
+separate_states: [NWK]
 members:
   _replace: true
   default: PL
@@ -39,10 +46,12 @@ members:
 dominant_language:
   _replace: true
   default: pl
-  KRAI: auto:lt,pl,be+pls
+  KRAI: auto:lt,pl,be+pls,lv,ru
 official_languages:
   _replace: true
   KRAI: [lt, be, pl, yi, ru]
+  LV_LAT: [lv, lt, be, pl, yi, ru]
+  SUW: [pl, lt]
 migration:
   member_friction:
     _replace: true

@@ -521,22 +521,58 @@ def _split_units(lat, lon, poles, people, dlat, dlon, units) -> dict:
             "residual": west - target, "poles_at_balance": pa_bal}
 
 
-def lines_for(sr, res, years) -> list[dict]:
+# Counting by declared nationality (``curzon_count: identity``): Poles are the
+# people of Polish national identity (plsim.identity), whatever their home
+# language; Jews, Germans and Kashubians by identity are not counted.
+ID_EXCLUDED = ("jw", "de", "csb")
+
+
+def count_mode(res) -> str:
+    return (getattr(res, "params", None) or {}).get("curzon_count", "language")
+
+
+def identity_cells(sr, res, year: int) -> np.ndarray:
+    """(cells, NI) persons by national identity: each cell's speakers of a
+    language take their region's identity mix for that language (the run's
+    ``identity_lang`` at the nearest snapshot year)."""
+    IL = res.identity_lang
+    y = min(IL, key=lambda t: abs(t - year))
+    L = np.asarray(IL[y], float)                                        # (R, NL, NI)
+    sh = L / np.maximum(L.sum(axis=2, keepdims=True), 1e-12)
+    X = sr.display(sr.frame(year))                                      # (cells, NL)
+    return np.einsum("cl,cli->ci", X, sh[sr.grid.region])
+
+
+def counts(sr, res, year: int, count: str | None = None):
+    """(Poles, counted people, persons not counted) per cell."""
+    count = count or count_mode(res)
+    X = sr.display(sr.frame(year))                     # (cells, languages), persons
+    if count == "identity":
+        from .identity import ID_INDEX
+        Icell = identity_cells(sr, res, year)
+        exc = Icell[:, [ID_INDEX[k] for k in ID_EXCLUDED]].sum(axis=1)
+        people = Icell.sum(axis=1) - exc
+        return Icell[:, ID_INDEX["pl"]], people, float(X.sum() - people.sum())
+    pl = LANG_INDEX["pl"]
+    keep = 1.0 - excluded_share(res, year)[sr.grid.region]   # (cells, languages)
+    people = (X * keep).sum(axis=1)
+    return X[:, pl] * keep[:, pl], people, float(X.sum() - people.sum())
+
+
+def lines_for(sr, res, years, count: str | None = None) -> list[dict]:
     """The line for each of ``years`` in a downscaled scenario
     (``spatial.SpatialResult``) and its run (which gives the community of
-    each language's speakers, region by region)."""
+    each language's speakers, region by region). ``count``: "language"
+    (Poles speak Polish at home; the default) or "identity" (Poles by
+    declared nationality); by default the scenario's ``curzon_count``."""
     g = sr.grid
-    pl = LANG_INDEX["pl"]
     w = historical_side(g.lat, g.lon)
     out = []
     for y in years:
-        X = sr.display(sr.frame(y))                     # (cells, languages), persons
-        keep = 1.0 - excluded_share(res, y)[g.region]    # (cells, languages)
-        people = (X * keep).sum(axis=1)
-        poles = X[:, pl] * keep[:, pl]
+        poles, people, excluded = counts(sr, res, y, count)
         s = split(g.lat, g.lon, poles, people, g.dlat, g.dlon, units=g.region)
         s["year"] = int(y)
-        s["excluded"] = float(X.sum() - people.sum())
+        s["excluded"] = excluded
         # the same count on either side of the historical line
         s["hist_west_poles"] = float(poles[w].sum())
         s["hist_west_others"] = float(people[w].sum() - poles[w].sum())
@@ -567,15 +603,42 @@ def write_csv(lines: list[dict], path: str) -> str:
     return path
 
 
-def exchange_plan(sr, res, year: int) -> dict:
+def exchange_plan(sr, res, year: int, count: str = "language") -> dict:
     """Who moves in a population exchange along the line of ``year``
     (``plsim.exchange``): for each county, the share of its Poles on the
-    other side and, by language, the share of its counted non-Poles on the
-    Polish side."""
+    other side and, by language (or, with ``count="identity"``, by national
+    identity), the share of its counted non-Poles on the Polish side."""
     g = sr.grid
     pl = LANG_INDEX["pl"]
-    s = lines_for(sr, res, [year])[0]
+    s = lines_for(sr, res, [year], count)[0]
     west = s["polish_side"]
+    if count == "identity":
+        from .identity import ID_INDEX, IDENTITIES
+        Icell = identity_cells(sr, res, year)
+        east_poles, west_others = {}, {}
+        for r, code in enumerate(sr.region_codes):
+            m = g.region == r
+            if not m.any():
+                continue
+            tot = Icell[m].sum(axis=0)
+            k = ID_INDEX["pl"]
+            if tot[k] > 0:
+                f = float(Icell[m & ~west, k].sum() / tot[k])
+                if f > 1e-4:
+                    east_poles[code] = round(f, 5)
+            d = {}
+            for ident in IDENTITIES:
+                k = ID_INDEX[ident]
+                if ident == "pl" or ident in ID_EXCLUDED or tot[k] <= 0:
+                    continue
+                f = float(Icell[m & west, k].sum() / tot[k])
+                if f > 1e-4:
+                    d[ident] = round(f, 5)
+            if d:
+                west_others[code] = d
+        return {"year": int(year), "by": "identity", "east_poles": east_poles, "west_others": west_others,
+                "lines": [[[round(float(x), 3), round(float(y), 3)] for x, y in ln] for ln in s["lines"]],
+                "counts": {k: round(s[k]) for k in FIELDS[1:]}}
     X = sr.display(sr.frame(year))
     keep = 1.0 - excluded_share(res, year)[g.region]
     C = X * keep

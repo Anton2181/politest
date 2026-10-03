@@ -1,0 +1,23 @@
+# The Curzon-line exchange by declared nationality, as in the agreements of
+# 1944-46 (Poland with the Ukrainian, Belarusian and Lithuanian SSRs), which
+# went by nationality, not by the language spoken at home.
+#
+# * The line of 1946 is drawn on national identity (plsim.identity): Poles are
+#   the people of Polish identity, whatever their home language; Jews, Germans
+#   and Kashubians by identity are not counted (curzon_count: identity).
+# * On 1 January 1946 every Pole by identity beyond the line moves to the
+#   Polish side and every counted non-Pole by identity on the Polish side
+#   moves to the other side, each keeping home language and identity
+#   (plsim/exchange.py, apply_exchange_identity). Polish-identity speakers of
+#   Lithuanian or Belarusian (the Lauda gentry, Catholic "locals") go west;
+#   Ukrainian- or Lithuanian-identity speakers of Polish go east. Jews do not
+#   move. Everything else is the baseline.
+extends: curzon_exchange
+meta:
+  name: curzon_exchange_identity
+  description: "Baseline with an equal population exchange in 1946 by declared nationality, along that year's Curzon line counted on identity"
+curzon_count: identity
+population_exchange:
+  year: 1946
+  line_from: baseline
+  by: identity

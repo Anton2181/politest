@@ -94,6 +94,32 @@ def test_exchange_moves_people_and_conserves_them():
     assert info["to_polish_side"] == pytest.approx(3.0 * 2 * 2 * 40)
 
 
+def test_exchange_by_identity_moves_nationality_not_language():
+    """Polish-identity Lithuanian speakers (the Lauda) go west with their
+    language; Lithuanian-identity Polish speakers go east with theirs."""
+    from plsim.exchange import apply_exchange_identity
+    from plsim.identity import ID_INDEX, IDENTITIES
+    R = 2
+    P = np.zeros((R, 2, NG, 2, 2, 101))
+    I = np.zeros((R, 2, NG, len(IDENTITIES)))
+    pl, lt = GROUP_INDEX[("RC", "pl")], GROUP_INDEX[("RC", "lt")]
+    P[0, 0, pl, 1, :, 20:60] = 10.0                     # west: Polish speakers, a quarter Lithuanian by identity
+    I[0, 0, pl, ID_INDEX["pl"]] = 600.0
+    I[0, 0, pl, ID_INDEX["lt"]] = 200.0
+    P[1, 0, lt, 0, :, 20:60] = 10.0                     # east: Lithuanian speakers, a tenth Polish by identity
+    I[1, 0, lt, ID_INDEX["lt"]] = 720.0
+    I[1, 0, lt, ID_INDEX["pl"]] = 80.0
+    totP, totI = P.sum(), I.sum()
+    plan = {"year": 1946, "by": "identity", "east_poles": {"E": 1.0}, "west_others": {"W": {"lt": 1.0}}}
+    info = apply_exchange_identity(P, I, ["W", "E"], plan)
+    assert P.sum() == pytest.approx(totP) and I.sum() == pytest.approx(totI)
+    assert np.allclose(I.sum(axis=3), P.sum(axis=(3, 4, 5)))
+    assert info["to_polish_side"] == pytest.approx(80.0) and info["to_other_side"] == pytest.approx(200.0)
+    assert P[0, :, lt].sum() == pytest.approx(80.0)          # the Lauda Poles arrive speaking Lithuanian
+    assert I[1, :, :, ID_INDEX["pl"]].sum() == pytest.approx(0.0)
+    assert I[1, :, pl, ID_INDEX["lt"]].sum() == pytest.approx(200.0)
+
+
 def test_exchange_scenario_runs_with_a_plan():
     from plsim.model import Simulation
     from plsim.params import load_scenario
@@ -181,16 +207,51 @@ def test_belarus_has_no_exclave():
     assert n == 1
 
 
-@pytest.mark.parametrize("name,member,out", [("nw_krai", "NWK", []),
-                                             ("lit_bel", "LB", ["BY_WIT", "BY_MOH.mohylew", "BY_HOM.homel"])])
-def test_krai_scenarios_split_the_lands(name, member, out):
-    from plsim.params import load_scenario, region_lookup
-    p = load_scenario(name)
-    for code in ["WIL.wilno", "NOW.lida", "BIA.grodno", "POL.pinsk", "LT_KAU", "LT_NEA.utena", "BY_MIN.minsk"]:
-        assert region_lookup(p["members"], code) == member
-        assert sorted(region_lookup(p["official_languages"], code)) == ["be", "lt", "pl", "ru", "yi"]
-    for code in ["BIA.lomza", "BIA.suwalki", "POL.kamienkoszyrsk", "WOL.luck", "WAR"]:
-        assert region_lookup(p["members"], code) == "PL"
-    assert "LT_KLA" in p["exclude"]
-    for code in out:
-        assert code in p["exclude"]
+@pytest.fixture(scope="module", params=["nw_krai", "lit_bel"])
+def krai_sim(request):
+    from plsim.model import Simulation
+    from plsim.params import load_scenario
+    p = load_scenario(request.param)
+    p["end_year"] = p["start_year"]
+    return request.param, Simulation(p)
+
+
+def test_krai_follows_the_governorates(krai_sim):
+    name, sim = krai_sim
+    mem = dict(zip(sim.codes, sim.member))
+    krai = "NWK" if name == "nw_krai" else "LB"
+    for code in ["WIL.wilno", "NOW.lida", "BIA.grodno", "BIA.bialystok", "POL.pinsk", "LT_NEA.utena", "BY_MIN.minsk"]:
+        assert mem[code] == krai, code
+    for code in ["BIA.lomza", "BIA.wysokiemazowie", "POL.kamienkoszyrsk", "WOL.luck", "LUB.wlodawa", "WAW"]:
+        assert mem[code] == "PL", code
+    assert not any(c.startswith("LT_KLA") for c in sim.codes)         # Prussian before 1920
+    # the Suwałki governorate: Poland's in the krai scenario, Lit-Bel's in Lit-Bel
+    suw = "PL" if name == "nw_krai" else krai
+    for code in ["LT_SUV.marijampole", "LT_SUV.vilkaviskis", "BIA.suwalki", "BIA.augustow"]:
+        assert mem[code] == suw, code
+    assert sorted(sim.official[sim.codes.index("WIL.wilno")]) == ["be", "lt", "pl", "ru", "yi"]
+    if name == "nw_krai":                    # Latgale and the Nevel lands join; the BSSR whole
+        for code in ["LV_LAT.dyneburg", "RU_VIT.newel", "RU_MOH", "BY_WIT.witebsk", "BY_MOH.mohylew"]:
+            assert mem[code] == krai, code
+        assert sim.dominant[sim.codes.index("LV_LAT.rzezyca")] == "lv"
+    else:                                    # the Mogilev and Vitebsk lands are left out
+        for code in ["BY_WIT.witebsk", "BY_MOH.mohylew", "BY_HOM.homel"]:
+            assert code not in sim.codes
+        assert not any(c.startswith(("LV_", "RU_")) for c in sim.codes)
+
+
+def test_cut_pieces_cover_their_county(krai_sim):
+    """Pieces of a cut unit add up to its people, and the map grid gives each
+    piece the land of its own governorates."""
+    from plsim.data.geography import build_grid
+    from plsim.data.governorates import letter, split_code
+    name, sim = krai_sim
+    pieces = [c for c in sim.codes if "~" in c]
+    assert pieces
+    g = build_grid(sim.codes)
+    for c in pieces:
+        r = sim.codes.index(c)
+        m = g.region == r
+        assert m.any(), c
+        lets = split_code(c)[1]
+        assert np.isin(letter(g.lat[m], g.lon[m]), list(lets)).all(), c

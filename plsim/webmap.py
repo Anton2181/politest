@@ -151,7 +151,8 @@ def geo_payload(ndigits: int = 2) -> dict:
         return [[[round(x, 3), round(y, 3)] for x, y in ln] for ln in lines]
     states = {"PL": r3([p[0] for p in b["PL"]]), "LT": r3([p[0] for p in b["LT"]]),
               "BY": r3([p[0] for p in b["BY"]]), "outline": r3(b["outline"]), "plLt": r3(b["PL_LT"]),
-              "plBy": r3(b["PL_BY"]), "outlines": {k: r3(v) for k, v in b["outlines"].items()}}
+              "plBy": r3(b["PL_BY"]), "outlines": {k: r3(v) for k, v in b["outlines"].items()},
+              "XK": r3([p[0] for p in b.get("XK", [])]), "byXk": r3(b.get("BY_XK", []))}
     return {"land": rnd(geo["land"], 3), "lakes": rnd(geo["lakes"], 3), "rivers": rnd(geo["rivers"]), "states": states}
 
 

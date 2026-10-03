@@ -61,7 +61,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from . import bssr
+from . import bssr, krai_east
 from .languages import COMMUNITIES, GROUP_INDEX, GROUPS, NG
 from .regions import REGIONS, Region
 
@@ -287,6 +287,8 @@ def build_region_shares(code: str, variant: str, lt_variant: str) -> dict[tuple[
     region = next(r for r in REGIONS if r.code == code)
     if region.country == "BY":
         return bssr.region_groups(code)          # 1926 Soviet census (see data.bssr)
+    if region.country == "XK":
+        return krai_east.region_groups(code)     # 1897 census carried to 1931 (see data.krai_east)
     if region.country == "LT":
         shares = dict(LT_GROUPS_1923[code])
         if lt_variant in LT_EXTRA_POLISH:

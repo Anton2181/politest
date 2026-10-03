@@ -52,7 +52,7 @@ import numpy as np
 from .data import subregions
 from .data.counties import BY_CODE as COUNTY_BY_CODE
 from .data.census1931 import build_initial_composition
-from .data.geography import MODEL_DLAT, MODEL_DLON, build_grid
+from .data.geography import MODEL_DLAT, MODEL_DLON, build_grid, haversine_matrix
 from .data.languages import GROUPS, LANG_INDEX, NL
 from .data.network import NODES
 from .economy import piecewise
@@ -91,7 +91,8 @@ def _census_seed(cty, ds: np.ndarray, pop: float) -> np.ndarray:
             seed[idx] += n * w / w.sum()
             covered |= set(idx)
         elif key == "oth":
-            idx = [j for c, j in _L.items() if c not in named]
+            # languages the census hid inside Polish or Ukrainian are not "other"
+            idx = [j for c, j in _L.items() if c not in named and _HOST.get(c, "oth") not in named]
             w = share[idx] + 1e-9
             seed[idx] += n * w / w.sum()
             covered |= set(idx)
@@ -165,63 +166,141 @@ def _parents(spec, codes):
     return [c for c in (spec or []) if c in codes and c in subregions.SPLITS], "named"
 
 
+def _cut(code, lang, cells, towns, g, ds, C, groups):
+    """Pieces of a unit along the edges of the scenario's governorate groups
+    (``data.governorates``). ``lang`` (2, NL) is the unit's latent language
+    totals, ``cells`` and ``towns`` its places. Returns
+    [(code, lang, cell mask, town mask, group)], the largest piece first. A
+    unit that is not cut keeps its code; the pieces of a cut unit are coded by
+    the letters they cover (``data.governorates.piece_code``), the largest
+    taking every letter the others do not. A piece smaller than 5 % of the
+    unit (or 2,000 people) stays with the largest."""
+    from .data.governorates import letter, piece_code, piece_letters
+    lets = piece_letters(groups)
+    grp_of = {c: gname for gname, ls in lets.items() for c in ls}
+    Nc = ds.Nc
+    cg = np.array([grp_of.get(c) for c in letter(g.lat[cells], g.lon[cells])], dtype=object)
+    # a town takes the governorate of its unit's nearest place (towns on a border river)
+    if len(cells) and len(towns):
+        near = haversine_matrix(ds.town_lat[towns], ds.town_lon[towns], g.lat[cells], g.lon[cells]).argmin(axis=1)
+        tg = cg[near]
+    else:
+        tg = np.array([grp_of.get(c) for c in letter(ds.town_lat[towns], ds.town_lon[towns])], dtype=object)
+    # downscaled people by (stratum, language) in each group's part
+    part = {}
+    for gname in dict.fromkeys(list(cg) + list(tg)):
+        mc, mt = cells[cg == gname], towns[tg == gname]
+        part[gname] = np.stack([C[mc].sum(axis=0), C[Nc + mc].sum(axis=0) + C[2 * Nc + mt].sum(axis=0)])
+    size = {k: v.sum() for k, v in part.items()}
+    total = sum(size.values())
+    main = max(size, key=size.get) if size else None
+    kept = [k for k in size if k != main and size[k] >= max(0.05 * total, 2000.0)]
+    if not kept:
+        return [(code, lang, np.ones(len(cells), bool), np.ones(len(towns), bool), main)]
+    own = {k: np.isin(cg, [k]) for k in kept}
+    town_own = {k: np.isin(tg, [k]) for k in kept}
+    rest_c = ~np.any(list(own.values()), axis=0)
+    rest_t = ~np.any(list(town_own.values()), axis=0) if len(towns) else np.zeros(0, bool)
+    whole = sum(part.values())
+    # every piece is named by the letters it covers (the largest takes the rest),
+    # so no piece inherits a setting resolved for another
+    taken = "".join(lets[k] for k in kept)
+    main_lets = "".join(c for c in "VKGMOTSx" if c not in taken)
+    out = []
+    for k, mc, mt in [(main, rest_c, rest_t)] + [(k, own[k], town_own[k]) for k in kept]:
+        if k == main:
+            pc = whole - sum(part[j] for j in kept)
+        else:
+            pc = part[k]
+        share = np.where(whole > 0, pc / np.maximum(whole, 1e-12), mc.mean())
+        out.append((piece_code(code, main_lets if k == main else lets[k]), lang * share, mc, mt, k))
+    return out
+
+
 def apply_partition(regions, params: dict):
-    """Return (regions, composition (R,2,G), node -> region code overrides)."""
+    """Return (regions, composition (R,2,G), node -> region code overrides,
+    unit -> governorate group). With ``governorates`` set, units that straddle
+    the edge of a group are cut into pieces (``_cut``)."""
     codes = [r.code for r in regions]
     parents, mode = _parents(params.get("partition", []), codes)
+    groups = params.get("governorates") or {}
     comp = build_initial_composition(regions, params["census_variant"], params["lt_variant"]).pop
-    if not parents:
-        return regions, comp, {}
+    if not parents and not groups:
+        return regions, comp, {}, {}
     ds, C = _initial_units(regions, comp, params)
     g = ds.grid
     Nc = ds.Nc
     group_lang = np.array([LANG_INDEX[l] for _, l in GROUPS])
     ur_ratio = piecewise(1931, params["economy"]["urban_rural_ratio"])
-    new_regions, new_comp, node_region = [], [], {}
+    new_regions, new_comp, node_region, labels = [], [], {}, {}
     for i, reg in enumerate(regions):
-        if reg.code not in parents:
-            new_regions.append(reg)
-            new_comp.append(comp[i])
-            continue
-        kids = subregions.children(reg.code, mode)
         cells = np.where(g.region == i)[0]
-        cell_child = subregions.assign(reg.code, g.lat[cells], g.lon[cells], kids)
         towns = np.where(ds.town_region == i)[0]
-        town_child = subregions.assign(reg.code, ds.town_lat[towns], ds.town_lon[towns], kids)
-        for n, k in zip(towns, town_child):
-            node_region[ds.town_names[n]] = str(k)
         parent_lang = lang_totals(comp[i])                                # (2, NL)
+        if reg.code not in parents:
+            pieces = _cut(reg.code, parent_lang, cells, towns, g, ds, C, groups) if groups else [(reg.code, None, None, None, None)]
+            if len(pieces) == 1:
+                new_regions.append(reg)
+                new_comp.append(comp[i])
+                labels[reg.code] = pieces[0][4]
+                continue
+            seat = {reg.code: (reg.lat, reg.lon)}
+            units = [(pc, pl, cells[mc], towns[mt], gname) for pc, pl, mc, mt, gname in pieces]
+            base_of = {pc: reg.code for pc, *_ in pieces}
+        else:
+            kids = subregions.children(reg.code, mode)
+            cell_child = subregions.assign(reg.code, g.lat[cells], g.lon[cells], kids)
+            town_child = subregions.assign(reg.code, ds.town_lat[towns], ds.town_lon[towns], kids)
+            seat = {c: (la, lo) for la, lo, c in subregions.seat_table(reg.code, kids)}
+            child_lang = {}
+            for k in kids:
+                mc = cells[cell_child == k]
+                mt = towns[town_child == k]
+                if not len(mc) and not len(mt):
+                    continue                     # a seat that wins neither land nor towns
+                child_lang[k] = np.stack([C[mc].sum(axis=0), C[Nc + mc].sum(axis=0) + C[2 * Nc + mt].sum(axis=0)])
+            if mode == "county":
+                child_lang = _fit_counties(parent_lang, child_lang)
+            units, base_of = [], {}
+            for k, cl in child_lang.items():
+                mc, mt = cells[cell_child == k], towns[town_child == k]
+                pieces = _cut(k, cl, mc, mt, g, ds, C, groups) if groups else [(k, cl, None, None, None)]
+                for pc, pl, pmc, pmt, gname in pieces:
+                    units.append((pc, pl, mc if pmc is None else mc[pmc], mt if pmt is None else mt[pmt], gname))
+                    base_of[pc] = k
         area_all = g.cell_km2[cells].sum()
         u_par = comp[i][1].sum() / max(comp[i].sum(), 1e-9)
-        seat = {c: (la, lo) for la, lo, c in subregions.seat_table(reg.code, kids)}
-        child_lang = {}
-        for k in kids:
-            mc = cells[cell_child == k]
-            mt = towns[town_child == k]
-            if not len(mc) and not len(mt):
-                continue                     # a seat that wins neither land nor towns
-            child_lang[k] = np.stack([C[mc].sum(axis=0), C[Nc + mc].sum(axis=0) + C[2 * Nc + mt].sum(axis=0)])
-        if mode == "county":
-            child_lang = _fit_counties(parent_lang, child_lang)
-        for k, cl in child_lang.items():
-            mc = cells[cell_child == k]
+        for k, cl, mc, mt, gname in units:
+            labels[k] = gname
+            for n in mt:
+                node_region[ds.town_names[n]] = str(k)
             ratio = np.where(parent_lang > 0, cl / np.maximum(parent_lang, 1e-12), 0.0)
             cc = comp[i] * ratio[:, group_lang]                           # (2, G)
             total = cc.sum()
-            if mode == "county" or not len(mc):
-                lat, lon = seat[k]
+            base = base_of[k]
+            if base == k and (mode == "county" or reg.code not in parents) and base in seat:
+                lat, lon = seat[base]
+            elif not len(mc):
+                lat, lon = seat.get(base, (reg.lat, reg.lon))
             else:
                 w = C[mc].sum(axis=1) + C[Nc + mc].sum(axis=1) + 1e-9
                 lat, lon = float((g.lat[mc] * w).sum() / w.sum()), float((g.lon[mc] * w).sum() / w.sum())
-            cty = COUNTY_BY_CODE.get(k)
-            src = (f"1931 county census, grade {cty.grade}" if cty is not None and cty.grade in "AB"
+            cty = COUNTY_BY_CODE.get(base)
+            src = (f"1931 county census, grade {cty.grade}" if cty is not None and cty.grade in "ABE"
                    else "1931 population downscaled from the voivodeship")
+            name = subregions.child_name(base) if base != reg.code else reg.name
+            if k != base:
+                from .data.governorates import NAMES, split_code
+                govs = [NAMES[c] for c in split_code(k)[1] if c in NAMES]
+                name = f"{name} ({', '.join(govs) if gname is not None else 'outside'} part)"
+                src += "; the part of it in the " + (", ".join(govs) + " governorate(s) of 1897" if gname is not None
+                                                      else "governorates outside the scenario's groups")
             u_k = cc[1].sum() / max(total, 1e-9)
             income = reg.income_index * (u_k * ur_ratio + 1 - u_k) / (u_par * ur_ratio + 1 - u_par)
             new_regions.append(dataclasses.replace(
-                reg, code=k, name=subregions.child_name(k), income_index=float(income),
+                reg, code=k, name=name, income_index=float(income),
                 area_km2=max(reg.area_km2 * g.cell_km2[mc].sum() / max(area_all, 1e-9), 20.0),
                 pop_1931=float(total), urban_1931=float(u_k),
                 lat=lat, lon=lon, notes=f"sub-region of {reg.code} ({reg.name}); {src}"))
             new_comp.append(cc)
-    return new_regions, np.array(new_comp), node_region
+    return new_regions, np.array(new_comp), node_region, labels

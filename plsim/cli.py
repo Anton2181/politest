@@ -98,7 +98,7 @@ def with_exchange_plan(p: dict, outroot: str) -> dict:
         base["seed"] = p["seed"]
     res, _ = _run_cached(ex["line_from"], base, os.path.join(outroot, ".runcache"), write=False)
     sr = downscale(res, frame_years=[ex["year"]])
-    p["population_exchange"] = dict(ex, plan=curzon.exchange_plan(sr, res, ex["year"]))
+    p["population_exchange"] = dict(ex, plan=curzon.exchange_plan(sr, res, ex["year"], ex.get("by", "language")))
     return p
 
 
@@ -143,6 +143,7 @@ SCENARIO_TITLES = {
     "wakar_poland_belarus": "Wakar's Poland-Belarus",
     "no_official_language": "No official language",
     "curzon_exchange": "Curzon-line population exchange",
+    "curzon_exchange_identity": "Curzon-line exchange by nationality",
     "nw_krai": "Poland and the Northwestern Krai",
     "lit_bel": "Poland and Lit-Bel",
 }
@@ -175,7 +176,7 @@ def _map_job(args):
         mp.fig_curzon(sr, lines, os.path.join(mapdir, "map_curzon.png"), title="Equal-exchange Curzon line, baseline")
         mp.fig_identity(sr, res, os.path.join(mapdir, "map_identity.png"),
                         title="Home language (cells) and national identity (counties), baseline")
-    if name == "curzon_exchange":
+    if name.startswith("curzon_exchange"):
         mp.fig_plurality(sr, os.path.join(mapdir, f"{name}_before_after.png"),
                          years=(1932, ex_year, ex_year + 1, 1970, 2000, 2032),
                          title=f"Population exchange on 1 January {ex_year} along that year's equal-exchange line "
@@ -424,12 +425,17 @@ def write_extras(outroot, results):
     for n, res in results.items():
         ex = getattr(res, "exchange", None)
         if ex:
+            by = ex.get("by", "language")
             for lang, v in sorted(ex["by_language"].items(), key=lambda kv: -kv[1]):
-                ex_rows.append([n, ex["year"], "to the other side", lang, round(v)])
-            ex_rows.append([n, ex["year"], "to the Polish side", "pl", round(ex["to_polish_side"])])
+                ex_rows.append([n, ex["year"], by, "to the other side", "home language", lang, round(v)])
+            for lang, v in sorted((ex.get("west_languages") or {"pl": ex["to_polish_side"]}).items(),
+                                  key=lambda kv: -kv[1]):
+                ex_rows.append([n, ex["year"], by, "to the Polish side", "home language", lang, round(v)])
+            for ident, v in sorted((ex.get("by_identity") or {}).items(), key=lambda kv: -kv[1]):
+                ex_rows.append([n, ex["year"], by, "to the other side", "identity", ident, round(v)])
     with open(os.path.join(outroot, "exchange_summary.csv"), "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
-        w.writerow(["scenario", "year", "direction", "home_language", "persons"])
+        w.writerow(["scenario", "year", "counted_by", "direction", "kind", "category", "persons"])
         w.writerows(ex_rows)
 
 

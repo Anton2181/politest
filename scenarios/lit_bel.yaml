@@ -1,40 +1,38 @@
 # Lit-Bel: Poland without the lands of the Lithuanian-Belorussian republic
-# of 1919 (the Vilna, Kovno, Grodno and Minsk governorates), which form a
-# state of their own, simulated alongside it.
+# of 1919 (the Vilna, Kovno, Grodno, Minsk and Suwałki governorates), which
+# form a state of their own, simulated alongside it.
 #
 # * Premise: the Lithuanian-Belorussian republic (Litbel, February-July 1919)
-#   survives in its claimed borders, without the Mogilev and Vitebsk
-#   governorates, which had gone to Soviet Russia in January 1919. Poland keeps
-#   the rest of its 1931 territory (with Volhynia and Galicia); there is no
+#   survives in its claimed borders: the five governorates of Vilna, Kovno,
+#   Grodno, Minsk and Suwałki, without the Mogilev and Vitebsk governorates,
+#   which had gone to Soviet Russia in January 1919. Poland keeps the rest of
+#   its 1931 territory (with Volhynia and Galicia); there is no
 #   Polish-Lithuanian union.
-# * The krai, by 1931 counties (governorates of 1897 in brackets): Lithuania
-#   without Klaipėda (Kovno; Suvalkija, which was Suwałki governorate, stays
-#   with the Lithuanian lands); the whole of wileńskie and nowogródzkie
-#   (Vilna, Minsk, Grodno); Białystok, Bielsk, Sokółka, Grodno and Wołkowysk
-#   (Grodno); Polesie except Kamień Koszyrski, which was Volhynia (Grodno,
-#   Minsk); and the Minsk-governorate okrugs of Soviet Belarus (Mińsk,
-#   Borysów, Słuck, Bobrujsk, Mozyrz, Rzeczyca). The Mogilev and Vitebsk
-#   okrugs (Mohylew, Klimowicze, Homel, Witebsk, Połock, Orsza) are left out
-#   as Soviet territory, and so is Klaipėda, German Memelland until 1923.
+# * Borders: the governorates of 1897 (RISTAT GIS; data/governorates.py), not
+#   the 1931 counties. Counties and okrugs that straddle a governorate border
+#   are cut along it. Lit-Bel holds Lithuania without Klaipėda (Prussian
+#   before 1920) and Palanga (Courland); the north-east of 1931 Poland with
+#   Suwałki and Augustów (Suwałki governorate); and the Minsk-governorate part
+#   of the BSSR. The Mogilev and Vitebsk parts of the BSSR are left out as
+#   Soviet territory.
 # * Two states in one run. Lit-Bel has its own official languages and policy;
 #   migration across the Polish-Lit-Bel border is an international flow
 #   (friction 0.03, against 0.10 between federal members), and Polish
-#   settlement goes to Volhynia only. Both share one growth path and one
-#   transport budget, a simplification.
+#   settlement goes to Volhynia only. Each state has its own economy: its
+#   own national income (from its regions' 1931 level, converging at the same
+#   rate to the same target), emigration and transport budget.
 # * Languages of Lit-Bel: Lithuanian, Belarusian, Polish, Yiddish and Russian
 #   are all official (status, schools, open to shift). Each county works in
-#   whichever of Lithuanian, Polish and Belarusian (with West Polesian) had
-#   the most speakers in 1931. Assimilation pressure is low (0.6).
+#   whichever of Lithuanian, Polish, Belarusian (with West Polesian) and
+#   Russian had the most speakers in 1931. Assimilation pressure is low (0.6).
 extends: baseline
 meta:
   name: lit_bel
-  description: "Poland without Lit-Bel (Vilna, Kovno, Grodno, Minsk governorates), a separate state with five official languages"
+  description: "Poland without Lit-Bel (Vilna, Kovno, Grodno, Minsk and Suwałki governorates of 1897), a separate state with five official languages"
 include_belarus: true
-region_groups:
-  KRAI: [WIL, NOW, BIA.bialystok, BIA.bielskpodlaski, BIA.sokolka, BIA.grodno, BIA.wolkowysk,
-         POL.brzesc, POL.drohiczyn, POL.kobryn, POL.kosowpoleski, POL.luniniec, POL.pinsk, POL.pruzana, POL.stolin,
-         LT_KAU, LT_LAU, LT_NEA, LT_SUV, LT_ZEM, BY_MIN, BY_MOH.bobrujsk, BY_HOM.mozyrz, BY_HOM.rzeczyca]
-exclude: [LT_KLA, BY_WIT, BY_MOH.mohylew, BY_MOH.klimowicze, BY_HOM.homel]
+governorates:
+  KRAI: [Vilna, Kovno, Grodno, Minsk, Suwałki]
+separate_states: [LB]
 members:
   _replace: true
   default: PL
@@ -42,7 +40,7 @@ members:
 dominant_language:
   _replace: true
   default: pl
-  KRAI: auto:lt,pl,be+pls
+  KRAI: auto:lt,pl,be+pls,ru
 official_languages:
   _replace: true
   KRAI: [lt, be, pl, yi, ru]

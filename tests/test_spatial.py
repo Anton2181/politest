@@ -115,8 +115,8 @@ def test_state_borders_1932():
     g = build_grid([r.code for r in REGIONS])
     st = np.array([state_of_code(g.region_codes[k]) for k in g.region])
     assert (state_of(g.lat, g.lon) == st).all()
-    for s, official in (("PL", 388_600), ("LT", 55_750), ("BY", 126_792)):     # 1931 areas; BSSR 1926
-        assert g.cell_km2[st == s].sum() == pytest.approx(official, rel=0.03), s
-    # the map grid of Poland and Lithuania does not change when Soviet Belarus is available
-    pl_lt = build_grid([r.code for r in REGIONS if r.country != "BY"])
-    assert len(pl_lt.lat) == 37532 and (st != "BY").sum() == 37532
+    for s, official in (("PL", 388_600), ("LT", 55_750), ("BY", 126_792), ("XK", 31_627)):
+        assert g.cell_km2[st == s].sum() == pytest.approx(official, rel=0.03), s   # 1931; BSSR 1926; XK 1897 GIS
+    # the map grid of Poland and Lithuania does not change when the optional lands are available
+    pl_lt = build_grid([r.code for r in REGIONS if r.country not in ("BY", "XK")])
+    assert len(pl_lt.lat) == 37532 and (~np.isin(st, ["BY", "XK"])).sum() == 37532

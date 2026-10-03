@@ -30,7 +30,7 @@ from .demography import (FertilitySchedule, MortalityModel, alkema_decrement, ca
                          frontier_e0_female, mean_age_childbearing, sex_gap, stable_age_distribution, target_gap)
 from .economy import Economy, piecewise
 from .infrastructure import Network
-from .params import region_lookup, region_match
+from .params import region_lookup, region_match, resolve_governorates
 from .identity import IDENTITY_REGIMES, IdentityModel, identity_census
 from .language import CENSUS_CATEGORIES, LANGUAGE_REGIMES, LanguageModel, census_view
 from .migration import MigrationModel
@@ -148,12 +148,15 @@ class Simulation:
         self.rng = np.random.default_rng(demo_ss)
         self.econ_rng = np.random.default_rng(econ_ss)
         self.net_rng = np.random.default_rng(net_ss)
-        self.regions = select_regions(p["include_lithuania"], p.get("include_belarus", False))
+        self.regions = select_regions(p["include_lithuania"], p.get("include_belarus", False),
+                                      p.get("include_krai_east", False))
         self._comp = None
         node_region = {}
-        if p.get("partition"):
+        if p.get("partition") or p.get("governorates"):
             from .partition import apply_partition
-            self.regions, self._comp, node_region = apply_partition(self.regions, p)
+            self.regions, self._comp, node_region, labels = apply_partition(self.regions, p)
+            if p.get("governorates"):
+                resolve_governorates(p, labels)
         if self._comp is None:
             self._comp = build_initial_composition(self.regions, p["census_variant"], p["lt_variant"]).pop
         if p.get("exclude"):
@@ -182,6 +185,12 @@ class Simulation:
         self.mig = MigrationModel(p["migration"], self.regions, self.dominant)
         self.member = [region_lookup(p["members"], c, "PL") for c in self.codes]
         self.mig.member = np.array(self.member)
+        # separate states (two sovereign states in one run): their own economy
+        sep = list(p.get("separate_states") or [])
+        self.state = np.array([1 + sep.index(m) if m in sep else 0 for m in self.member])
+        kby = p["economy"].get("kappa_by_state") or {}
+        self.econ.set_states(self.state, np.array([r.pop_1931 for r in self.regions]),
+                             [None] + [kby.get(m) for m in sep])
         infra_p = copy.deepcopy(p["infrastructure"])
         infra_p["node_region"] = node_region
         infra_p["region_seats"] = [(r.lat, r.lon) for r in self.regions]
@@ -341,7 +350,13 @@ class Simulation:
                     hinter[idx] += rural[r] / len(idx) + net.pop[idx] * 1000.0 * 0.3
                 else:
                     hinter[caps[r]] += rural[r]
-            net.invest(year, budget, veh, vot, equity, ip["bcr_threshold"], hinter)
+            if len(self.econ.y_state) == 1:
+                net.invest(year, budget, veh, vot, equity, ip["bcr_threshold"], hinter)
+            else:            # separate states: each builds on its own territory from its own GDP
+                budgets = self.econ.infra_budgets(year, self.region_pop()) * ip["appraisal_interval"]
+                for k, b in enumerate(budgets):
+                    nodes = {i for i in range(net.N) if net.region[i] >= 0 and self.state[net.region[i]] == k}
+                    net.invest(year, float(b), veh, vot, equity, ip["bcr_threshold"], hinter, nodes=nodes, key=k)
         net.rationalise(year, veh)
         # towns
         urb_k = self.P[:, 1].sum(axis=(1, 2, 3, 4)) / 1000.0
@@ -398,11 +413,15 @@ class Simulation:
         R = self.R
         ex = p.get("population_exchange") or {}
         if ex.get("plan") and year == ex["year"]:
-            from .exchange import apply_exchange
-            before_x = self.P.sum(axis=(3, 4, 5))
-            self.res.exchange = apply_exchange(self.P, self.codes, ex["plan"])
-            self.mig.reset_competence(self.P)
-            self.ident.reconcile(before_x, self.P.sum(axis=(3, 4, 5)))
+            from .exchange import apply_exchange, apply_exchange_identity
+            if ex["plan"].get("by") == "identity":          # identity moves with its people
+                self.res.exchange = apply_exchange_identity(self.P, self.ident.I, self.codes, ex["plan"])
+                self.mig.reset_competence(self.P)
+            else:
+                before_x = self.P.sum(axis=(3, 4, 5))
+                self.res.exchange = apply_exchange(self.P, self.codes, ex["plan"])
+                self.mig.reset_competence(self.P)
+                self.ident.reconcile(before_x, self.P.sum(axis=(3, 4, 5)))
         P = self.P
         pop_r = self.region_pop()
         self.econ.step(year, self._d_log_ma, pop_r)
@@ -488,7 +507,8 @@ class Simulation:
         settle = p["migration"].get("settlement")
         flows_int = self.mig.interregional(P, self.t_reg, self.econ.region_income(), x_lang, year, settle,
                                            y_dest=self.econ.cell_income(self.urban_share())[:, 1])
-        intl = self.mig.international(P, year, self.econ.y_nat, self.econ.y_frontier, self.econ.region_income())
+        intl = self.mig.international(P, year, self.econ.y_of_region(), self.econ.y_frontier,
+                                      self.econ.region_income(), self.econ.state)
         self.mig.reset_competence(P)
         np.maximum(P, 0.0, out=P)
         self.ident.reconcile(before_m, P.sum(axis=(3, 4, 5)))
@@ -525,6 +545,7 @@ class Simulation:
         res.identity.append(self.ident.by_region().astype(np.float32))
         self._shift_acc[:] = 0
         res.econ.append({"y_nat": self.econ.y_nat, "y_frontier": self.econ.y_frontier,
+                         "y_state": [float(v) for v in self.econ.y_state],
                          "vehicles_per_1000": self.econ.vehicles_per_1000,
                          "literacy": float((self.econ.literacy * pop_r).sum() / pop_r.sum()),
                          "infra_account": self.net.account})

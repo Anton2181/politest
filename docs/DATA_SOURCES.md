@@ -232,7 +232,8 @@ from these descriptions (about 10 km); grade C as a line, A as a description.
 
 ### Data that could not be obtained here
 
-* **1931 county language tables for the centre and the west.** In the
+* **1931 county language tables for the centre and the west** (Pomorze
+  now done from a scan supplied by the user). In the
   census volumes by voivodeship (*Drugi Powszechny Spis Ludności*,
   *Statystyka Polski* seria C), digitised in the Kujawsko-Pomorska (kpbc.umk.pl),
   Mazowiecka (mbc.cyfrowemazowsze.pl) and Wielkopolska (wbc.poznan.pl)
@@ -279,7 +280,8 @@ about each county besides its seat.
 | Nowogródek | 8 | A | population, mother tongue; Orthodox and Roman Catholic for 5 | English Wikipedia, "Belarusians in Poland" (county table). Belarusian, tutejszy and Russian are given as one category, which the model splits by the downscaled pattern |
 | Polesie | 5 A + 4 B | A/B | as Nowogródek where found (Kamień Koszyrski, Kosów, Pińsk, Prużana, Stolin); population only for the rest | ditto |
 | Lublin | 13 B + 5 C | B | population (Biała includes Konstantynów, 174,460) | 1931 administrative tables, rounded |
-| Kraków, Kielce, Łódź, Warsaw, Poznań, Pomorze, Silesia | 136 | C | seat only | the county language tables were not reachable from this environment (see "Data that could not be obtained here") |
+| Pomorze | 16 | A | population, mother tongue | the census volume itself: *Drugi Powszechny Spis Ludności z dn. 9 XII 1931 r.*, województwo pomorskie, Statystyka Polski seria C, zeszyt 75 (GUS 1938), tabl. 12, supplied as a DjVu scan and read from the page images. Every county row sums to its printed total, and the counties add up to the printed voivodeship (1,080,138; Polish 969,386, German 105,400). Gdynia city is merged into the powiat morski, Grudziądz and Toruń cities into their powiaty. Ruthenian is counted with Ukrainian, Hebrew with Yiddish, and Czech, "other" and "not given" as other. Kashubians, not enumerated, are inside "Polish" and split off by the county anchors |
+| Kraków, Kielce, Łódź, Warsaw, Poznań, Silesia | 120 | C | seat only | the county language tables were not reachable from this environment (see "Data that could not be obtained here") |
 | Lithuania (apskritys, 1923) | 22 | C | seat only | ditto; the 1923 census apskritis tables |
 
 How the table enters the model is described in `docs/METHODOLOGY.md` §12.6.
