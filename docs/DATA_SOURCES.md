@@ -246,23 +246,26 @@ from these descriptions (about 10 km); grade C as a line, A as a description.
 
 ### Data that could not be obtained here
 
-* **1931 county language tables for the centre and the west** (Pomorze
-  now done from a scan supplied by the user). In the
-  census volumes by voivodeship (*Drugi Powszechny Spis Ludności*,
-  *Statystyka Polski* seria C), digitised in the Kujawsko-Pomorska (kpbc.umk.pl),
-  Mazowiecka (mbc.cyfrowemazowsze.pl) and Wielkopolska (wbc.poznan.pl)
-  digital libraries. Also in the Polish Wikipedia voivodeship articles,
-  which provided the eastern tables through search summaries. The libraries
-  and Wikipedia (and its mirrors) were blocked by the build environment's
-  network policy, and search summaries did not reproduce the central and
-  western tables.
+* **1931 county language tables**: now complete for every Polish
+  voivodeship, from the volumes the user supplied (see "Counties, 1931").
 * **1931 powiat boundaries.** The MPIDR Population History GIS Collection
-  (mosaic.ipums.org / censusmosaic.demog.berkeley.edu; registration) has
-  Poland's 1931 administrative division. It was blocked as well. The only
-  GeoJSON powiat sets on GitHub are modern. The model accepts the file when
-  supplied (`plsim/data/powiaty_1931.geojson`, `tools/match_powiaty.py`).
-* **1926 Soviet census by raion** (for Soviet Belarus below the okrug):
-  in the census volumes and on Demoscope, which was blocked.
+  (mosaic.ipums.org) has Poland's 1931 administrative division, but an
+  account needs an academic affiliation, so the user could not get it. The
+  only GeoJSON powiat sets on GitHub are modern. County borders stay the
+  weighted Voronoi approximation; the model accepts a boundary file when one
+  is supplied (`plsim/data/powiaty_1931.geojson`, `tools/match_powiaty.py`).
+* **1926 Soviet census by raion** (for Soviet Belarus below the okrug): the
+  rusneb copy could not be opened by the user either. The supplied *Kratkie
+  svodki* vyp. IV (nationality and native language, archive.org) is by
+  okrug: its Table III confirms the okrug data of `data.bssr` (Minsk
+  539,529 against 539,700 in the model; Vitebsk 583,391; Polotsk 323,861,
+  86.1 % Belarusian; Slutsk 309,384; Rechitsa 254,816).
+* **1923 Lithuanian apskritis nationality**: the supplied *Lietuvos
+  apgyventos vietos* lists settlements and their populations only; the
+  nationality tables are in the main results volume.
+* **German Kreise, 1933**: the supplied file is the user handbook of the
+  GESIS study ZA8013, without its data files; the west lands keep the
+  figures of `data.west`.
 
 ### Where to download them (for the user; not reachable from the build environment)
 
@@ -357,6 +360,30 @@ emigration in 1946-47, 1949-51, 1956-58 and 1968-69, and the Aussiedler
 the Lithuanian apskritys outside Kaunas city. The grade says what is known
 about each county besides its seat.
 
+**The 1931 county table** (`plsim/data/census1931_powiaty.csv`, checked by
+`tools/check_census1931.py` and the tests). Read from the volumes the user
+supplied, one row per powiat (or town with county rights), with the source
+volume and page:
+
+* the voivodeship volumes of the 1931 census (*Mieszkania i gospodarstwa
+  domowe. Ludność. Stosunki zawodowe*, Statystyka Polski seria C: Łódź
+  without the city, z. 77; Kielce, z. 86; Kraków, z. 88; Poznań without the
+  city; Silesia, z. 54), tabl. 12, "Ludność według płci i języka
+  ojczystego", all twelve language categories;
+* the short results by powiat (*Drugi Powszechny Spis Ludności ... w postaci
+  skróconej*, GUS; MBC edition 14481): one page per powiat with population
+  by religion and mother tongue for towns and villages. Its language columns
+  are those of the powiat's main languages; the remainder ("unk") is shared
+  pro rata.
+
+Every row adds up to its printed total. Each voivodeship read whole
+reproduces the census population of the voivodeship: Łódź, Kielce, Lublin,
+Nowogródek, Polesie, Poznań, Silesia and Kraków exactly (to 29 persons).
+The library's text layer of the short results is too noisy for the digits
+(`tools/parse_census1931.py` tries, with the census identities total =
+religions = languages, and reads about half the pages); the table was read
+from the page images.
+
 | Voivodeship | Counties | Grade | What is known | Source / check |
 |---|---|---|---|---|
 | Tarnopol | 17 | A | population, mother tongue | Polish Wikipedia voivodeship article, from the 1931 census (Statystyka Polski, seria C); reproduces the voivodeship totals exactly |
@@ -365,12 +392,13 @@ about each county besides its seat.
 | Volhynia | 11 | A | population, mother tongue | ditto |
 | Wilno | 7 A + 1 B | A | population, mother tongue | ditto; Wilno city merged into wileńsko-trocki (409,543, grade B) |
 | Białystok | 12 | A | population, mother tongue | ditto; Białystok city merged into białostocki (231,179). The Augustów Yiddish figure is derived from the voivodeship residual |
-| Nowogródek | 8 | A | population, mother tongue; Orthodox and Roman Catholic for 5 | English Wikipedia, "Belarusians in Poland" (county table). Belarusian, tutejszy and Russian are given as one category, which the model splits by the downscaled pattern |
-| Polesie | 5 A + 4 B | A/B | as Nowogródek where found (Kamień Koszyrski, Kosów, Pińsk, Prużana, Stolin); population only for the rest | ditto |
-| Lublin | 13 B + 5 C | B | population (Biała includes Konstantynów, 174,460) | 1931 administrative tables, rounded |
+| Nowogródek | 8 | A | population, mother tongue (Belarusian, Russian and Lithuanian separately), religion | the short results by powiat (below) |
+| Polesie | 9 | A | population, mother tongue (Belarusian, "tutejszy", Ukrainian, Russian separately), religion | ditto |
+| Lublin | 17 | A | population, mother tongue, religion | ditto |
+| Warsaw voivodeship | 23 | A | population, mother tongue (Polish, German, Yiddish with Hebrew, other) | ditto. Rawa, in this voivodeship in 1931, is a WAR county (the model's areas already had it there). The page of the town of Płock is missing from the scan: powiat Płock has shares only and takes the voivodeship remainder (128,144 with the town) |
 | Pomorze | 16 | A | population, mother tongue | the census volume itself: *Drugi Powszechny Spis Ludności z dn. 9 XII 1931 r.*, województwo pomorskie, Statystyka Polski seria C, zeszyt 75 (GUS 1938), tabl. 12, supplied as a DjVu scan and read from the page images. Every county row sums to its printed total, and the counties add up to the printed voivodeship (1,080,138; Polish 969,386, German 105,400). Gdynia city is merged into the powiat morski, Grudziądz and Toruń cities into their powiaty. Ruthenian is counted with Ukrainian, Hebrew with Yiddish, and Czech, "other" and "not given" as other. Kashubians, not enumerated, are inside "Polish" and split off by the county anchors |
-| Kraków, Kielce, Łódź, Warsaw, Poznań, Silesia | 120 | C | seat only | the county language tables were not reachable from this environment (see "Data that could not be obtained here") |
-| Lithuania (apskritys, 1923) | 22 | C | seat only | ditto; the 1923 census apskritis tables |
+| Łódź, Kielce, Kraków, Poznań, Silesia | 12, 17, 18, 31, 8 | A | population, mother tongue (all twelve categories of the census) | the voivodeship volumes, tabl. 12 (Statystyka Polski seria C; Łódź without the city, Kielce, Kraków without the city, Poznań without the city, Silesia), read from the page images; Łódź, Kraków and Poznań cities from the short results. Each voivodeship reproduces its census population exactly. Powiaty abolished in 1932 (Słupca, Oświęcim, Pleszew, Ostrzeszów, Grodzisk, Odolanów) were printed with the powiat that absorbed them and are split by the downscaled pattern |
+| Lithuania (apskritys, 1923) | 22 | C | seat only | the 1923 apskritis nationality tables are in *Lietuvos gyventojai* (1923 census results), not in the supplied *Lietuvos apgyventos vietos* (settlements and their populations) |
 
 How the table enters the model is described in `docs/METHODOLOGY.md` §12.6.
 In short:
