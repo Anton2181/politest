@@ -53,6 +53,20 @@ a Polish state (`plsim/data/bssr.py`; method in METHODOLOGY §12.7).
 | Incomes, vital rates, literacy, urban shares | as Wilno, Nowogródek and Polesie | C | assumption |
 | Towns and railways | 24 towns (1926 populations grown to 1931; Mińsk 240 k, Witebsk 106 k, Homel 93 k), the c. 1931 main lines | B | 1926 census town populations; standard railway histories |
 
+## Governorates of 1897 and the krai's eastern lands (only `nw_krai`, `lit_bel`)
+
+The scenarios drawn on the old imperial borders (METHODOLOGY §12.1, §12.5,
+§12.7; `plsim/data/governorates.py`, `plsim/data/krai_east.py`).
+
+| Input | Value | Grade | Source / note |
+|---|---|---|---|
+| Governorate borders, 1897 | Vilna, Kovno, Grodno, Minsk, Mogilev, Vitebsk and Suwałki governorates (and the uezds of Vitebsk and Mogilev for the land outside the 1932 states), simplified to about 300 m | A | Electronic Repository of Russian Historical Statistics (RISTAT), "Russian Empire Historical GIS Maps (1897)", IISG Dataverse hdl:10622/DN9QDM, CC0; read from the GeoJSON republished in github.com/Baushkiner/history_stats (the Dataverse host was blocked). `tools/build_governorates.py`. Checked at 25 places (Włodawa west of the Bug, Brest east of it, Tykocin in the Łomża governorate, Garliava south of the Niemen in Suwałki ...) |
+| The krai outside the 1932 states | 31,600 km²: Latgale 14,200, Nevel-Sebezh-Velizh 12,400, east Mogilev 4,600 | B | the governorates minus Poland, Lithuania and the BSSR of 1932 (CShapes / Natural Earth); pieces under 150 km² (border slivers) dropped |
+| Uezd populations and native languages, 1897 | Dvinsk 237,023 (39.0 % Latvian, 20.0 Yiddish, 15.3 Russian, 13.8 Belarusian, 9.1 Polish); Rezhitsa 136,445 (57.9 Latvian, 23.9 Russian); Lyutsin 128,155 (64.2 Latvian, 20.5 Belarusian); Nevel 110,394 (84.0 Belarusian); Sebezh 92,055 (47.1 Russian, 47.1 Belarusian); Velizh 100,079 (85.7 Belarusian, 9.8 Yiddish) | A | 1897 census, as quoted in the English Wikipedia uezd articles (read through search summaries; Demoscope was blocked) |
+| Latgale in 1935 | 567,000 people (27,974 Jews = 4.93 %); Daugavpils city 45,100, Rēzekne 13,139, Ludza 5,546 | A | Latvian census of 1935, via secondary sources |
+| Growth to 1931, strips, east Mogilev | Latgale x 1.02; Russian lands x 1.22; Drissa strip 12,000, Gorodok strip 14,000; east Mogilev 35 per km² in 1897 | C | estimates (see `data/krai_east.py`) |
+| Military settlers by voivodeship (settlement destinations) | Wołyń 41.5 %, Nowogródek 21.7 %, Wilno 13.3 %, Polesie 12.6 %, Białystok 10.9 % of households | B | osadnicy.org, kresy24.pl, polesie.org (from the interwar settlement statistics) |
+
 ## Imperial Russian census, 1897 (native language)
 
 | Governorate | Figures used | Grade |

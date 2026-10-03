@@ -35,7 +35,7 @@ python -m plsim ensemble baseline -n 32 # Monte-Carlo ensemble -> outputs/ensemb
 python -m plsim report -n 32            # all scenarios + ensembles + figures + outputs/report.html
 python -m plsim maps                    # 3.5 km maps, GIF animations and the interactive atlas (outputs/atlas/)
 python -m plsim calibrate               # history matching of the language-shift rates (outputs/calibration/)
-pytest -q                               # 90 tests
+pytest -q                               # 103 tests
 ```
 
 A 100-year county-level run takes about 4 minutes (20 s for the
@@ -173,7 +173,7 @@ north-east and in the mixed Polish-Ukrainian belt of western Galicia
 3.5 x 3.4 km and draws the result:
 
 * **Interactive atlas**: `outputs/atlas/index.html`.
-  * **Scenarios and layers.** A time slider, all 13 scenarios, and six
+  * **Scenarios and layers.** A time slider, all 16 scenarios, and six
     layers:
     * plurality language;
     * one language (optionally as change since 1932);
@@ -422,7 +422,8 @@ The full table is in `outputs/scenario_summary.csv`; the assumptions are in
 
 ```
 plsim/
-  data/regions.py        23 spatial units (1931 voivodeships + Lithuanian units)
+  data/regions.py        30 first-order units (17 voivodeships, 6 Lithuanian units, 4 Soviet-Belarusian
+                         groups of okrugs, Latgale and two RSFSR units)
   data/languages.py      languages, communities, (community, language) groups, shift targets
   data/census1931.py     1931 / 1923 / 1897-anchored reconstructions, bilingual shares
   data/network.py        towns, c.1931 rail network, paved roads, dated & planned projects
@@ -441,10 +442,13 @@ plsim/
   report.py, export.py   figures, CSVs, HTML report
   data/geography.py      3.5 km map grid (7 km model grid), 1932 state borders, county language anchors
   data/bssr.py           Soviet Belarus (BSSR, 1926 census by okrug), for wakar_poland_belarus
+  data/governorates.py   the governorates of 1897 (RISTAT GIS, governorates_1897.json), for nw_krai and lit_bel
+  data/krai_east.py      Latgale, Nevel-Sebezh-Velizh and eastern Mogilev from the 1897 census, for nw_krai
   data/borders_1932.json Poland and Lithuania on 1 Jan 1932 (CShapes 2.0)
   data/subregions.py     county-line splits of voivodeships (Curzon line, cantons, the San); real powiat
                          polygons from data/powiaty_1931.geojson when supplied
-  data/counties.py       269 counties (1931 powiaty, 1923 apskritys) with graded census rows
+  data/counties.py       287 counties (1931 powiaty, 1923 apskritys, 1926 BSSR okrugs, krai uezds) with graded
+                         census rows
   partition.py           1931 population of sub-regions and counties, via the grid
   data/geo_base.json     coastline, lakes and rivers (GSHHS via basemap-data)
   spatial.py             downscaling + neighbourhood (Prochazka-Vogl) language-shift allocation
@@ -452,9 +456,10 @@ plsim/
   curzon.py              the equal-exchange Curzon line (whole counties), the 1919-20 line
   atlas_template.html    the interactive atlas page
   cli.py                 command-line interface
-scenarios/*.yaml         13 scenarios (extends/override)
+scenarios/*.yaml         16 scenarios (extends/override)
 tools/build_geodata.py   rebuilds the base map and the Soviet Belarus border (shapely; not needed to run)
 tools/match_powiaty.py   adds county codes to a GeoJSON of 1931 powiat polygons
+tools/build_governorates.py  rebuilds the 1897 governorates and the krai's land outside the 1932 states (shapely)
 docs/                    METHODOLOGY, DATA_SOURCES (with reliability grades), SCENARIOS, ROADMAP
 outputs/                 report.html, figures/, maps/, atlas/, calibration/, scenario_summary.csv, identity and
                          exchange summaries, ensemble CSVs, baseline run CSVs

@@ -75,6 +75,10 @@ def _initial_units(regions, comp: np.ndarray, params: dict):
 
 _L = LANG_INDEX
 _HOST = {"csb": "pl", "wym": "pl", "rom": "pl", "rue": "uk", "kdr": "oth"}   # unenumerated -> census category
+# a piece of a unit cut along a governorate border is kept only if it holds
+# at least 5 % of the unit and this many people (smaller ones are slivers of
+# the 300 m governorate outlines against the 1932 borders)
+MIN_PIECE = 5000.0
 
 
 def _census_seed(cty, ds: np.ndarray, pop: float) -> np.ndarray:
@@ -194,7 +198,7 @@ def _cut(code, lang, cells, towns, g, ds, C, groups):
     size = {k: v.sum() for k, v in part.items()}
     total = sum(size.values())
     main = max(size, key=size.get) if size else None
-    kept = [k for k in size if k != main and size[k] >= max(0.05 * total, 2000.0)]
+    kept = [k for k in size if k != main and size[k] >= max(0.05 * total, MIN_PIECE)]
     if not kept:
         return [(code, lang, np.ones(len(cells), bool), np.ones(len(towns), bool), main)]
     own = {k: np.isin(cg, [k]) for k in kept}

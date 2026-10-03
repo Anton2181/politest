@@ -224,6 +224,27 @@ GOV_ALLOWED = {
     "BY_WIT": "TVO", "BY_MIN": "MVx", "BY_MOH": "OMx", "BY_HOM": "OMx", "LV_LAT": "Tx", "RU_VIT": "Tx", "RU_MOH": "Ox",
 }
 
+# A place is held to its governorate only where a region (or county) of that
+# governorate lies within this many km of its nearest one; elsewhere (slivers
+# where the 1897 and 1931 borders part, such as the Courland bank of the Dvina
+# by Druja) the plain nearest-seat rule decides.
+GOV_SLACK_KM = 30.0
+# ... and the area weights of the voivodeship Voronoi never hand a place to a
+# region whose nearest town is more than this much farther than the nearest
+# one it may join.
+REACH_KM = 60.0
+
+
+def gov_constrain(D: np.ndarray, banned: np.ndarray) -> np.ndarray:
+    """Distances ``D`` (places x options) with the ``banned`` options (another
+    governorate's) ruled out for the places that keep an allowed option within
+    ``GOV_SLACK_KM`` of their nearest option."""
+    D2 = np.where(banned, np.inf, D)
+    ok = D2.min(axis=1) <= D.min(axis=1) + GOV_SLACK_KM
+    out = D.copy()
+    out[ok] = D2[ok]
+    return out
+
 
 def load_base_geography() -> dict:
     with open(os.path.join(HERE, "geo_base.json"), encoding="utf-8") as fh:
@@ -452,9 +473,8 @@ def _build_base_grid(region_codes: list[str], dlat: float, dlon: float) -> Grid:
     gi = np.array(["VKGMOTSx".index(g) for g in letter(la, lo)])
     allowed = [GOV_ALLOWED.get(c, "VKGMOTSx") for c in region_codes]
     bad = np.array([[g not in allowed[r] for r in dreg] for g in "VKGMOTSx"])     # (8, towns)
-    D2 = np.where(bad[gi], np.inf, Dk)
-    ok = np.isfinite(D2).any(axis=1)
-    Dk[ok] = D2[ok]
+    Dk = gov_constrain(Dk, bad[gi])
+    Dk[Dk > Dk.min(axis=1, keepdims=True) + REACH_KM] = np.inf
     km2 = (dlat * 111.2) * (dlon * 111.2 * np.cos(np.radians(la)))
     # multiplicatively weighted Voronoi: region weights calibrated so that
     # cell areas match the official region areas

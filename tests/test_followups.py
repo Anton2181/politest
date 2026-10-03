@@ -222,8 +222,11 @@ def test_krai_follows_the_governorates(krai_sim):
     krai = "NWK" if name == "nw_krai" else "LB"
     for code in ["WIL.wilno", "NOW.lida", "BIA.grodno", "BIA.bialystok", "POL.pinsk", "LT_NEA.utena", "BY_MIN.minsk"]:
         assert mem[code] == krai, code
-    for code in ["BIA.lomza", "BIA.wysokiemazowie", "POL.kamienkoszyrsk", "WOL.luck", "LUB.wlodawa", "WAW"]:
+    for code in ["BIA.lomza", "BIA.wysokiemazowie", "WOL.luck", "LUB.wlodawa", "WAW"]:
         assert mem[code] == "PL", code
+    # Kamień Koszyrski (1930) reaches into the krai's governorates: its main piece stays Polish
+    kk = [c for c in sim.codes if c.startswith("POL.kamienkoszyrsk")]
+    assert sorted(mem[c] for c in kk) == sorted(["PL", krai])
     assert not any(c.startswith("LT_KLA") for c in sim.codes)         # Prussian before 1920
     # the Suwałki governorate: Poland's in the krai scenario, Lit-Bel's in Lit-Bel
     suw = "PL" if name == "nw_krai" else krai

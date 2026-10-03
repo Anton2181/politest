@@ -300,8 +300,18 @@ underlies the UN World Population Prospects (bayesTFR):
   income). This reflects the Princeton European Fertility Project finding
   that declines spread along cultural-linguistic and religious lines (Coale
   & Watkins 1986; Lesthaeghe 1977). There are community pace factors:
-  Orthodox 0.85, Greek Catholic 0.9, acculturating Jews 1.1, and Haredi 0.12,
-  whose fertility drifts to its own long-run mean.
+  Greek Catholic 0.9, acculturating Jews 1.1, and Haredi 0.12, whose
+  fertility drifts to its own long-run mean. The Orthodox decline at the
+  Catholic pace (1.0): after the war the Orthodox Belarusians of Podlasie had
+  fewer children than their Catholic neighbours, and Soviet Belarus and
+  Ukraine fell below Poland's fertility by 1970. Their higher interwar
+  fertility is in the level (x 1.05), not the pace. The pace has a floor of
+  0.55 of its maximum in the least modernised lands, so that the eastern
+  countryside starts its decline in step with rural eastern Poland of
+  1960-90 (about 2.9 children per woman in 1970 and 2.4-2.6 in 1990).
+  With the slower settings of earlier versions (Orthodox 0.85, floor 0.40)
+  the lands of Soviet Belarus still had 3.6 children per woman in 1970 and
+  2.7 in 1990; now 3.4 and 2.4. The 1930s checks (§10.1) are unchanged.
 * **Phase III**: once TFR reaches D4 + 0.12 the cell follows an AR(1)
   process (rho = 0.93) around a long-run mean. That mean is 1.45 for the
   Catholic/Orthodox majority, with ensemble spread; the Catholic southern
@@ -379,10 +389,14 @@ opportunities are close alternatives. With 23 regions the gravity form is
 easier to calibrate.
 
 **Planned settlement** (*osadnictwo*): Polish Catholic smallholder families
-move from Kraków, Kielce, Lublin, Warsaw and Lwów voivodeships to Volhynia,
-Polesie, Nowogródek and Wilno. The flow is 8 k/yr in the 1930s, 12 k/yr for
-1939-55 (Polesie drainage), then zero. The `integral_nationalism` scenario
-raises it to 25 k/yr.
+move from Kraków, Kielce, Lublin, Warsaw and Lwów voivodeships to the east.
+The flow is 8 k/yr in the 1930s, 12 k/yr for 1939-55 (Polesie drainage),
+then zero; the `integral_nationalism` scenario raises it to 25 k/yr. The
+destinations follow the military settlers of 1921-39 by voivodeship
+(households): Wołyń 41.5 %, Nowogródek 21.7 %, Wilno 13.3 %, Polesie 12.6 %
+and Białystok 10.9 %, the last on the estates of its Grodno-governorate
+east (the Grodno and Wołkowysk counties). Earlier versions gave Polesie as
+much weight as Volhynia and none to Białystok.
 
 ### 5.3 International
 
@@ -862,6 +876,16 @@ savings and market access follows Fogel (1964) and Donaldson & Hornbeck
 * Motorisation follows the Dargay-Gately Gompertz curve with partial
   adjustment, calibrated to 44,200 motor vehicles on 1 Jan 1938 (~1.3 per
   1000) and to southern-European ownership at 15,000 GK$.
+* **Separate states** (`separate_states`; the Northwestern Krai or Lit-Bel
+  beside Poland). Each state has its own national income, starting from its
+  regions' share of the 1931 income (the krai at about 64 % of Poland's per
+  head) and converging at the same speed to the same `kappa` (by default),
+  with the same shocks. Relative incomes are normalised within each state.
+  Each state has its own migration hump (emigration and immigration follow
+  its own income) and its own infrastructure budget, spent on links within
+  its territory or to a foreign gateway; no link across the border between
+  them is built. Earlier versions gave the two states one income and one
+  budget, so that Poland's results depended on which krai it was tied to.
 
 ## 9. How the parts are coupled
 
@@ -977,6 +1001,37 @@ model's figures (by region x rural/urban x language). The spatial layer adds
   region calibrated so that cell areas match the official areas (all
   within 2.5 %). Warsaw city has 11 cells. State borders are therefore
   exact to the cell; voivodeship borders are approximations.
+* **Governorates of 1897.** Where the 1931 borders followed those of the
+  imperial governorates, the Voronoi may not cross them
+  (`geography.GOV_ALLOWED`, polygons from the RISTAT GIS of 1897,
+  `data/governorates.py`). The voivodeships of the Kingdom of Poland and
+  Galicia, and Volhynia, take no land of the Vilna, Kovno, Grodno or Minsk
+  governorates; Wilno, Nowogródek, Polesie and Białystok hold only their
+  own governorates; Suvalkija is the Suwałki governorate. So the Bug, the
+  Biebrza and the Niemen are where they were, not where the nearest town
+  puts them. Inside the formerly Russian north-eastern voivodeships a place
+  goes to a county whose seat lies in its own governorate (the powiaty of
+  1931 mostly kept the uezd lines there). Lithuanian apskritys and Soviet
+  okrugs, which did cross the old lines, are not constrained. The rule
+  holds a place only where a town (or seat) of its own governorate lies
+  within 30 km of its nearest one (`GOV_SLACK_KM`); and the area weights may
+  not hand a place to a region whose nearest town is more than 60 km farther
+  than the nearest it may join (`REACH_KM`). Without these limits, slivers
+  where the 1897 and 1932 lines part went to the nearest region of their
+  own governorate however far: two cells on the Courland bank of the Dvina
+  by Druja fell to Biała Podlaska, 450 km away, and cells in northern
+  Lithuania to Klaipėda.
+* **The rest of the north-western governorates** (optional,
+  `include_krai_east`; key `XK` of `borders_1932.json`, built by
+  `tools/build_governorates.py`): the land of the Vilna, Kovno, Grodno,
+  Minsk, Mogilev and Vitebsk governorates outside Poland, Lithuania and the
+  BSSR of 1932, 31,600 km² in pieces of at least 150 km². Latgale (the
+  Dvinsk, Rezhitsa and Lyutsin uezds and a strip of Drissa, now Latvia),
+  the Nevel, Sebezh and Velizh uezds with a strip of Gorodok, and the
+  eastern edge of the Mogilev governorate (both RSFSR) form three units
+  (`data/krai_east.py`, §12.7); the uezds are their counties' borders. The
+  grid reaches 57.5° N for northern Latgale, which also counts as land
+  north of the base map's edge at 57.2° N.
 * **Drawing.** Maps clip the cell colours to the CShapes polygons and draw
   the state border and the Polish-Lithuanian border as lines, so the
   border itself is not stair-stepped at the cell size.
@@ -1072,7 +1127,7 @@ neighbourhood rule decides *which* cells give way first.
   * population change;
   * a scenario comparison;
 * two GIF animations (`anim_languages.gif`, `anim_density.gif`);
-* `outputs/atlas/`, an interactive atlas: 12 scenarios, a time slider,
+* `outputs/atlas/`, an interactive atlas: every scenario, a time slider,
   language, single-language, density and growth layers, and a cell
   read-out. Frames are quantised to 8 bits every 5 years (gzip, about
   0.6 MB per scenario) and interpolated in the browser.
@@ -1099,9 +1154,39 @@ or an autonomy is a `region_groups` list of counties instead.
 
 The children add up exactly to the parent (tested).
 
+**Pieces along the governorates of 1897** (`governorates`; scenarios
+`nw_krai`, `lit_bel`). A scenario may name groups of governorates
+(`governorates: {KRAI: [Vilna, Kovno, ...]}`). A unit that straddles the edge
+of a group is cut along it (`partition._cut`):
+
+* each part is the cells (and towns) of the unit in one group, or in none;
+  a town takes the governorate of its unit's nearest cell (towns on a
+  border river);
+* a part with less than 5 % of the unit's people (or under 5,000) stays
+  with the largest;
+* the unit's people are shared between its pieces by the downscaled
+  pattern, stratum by stratum and language by language, after the county
+  fit, so the pieces add up to the county;
+* each piece is coded by the governorate letters it covers
+  (`BY_MOH.bobrujsk~VKGMS`, `LT_KAU.~S`), so that the map grid rebuilds the
+  pieces from the codes alone (`geography.build_grid`).
+
+With the governorate constraints of §12.1, one Polish county straddles:
+Kamień Koszyrski, a county of 1930 put together partly from older Polesie
+counties, reaches into the krai's governorates (11 k people go to the
+krai). The other pieces are Lithuanian
+apskritys (Alytus and Kaunas across the Niemen) and Soviet okrugs (Bobrujsk,
+Rzeczyca, Homel and Połock across the Minsk-Mogilev-Vitebsk lines). Then `params.resolve_governorates` turns a group into its units: a
+setting keyed by the group applies to each (a key for the unit, its county
+or its voivodeship still wins), and units in no group are left out unless
+their 1932 state is listed in `governorates_keep_outside` (Poland by
+default), which drops Klaipėda, Palanga and the BSSR's slivers of other
+governorates.
+
 Region-keyed settings resolve by specificity: an exact code (`WIL.E`) beats
-the parent code (`WIL`), which beats a wildcard (`LT_*`), which beats
-`default` (`params.region_lookup`).
+the county a piece was cut from (`BIA.bialystok` for `BIA.bialystok~x`),
+which beats the parent code (`WIL`), which beats a wildcard (`LT_*`), which
+beats `default` (`params.region_lookup`).
 
 Two settings describe the political map:
 
@@ -1135,11 +1220,16 @@ voivodeship map, so it is merged into its neighbours.
 as for the named splits. The county's population and languages are then
 set by its grade:
 
-* **Grade A** (97 counties: the eight eastern voivodeships). The seed is
-  the 1931 county count by mother tongue. Merged categories are split by the
-  downscaled pattern: Belarusian + tutejszy + Russian in Nowogródek and
-  Polesie, "other", and the unenumerated Kashubian, Lemko and Wymysorys
-  speakers inside "Polish" and "Ukrainian". Two IPFs follow:
+* **Grade A** (113 counties: the eight eastern voivodeships and Pomorze).
+  The seed is the 1931 county count by mother tongue. Merged categories are
+  split by the downscaled pattern: Belarusian + tutejszy + Russian in
+  Nowogródek and Polesie, "other", and the unenumerated Kashubian, Lemko and
+  Wymysorys speakers inside "Polish" and "Ukrainian". The census "other"
+  holds only the languages the census could name elsewhere (Czech, Latvian,
+  Karaim ...): until this version it also took in Kashubian, so a county
+  table with an "other" column lost the Kashubians of the downscaled
+  pattern, which mattered once Pomorze had its county table (Kartuzy would
+  have been 20 % Kashubian; it is now 69 %). Two IPFs follow:
   1. Over (county × language), fitting the county populations and the
      voivodeship's latent language totals for the chosen census variant.
   2. Over (county × stratum × language), splitting rural and urban by the
@@ -1203,7 +1293,7 @@ and mortality, fertility and migration push would all be wrong.
     attractiveness, and moves inside a unit are not counted as
     inter-regional.
   * Settlement weights given for a voivodeship are shared among its
-    counties by rural population.
+    counties by rural population; a weight given for a county is its own.
 
   Splitting a voivodeship therefore moves migrants between its counties
   without changing how many it sends or draws (tested: a split run stays
@@ -1290,6 +1380,36 @@ rescaling alone removes about 30 k Belarusian speakers.
 * **Other inputs** (incomes, vital rates, literacy, urban shares) are set
   like those of the neighbouring Polish north-east, as befits a premise in
   which these lands were Polish from 1921.
+
+**The rest of the north-western governorates** (`include_krai_east`, only in
+`nw_krai`; `data/krai_east.py`). Three units, grade E (estimates built on
+the 1897 census):
+
+* **Latgale** (`LV_LAT`): counties Dyneburg (Dvinsk uezd and the Drissa
+  strip), Rzeżyca (Rezhitsa) and Lucyn (Lyutsin). 1897: 249,000, 136,445 and
+  128,155 people. Carried to 1931 x 1.02, which with the Pytalovo strip of
+  the Pskov governorate reaches the 567,000 people of Latgale in the 1935
+  Latvian census. Home languages: the 1897 shares (Dvinsk 39 % Latvian, 15
+  Russian, 14 Belarusian, 9 Polish; Rezhitsa 58 % Latvian, 24 Russian;
+  Lyutsin 64 % Latvian, 21 Belarusian), with Yiddish cut to the Jewish
+  numbers of the 1930s (about 27,000 in 1935) and the rest scaled up.
+  Latvian speakers are Catholic Latgalians (92 %); Russians Orthodox and
+  Old Believers.
+* **Nevel, Sebezh and Velizh** (`RU_VIT`): 1897 110,394 (with a strip of
+  Gorodok, 124,000), 92,055 and 91,000 (the part of Velizh outside the BSSR);
+  x 1.22 to 1931. 1897 speech: Nevel 84 % Belarusian, Sebezh 47 % Belarusian
+  and 47 % Russian, Velizh 86 % Belarusian. The Soviet censuses recorded
+  most of these Belarusian speakers as Russians by nationality; the speech
+  of 1897 is kept, as in §12.7 for Homel.
+* **The eastern edge of the Mogilev governorate** (`RU_MOH`, 4,600 km² of
+  the Mstislavl, Orsha, Klimovichi, Gorki and Gomel uezds): 35 people per
+  km² in 1897, x 1.22, 91 % Belarusian.
+* Incomes, vital rates and literacy like Soviet Belarus; Latgale a little
+  richer and more literate. Towns (Dyneburg 43 k, Rzeżyca 13 k, Newel 15 k,
+  Wieliż 12 k ...) and the railways of c. 1931 (Riga-Orel, Petersburg-Warsaw,
+  Moscow-Windau, Bologoye-Polotsk) join the network; Daugavpils and Nevel
+  stop being foreign gateways. Latvian is drawn on the maps with the
+  regional languages (as Latgalian).
 
 ### 12.8 The equal-exchange Curzon line
 
@@ -1428,6 +1548,20 @@ Movers take the places of those who left:
 Age, sex, community, bilingualism and identity move with them. The economy,
 the network and language policy are untouched, so the scenario isolates the
 demographic and linguistic effect of an "equal" exchange.
+
+**By declared nationality** (scenario `curzon_exchange_identity`). The
+agreements of 1944-46 went by nationality, not by the language spoken at
+home. With `curzon_count: identity` the line counts Poles by Polish national
+identity (§6.7), whatever their home language: each cell's speakers of a
+language take their region's identity mix for that language
+(`curzon.identity_cells`), and Jews, Germans and Kashubians by identity are
+left out. With `population_exchange: {by: identity}` every Pole by identity
+beyond the line moves west and every counted non-Pole by identity on the
+Polish side moves east, each with home language and identity
+(`exchange.apply_exchange_identity`): a Polish-identity speaker of
+Lithuanian (a Lauda gentleman) goes west speaking Lithuanian, a
+Lithuanian-identity speaker of Polish goes east speaking Polish. Jews of
+every language stay.
 
 ### 12.9 What the maps cannot show
 

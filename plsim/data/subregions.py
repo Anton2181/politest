@@ -36,7 +36,7 @@ import os
 import numpy as np
 from matplotlib.path import Path
 
-from .geography import ANCHORS, GOV_ALLOWED, haversine_matrix
+from .geography import ANCHORS, GOV_ALLOWED, gov_constrain, haversine_matrix
 
 POWIAT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "powiaty_1931.geojson")
 _POLYS: dict | None = None
@@ -162,9 +162,7 @@ def assign(parent: str, lat, lon, child_codes=None) -> np.ndarray:
         from .governorates import letter
         gl = letter(lat, lon)
         sl = letter([a[0] for a in anc], [a[1] for a in anc])
-        D2 = np.where(gl[:, None] != sl[None, :], np.inf, D)
-        ok = np.isfinite(D2).any(axis=1)
-        D[ok] = D2[ok]
+        D = gov_constrain(D, gl[:, None] != sl[None, :])
     out = np.array([anc[k][2] for k in D.argmin(axis=1)], dtype=object)
     polys = county_polygons()
     if polys:

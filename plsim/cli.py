@@ -73,15 +73,20 @@ def _run_cached(name: str, p: dict, cache_dir: str | None, write: bool = True):
     key = hashlib.sha1((json.dumps(p, sort_keys=True, default=str) + _code_fingerprint()).encode()).hexdigest()
     path = os.path.join(cache_dir, f"{name}.pkl") if cache_dir else None
     if path and os.path.exists(path):
-        with open(path, "rb") as fh:
-            k, res = pickle.load(fh)
-        if k == key:
-            return res, True
+        try:
+            with open(path, "rb") as fh:
+                k, res = pickle.load(fh)
+            if k == key:
+                return res, True
+        except (EOFError, pickle.UnpicklingError, ValueError):
+            pass                         # a cache file still being written by a parallel job
     res = Simulation(p).run()
     if path and write:
         os.makedirs(cache_dir, exist_ok=True)
-        with open(path, "wb") as fh:
+        tmp = f"{path}.{os.getpid()}.tmp"
+        with open(tmp, "wb") as fh:
             pickle.dump((key, res), fh, protocol=pickle.HIGHEST_PROTOCOL)
+        os.replace(tmp, path)            # atomic: readers see the old file or the whole new one
     return res, False
 
 

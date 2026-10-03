@@ -8,11 +8,20 @@ Each names the part of the code it touches.
 
 ## Priority list
 
-Done in this round (see METHODOLOGY): identity separate from home language
-(§6.7), history-matching calibration of the shift rates (§6.4), probability
-maps from the ensemble (§11), a calibrated road programme (§7.3),
-second-generation assimilation (the diaspora term, §6.4), the historical
-Curzon line and a population-exchange scenario (§12.8).
+Done in earlier rounds (see METHODOLOGY): identity separate from home
+language (§6.7), history-matching calibration of the shift rates (§6.4),
+probability maps from the ensemble (§11), a calibrated road programme
+(§7.3), second-generation assimilation (the diaspora term, §6.4), the
+historical Curzon line and a population-exchange scenario (§12.8).
+
+Done in this round: the Pomorze county tables, from the census volume
+(§12.6); the governorates of 1897 as borders for the krai scenarios and as
+constraints on the north-eastern voivodeship and county shapes (§12.1,
+§12.5), with the krai's lands outside the 1932 states (§12.7); separate
+economies for separate states (§8); settlement destinations from the
+military-settler statistics (§5.2); an exchange by declared nationality
+(§12.8); the eastern fertility transition checked against rural eastern
+Poland (§4.2).
 
 | # | Development | Why it matters | Effort |
 |---|---|---|---|
@@ -126,18 +135,17 @@ Curzon line and a population-exchange scenario (§12.8).
   census, grown under Polish-like vital rates. A Polish 1921-31 (no
   Belarusisation, no early collectivisation, Polish schools in the towns)
   would change the start, mostly in the towns.
-* **Curzon line.** The line is free to wind cell by cell; the search is a
-  heuristic. An exact or better bound (integer programming on a coarser
-  grid, or simulated annealing) would show how far from the optimum it is.
-  Variants: a length penalty for a smoother line, a minimum corridor width,
-  identity instead of home language, a line fixed in 1932 with the
+* **Curzon line.** The line follows county borders; the search is a
+  heuristic. An exact or better bound (integer programming on the county
+  graph, or simulated annealing) would show how far from the optimum it is.
+  Counting by identity is done (`curzon_count: identity`). Variants: a
+  length penalty for a smoother line, a line fixed in 1932 with the
   minorities on each side followed over time, or Poland alone in the union
   scenarios. The historical line (A in Galicia) is now digitised to about
   10 km from its description. Line B and a survey-grade digitisation are
   still to do.
-* **Population exchange (done: `curzon_exchange`).** Variants still to do:
-  * an exchange by identity rather than home language (the 1944-46
-    agreements went by declared nationality);
+* **Population exchange (done: `curzon_exchange`, and by declared
+  nationality, `curzon_exchange_identity`).** Variants still to do:
   * a voluntary, partial exchange (the real take-up);
   * exchange costs: lost capital and a temporary fall in farm output;
   * an exchange along the historical line.
