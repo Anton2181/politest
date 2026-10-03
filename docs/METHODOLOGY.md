@@ -1313,35 +1313,35 @@ and mortality, fertility and migration push would all be wrong.
 
   | | Voivodeship run | County run |
   |---|---|---|
-  | Population | 48.31 M | 48.21 M |
-  | Urban share | 66.1 % | 66.2 % |
-  | Ukrainian speakers | 9.06 M | 9.10 M |
-  | Belarusian speakers | 1.92 M | 1.93 M |
-  | Lithuanian speakers | 2.03 M | 2.02 M |
-  | West Polesian speakers | 0.95 M | 0.92 M |
+  | Population | 44.37 M | 44.26 M |
+  | Urban share | 66.5 % | 66.6 % |
+  | Ukrainian speakers | 6.82 M | 6.85 M |
+  | Belarusian speakers | 1.32 M | 1.29 M |
+  | Lithuanian speakers | 1.89 M | 1.88 M |
+  | West Polesian speakers | 0.76 M | 0.73 M |
 
   Every voivodeship's 2032 language shares are within about a point of the
   voivodeship run (Klaipėda's German 1.6 points).
 * **Populations.** Most voivodeship totals are within ±5 %. Two differ
   more. Pomorze is 10 % smaller, because migrants' travel times are now
   measured to each county (Gdynia included) rather than to Toruń, and the
-  Kashubian counties draw fewer Polish speakers. Klaipėda is 13 % larger.
+  Kashubian counties draw fewer Polish speakers. Klaipėda is 12 % larger.
 * **What the county level adds is *where*.** The plurality language
-  changes in 34 of 270 counties:
+  changes in 35 of 270 counties:
   * twelve Belarusian counties turn Polish-plurality: Grodno, Wołkowysk
     and Bielsk; Głębokie, Mołodeczno, Postawy and Wilejka; and Nowogródek
     voivodeship apart from Lida, Szczuczyn and Wołożyn;
   * all nine Polesie counties move from West Polesian to Polish;
   * Kartuzy, Kościerzyna and Wejherowo lose their Kashubian plurality;
-  * eight Lwów counties and Kamionka Strumiłowa turn from Ukrainian to
+  * nine Lwów counties and Kamionka Strumiłowa turn from Ukrainian to
     Polish plurality;
   * Klaipėda turns from German to Lithuanian.
 
-  Volhynia and the core of Stanisławów stay Ukrainian (Łuck 59 → 65 %).
+  Volhynia and the core of Stanisławów stay Ukrainian (Łuck 59 → 62 %).
   The cities draw the rural surplus of their voivodeship: Lwów county
-  grows from 460 k to 840 k, Wilno from 415 k to 803 k, and Brześć from
-  227 k to 1.03 M.
-* **Cost.** A run takes about 4 minutes, against 20 s for the voivodeship
+  grows from 460 k to 790 k, Wilno from 415 k to 708 k, and Brześć from
+  227 k to 823 k.
+* **Cost.** A run takes about 3 minutes, against 20 s for the voivodeship
   model.
 
 A first county run, before any of this nesting, gave 48.6 M people. In
