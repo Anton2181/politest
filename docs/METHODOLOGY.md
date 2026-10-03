@@ -976,6 +976,21 @@ These are not targets. They are bands from comparator countries: TFR 1960 in
 See §3.4. Passing the reconstructions through the 1931 observation model
 reproduces the printed census to within 2-3 points in total.
 
+### 10.4 The 1921 nationality census
+
+`validate.identity_1921` reads the starting identity through the 1921
+nationality question and checks it against the census (§6.7): Poland's
+totals within 3 points, the grade-A voivodeships within 3-8 points, and a
+county table when one is supplied.
+
+### 10.5 The historical scenario
+
+`historical` replays the real century with the shared behaviour and is
+compared with the censuses of 1946-2021 (§12.10; results in SCENARIOS). It
+calibrated the fertility transition (§4.2) and the post-war mortality shift
+(§4.1), and shows that the identity layer keeps minority identities too
+stable (§6.7).
+
 ## 11. Uncertainty
 
 Monte-Carlo members (`plsim.ensemble`) re-draw the following, with separate
@@ -1377,20 +1392,20 @@ and mortality, fertility and migration push would all be wrong.
   measured to each county (Gdynia included) rather than to Toruń, and the
   Kashubian counties draw fewer Polish speakers. Klaipėda is 12 % larger.
 * **What the county level adds is *where*.** The plurality language
-  changes in 35 of 270 counties:
+  changes in 34 of 270 counties:
   * twelve Belarusian counties turn Polish-plurality: Grodno, Wołkowysk
     and Bielsk; Głębokie, Mołodeczno, Postawy and Wilejka; and Nowogródek
     voivodeship apart from Lida, Szczuczyn and Wołożyn;
   * all nine Polesie counties move from West Polesian to Polish;
   * Kartuzy, Kościerzyna and Wejherowo lose their Kashubian plurality;
-  * nine Lwów counties and Kamionka Strumiłowa turn from Ukrainian to
+  * eight Lwów counties and Kamionka Strumiłowa turn from Ukrainian to
     Polish plurality;
   * Klaipėda turns from German to Lithuanian.
 
-  Volhynia and the core of Stanisławów stay Ukrainian (Łuck 59 → 62 %).
+  Volhynia and the core of Stanisławów stay Ukrainian (Łuck 59 % in 1933 and 2032).
   The cities draw the rural surplus of their voivodeship: Lwów county
-  grows from 460 k to 790 k, Wilno from 415 k to 708 k, and Brześć from
-  227 k to 823 k.
+  grows from 460 k to 973 k, Wilno from 415 k to 871 k, and Brześć from
+  227 k to 670 k.
 * **Cost.** A run takes about 3 minutes, against 20 s for the voivodeship
   model.
 

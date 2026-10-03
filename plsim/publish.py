@@ -255,6 +255,55 @@ def _extra_sections(outroot: str, end: int) -> dict:
   {_fig(mapdir, "map_curzon.png", "Curzon line", "The computed equal-exchange line in 1932, 1982 and 2032.")}
   {ctab}
 </section>"""
+    # small ensembles of every scenario
+    rg = _csv_or_none(os.path.join(outroot, "scenario_ranges.csv"))
+    figdir = os.path.join(outroot, "figures")
+    if rg:
+        h = rg[0]
+        by = {}
+        for r in rg[1:]:
+            by.setdefault(r[0], {})[r[2]] = (float(r[3]), float(r[4]), float(r[5]), r[1])
+        keys = [("pop_m", "Population (M)", 1), ("pl_pct", "Polish at home %", 1), ("pl_id_pct", "Polish identity %", 1),
+                ("uk_pct", "Ukrainian %", 1), ("be_pct", "Belarusian %", 1), ("yi_pct", "Yiddish %", 1),
+                ("gdp", "GDP per head", 0)]
+        rows = []
+        for n, d in by.items():
+            row = [f"{n} ({d['pop_m'][3]})"]
+            for k, _lab, nd in keys:
+                lo, med, hi, _m = d[k]
+                row.append(f"{med:,.{nd}f} ({lo:,.{nd}f}-{hi:,.{nd}f})")
+            rows.append(row)
+        rtab = _table(["Scenario (runs)"] + [lab for _k, lab, _n in keys], rows,
+                      f"{end}: median and 10-90 % range over each scenario's ensemble")
+        del h
+        out["ranges"] = f"""
+<section>
+  <h2>How far apart are the scenarios, given the uncertainty?</h2>
+  <p class="prose">Each scenario was also run as a small ensemble with re-drawn parameters and shocks, the same draws for
+  every scenario (common random numbers), so that the ranges show what each scenario's numbers rest on and how far
+  apart two scenarios are beyond the noise of single runs. The baseline has 32 runs, Poland alone 16 and the others 8.</p>
+  {_fig(figdir, "scenario_ranges.png", "Scenario ranges", "Median (dot) and 10-90 % range (bar) of each scenario's ensemble.")}
+  {rtab}
+</section>"""
+    # the historical scenario against the censuses
+    hc = _csv_or_none(os.path.join(outroot, "history", "historical_checks.csv"))
+    if hc:
+        rows = [[r[0], r[1], f"{float(r[2]):,.2f}", r[3]] for r in hc[1:]]
+        htab = _table(["Measure", "Year", "Model", "Census / GUS"], rows,
+                      "Historical scenario: Poland in each year's borders against what was recorded")
+        out["history"] = f"""
+<section>
+  <h2>The model on the real century</h2>
+  <p class="prose">The scenario <code>historical</code> replays the war, the border change of 1945, the flight and
+  expulsion of the Germans, the repatriation and settlement of the west, the transfer of the Ukrainians and People's
+  Poland, with the behaviour the counterfactual scenarios share. Its fertility and mortality settings were calibrated on
+  this comparison: rural Poland kept about three children per woman until 1980, which the earlier, faster transition
+  missed, and the Soviet-ruled east fell to about 2.6 by 1970, faster than the earlier settings allowed. Minority
+  identities are kept more stable than in People's Poland: Belarusians and Ukrainians of 2002 come out several times
+  too many.</p>
+  {_fig(os.path.join(outroot, "history"), "historical_checks.png", "Historical scenario against the censuses", "Poland in each year's borders (lines) against the censuses (points).")}
+  {htab}
+</section>"""
     return out
 
 
@@ -401,6 +450,8 @@ def build_page(outroot: str, standalone: bool = True) -> str:
   {F("lithuania_poles.png", "Polish speakers in Lithuania", "The Lauda question: Polish home speakers in the Lithuanian units by scenario.")}
   </div>
 </section>
+{X.get("ranges", "")}
+{X.get("history", "")}
 {X.get("curzon", "")}
 
 <section>
