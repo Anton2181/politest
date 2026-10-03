@@ -311,7 +311,11 @@ underlies the UN World Population Prospects (bayesTFR):
   1960-90 (about 2.9 children per woman in 1970 and 2.4-2.6 in 1990).
   With the slower settings of earlier versions (Orthodox 0.85, floor 0.40)
   the lands of Soviet Belarus still had 3.6 children per woman in 1970 and
-  2.7 in 1990; now 3.4 and 2.4. The 1930s checks (§10.1) are unchanged.
+  2.7 in 1990; now 3.4 and 2.3 (`nw_krai`; the model's Lublin
+  voivodeship 3.0 and 2.0). Polesie and Volhynia, the poorest and least
+  literate voivodeships, stay higher: about 4.0 and 2.8 in the baseline,
+  above the analogue, at the upper edge of what the evidence supports.
+  The 1930s checks (§10.1) are unchanged.
 * **Phase III**: once TFR reaches D4 + 0.12 the cell follows an AR(1)
   process (rho = 0.93) around a long-run mean. That mean is 1.45 for the
   Catholic/Orthodox majority, with ensemble spread; the Catholic southern
@@ -1482,11 +1486,11 @@ in strips one cell wide, which made it hard to read.
 
 * The line is as jagged as the county borders, no more.
 * The residual is at most the people of one border county: under 70
-  thousand in most frames, up to 0.44 M where a large county lies on the
-  line, against flows of 1.2-5 million each way.
+  thousand in most frames, up to 0.36 M where a large county lies on the
+  line, against flows of 1.1-4.3 million each way.
 * Whole counties cost nothing in practice. In the baseline of 1932 the
   line that wound cell by cell left 1.89 M each way, the county line
-  1.84-1.85 M. Both searches are heuristics, and the one on cells, with
+  1.83 M. Both searches are heuristics, and the one on cells, with
   far more moves open to it, stopped at a poorer solution.
 * Remote Polish districts join the Polish side only if a chain of counties
   to them pays its way. In the union scenarios of 1932 the western Wilno
@@ -1520,11 +1524,11 @@ The same people as for the computed line are counted on each side of it
 1919-20", dashed). This shows how far the equal-exchange line, which follows
 the modelled population, lies from the diplomats' line, which followed the
 ethnographic maps of 1919. In the baseline of 1932 the historical line leaves
-0.96 M non-Poles on its west side and 3.27 M Poles on its east side (the
-Wilno lands, Lwów and the eastern towns); the computed line leaves 1.84 M
-non-Poles and 1.85 M Poles. By 2032 the historical line's imbalance grows to 2.38 M against
-9.0 M as the east Polonises. In the autonomy scenarios it comes close to
-balance (3.0 M against 4.1 M).
+0.96 M non-Poles on its west side and 3.26 M Poles on its east side (the
+Wilno lands, Lwów and the eastern towns); the computed line leaves 1.83 M
+on either side. By 2032 the historical line's imbalance grows to 2.1 M
+against 7.9 M as the east Polonises. In the autonomy scenarios it comes
+closer to balance (2.7 M against 3.7 M).
 
 **A population exchange along the line** (scenario `curzon_exchange`,
 `plsim.exchange`). On 1 January of the exchange year (1946), every Pole on

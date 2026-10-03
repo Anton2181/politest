@@ -1,20 +1,20 @@
 Result,Type,Check,Model,Accepted range
-PASS,historical,Poland population 1 Jan 1939 (M),34.60,34.3 - 35.3
-PASS,historical,Poland CBR 1932 (per 1000),29.74,27.3 - 30.3
-PASS,historical,Poland CBR 1938 (per 1000),25.30,22.8 - 25.8
+PASS,historical,Poland population 1 Jan 1939 (M),34.56,34.3 - 35.3
+PASS,historical,Poland CBR 1932 (per 1000),29.70,27.3 - 30.3
+PASS,historical,Poland CBR 1938 (per 1000),24.99,22.8 - 25.8
 PASS,historical,Poland CDR 1932 (per 1000; registered 15.0),15.75,14.0 - 17.0
-PASS,historical,Poland CDR 1938 (per 1000; registered 13.8),14.69,12.8 - 15.3
+PASS,historical,Poland CDR 1938 (per 1000; registered 13.8),14.66,12.8 - 15.3
 PASS,historical,Poland e0 males 1932 (1931-32 table: 48.2),49.38,46.7 - 50.2
 PASS,historical,Poland e0 females 1932 (1931-32 table: 51.4),52.64,49.9 - 53.4
 PASS,historical,"Motor vehicles per 1000, 1 Jan 1938",1.18,0.8 - 1.8
 PASS,historical,Poland urban share 1939,0.29,0.27 - 0.33
-PASS,historical,Lithuania population 1938 (M),2.58,2.45 - 2.65
-PASS,historical,Lithuania CBR 1938 (22.6),22.68,20.6 - 24.6
-PASS,historical,Lithuania CDR 1938 (12.6),12.47,11.1 - 14.1
-PASS,plausibility,TFR 1960 (S. Europe 2.3-3.8),2.80,2.3 - 3.8
+PASS,historical,Lithuania population 1938 (M),2.57,2.45 - 2.65
+PASS,historical,Lithuania CBR 1938 (22.6),22.08,20.6 - 24.6
+PASS,historical,Lithuania CDR 1938 (12.6),12.42,11.1 - 14.1
+PASS,plausibility,TFR 1960 (S. Europe 2.3-3.8),2.70,2.3 - 3.8
 PASS,plausibility,e0 both sexes 1960 (58-72),62.22,58 - 72
-PASS,plausibility,TFR 2000 (1.2-2.2),1.74,1.2 - 2.2
-PASS,plausibility,e0 both sexes 2000 (70-81),74.32,70 - 81
+PASS,plausibility,TFR 2000 (1.2-2.2),1.65,1.2 - 2.2
+PASS,plausibility,e0 both sexes 2000 (70-81),74.33,70 - 81
 PASS,plausibility,Urban share 2000 (0.50-0.80),0.59,0.5 - 0.8
-PASS,plausibility,Polish-unit population 2000 (M),47.99,40 - 65
-PASS,plausibility,"Expressways + motorways, last year (km per 1000 km2)",19.37,15 - 35
+PASS,plausibility,Polish-unit population 2000 (M),45.73,40 - 65
+PASS,plausibility,"Expressways + motorways, last year (km per 1000 km2)",16.97,15 - 35

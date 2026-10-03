@@ -1,13 +1,50 @@
-scenario,year,direction,home_language,persons
-curzon_exchange,1946,to the other side,uk,1370666
-curzon_exchange,1946,to the other side,be,540426
-curzon_exchange,1946,to the other side,rue,125505
-curzon_exchange,1946,to the other side,lt,96747
-curzon_exchange,1946,to the other side,ru,88533
-curzon_exchange,1946,to the other side,oth,49841
-curzon_exchange,1946,to the other side,pls,40520
-curzon_exchange,1946,to the other side,rom,28636
-curzon_exchange,1946,to the other side,cs,2574
-curzon_exchange,1946,to the other side,kdr,307
-curzon_exchange,1946,to the other side,lv,283
-curzon_exchange,1946,to the Polish side,pl,2399173
+scenario,year,counted_by,direction,kind,category,persons
+curzon_exchange,1946,language,to the other side,home language,uk,1308628
+curzon_exchange,1946,language,to the other side,home language,be,593326
+curzon_exchange,1946,language,to the other side,home language,rue,124487
+curzon_exchange,1946,language,to the other side,home language,lt,96453
+curzon_exchange,1946,language,to the other side,home language,ru,89075
+curzon_exchange,1946,language,to the other side,home language,oth,49597
+curzon_exchange,1946,language,to the other side,home language,pls,40509
+curzon_exchange,1946,language,to the other side,home language,rom,28419
+curzon_exchange,1946,language,to the other side,home language,cs,2568
+curzon_exchange,1946,language,to the other side,home language,kdr,295
+curzon_exchange,1946,language,to the other side,home language,lv,283
+curzon_exchange,1946,language,to the Polish side,home language,pl,2345985
+curzon_exchange_identity,1946,identity,to the other side,home language,uk,1475367
+curzon_exchange_identity,1946,identity,to the other side,home language,be,598672
+curzon_exchange_identity,1946,identity,to the other side,home language,rue,113358
+curzon_exchange_identity,1946,identity,to the other side,home language,pl,94603
+curzon_exchange_identity,1946,identity,to the other side,home language,ru,85028
+curzon_exchange_identity,1946,identity,to the other side,home language,lt,84411
+curzon_exchange_identity,1946,identity,to the other side,home language,oth,41720
+curzon_exchange_identity,1946,identity,to the other side,home language,pls,38387
+curzon_exchange_identity,1946,identity,to the other side,home language,rom,20070
+curzon_exchange_identity,1946,identity,to the other side,home language,cs,2447
+curzon_exchange_identity,1946,identity,to the other side,home language,kdr,295
+curzon_exchange_identity,1946,identity,to the other side,home language,lv,286
+curzon_exchange_identity,1946,identity,to the other side,home language,de,5
+curzon_exchange_identity,1946,identity,to the Polish side,home language,pl,1955046
+curzon_exchange_identity,1946,identity,to the Polish side,home language,uk,269537
+curzon_exchange_identity,1946,identity,to the Polish side,home language,be,129838
+curzon_exchange_identity,1946,identity,to the Polish side,home language,pls,47464
+curzon_exchange_identity,1946,identity,to the Polish side,home language,de,8254
+curzon_exchange_identity,1946,identity,to the Polish side,home language,ru,6985
+curzon_exchange_identity,1946,identity,to the Polish side,home language,lt,6034
+curzon_exchange_identity,1946,identity,to the Polish side,home language,rom,3035
+curzon_exchange_identity,1946,identity,to the Polish side,home language,rue,1940
+curzon_exchange_identity,1946,identity,to the Polish side,home language,cs,1801
+curzon_exchange_identity,1946,identity,to the Polish side,home language,oth,1779
+curzon_exchange_identity,1946,identity,to the Polish side,home language,csb,670
+curzon_exchange_identity,1946,identity,to the Polish side,home language,wym,5
+curzon_exchange_identity,1946,identity,to the Polish side,home language,kdr,1
+curzon_exchange_identity,1946,identity,to the Polish side,home language,lv,0
+curzon_exchange_identity,1946,identity,to the other side,identity,uk,1424008
+curzon_exchange_identity,1946,identity,to the other side,identity,be,394730
+curzon_exchange_identity,1946,identity,to the other side,identity,loc,338003
+curzon_exchange_identity,1946,identity,to the other side,identity,lt,130032
+curzon_exchange_identity,1946,identity,to the other side,identity,ru,123186
+curzon_exchange_identity,1946,identity,to the other side,identity,rue,75806
+curzon_exchange_identity,1946,identity,to the other side,identity,oth,66068
+curzon_exchange_identity,1946,identity,to the other side,identity,cs,2528
+curzon_exchange_identity,1946,identity,to the other side,identity,lv,290

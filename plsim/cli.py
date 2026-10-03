@@ -200,7 +200,7 @@ def _map_job(args):
     entry = {"name": name, "title": title, "description": p["meta"]["description"],
              "series": webmap.national_series(res), "towns": webmap.town_series(sr),
              "net": webmap.network_payload(res), "geo": webmap.geometry_payload(res, sr, full),
-             "curzon": webmap.curzon_payload(lines), "ident": webmap.identity_series(res)}
+             "curzon": webmap.curzon_payload(lines, curzon.count_mode(res)), "ident": webmap.identity_series(res)}
     if unc_meta:
         entry["uncert"] = unc_meta
     if getattr(res, "exchange", None):

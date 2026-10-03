@@ -327,9 +327,9 @@ Home languages in the krai states:
 * **Fast growth.** The krai grows 2.1-fold, its Soviet-Belarusian part
   2.5-fold and its eastern lands 2.4-fold, against 1.23-fold for Poland.
   Two causes:
-  * the fertility transition is late in these lands: 3.2 children per woman
-    in the krai in 1970 and 2.3 in 1990 (3.4 and 2.35 in its
-    Soviet-Belarusian part), against 2.4 and 1.9 in Poland. This was
+  * the fertility transition is late in these lands: 3.0 children per woman
+    in the krai in 1970 and 2.2 in 1990 (3.4 and 2.3 in its
+    Soviet-Belarusian part), against 2.2 and 1.8 in Poland. This was
     checked against rural eastern Poland in the real 1970s and 1980s
     (about 2.9 in 1970, 2.4-2.6 in 1990), the closest analogue to these
     lands without Soviet industrialisation; the real BSSR, urbanised fast,
@@ -433,26 +433,30 @@ states.
 
 | Scenario | 1932: non-Poles on the Polish side / Poles on the other | 2032 | 1919-20 line, 1932: non-Poles west / Poles east | 2032 | Polish side % Polish, 1932 / 2032 |
 |---|---|---|---|---|---|
-| baseline | 1.84 / 1.85 M | 4.39 / 4.33 M | 0.96 / 3.27 M | 2.38 / 9.02 M | 91 / 86 % |
-| ii_rp_only | 1.71 / 1.74 M | 4.28 / 4.14 M | 0.95 / 3.13 M | 2.33 / 8.88 M | 92 / 87 % |
-| federal_autonomy | 1.84 / 1.86 M | 4.99 / 4.55 M | 0.96 / 3.28 M | 3.54 / 6.84 M | 91 / 83 % |
-| integral_nationalism | 1.84 / 1.85 M | 4.78 / 4.91 M | 0.96 / 3.27 M | 1.80 / 10.80 M | 91 / 86 % |
-| polonizing_union | 1.84 / 1.85 M | 4.97 / 4.93 M | 0.96 / 3.27 M | 2.36 / 9.25 M | 91 / 85 % |
-| census_official | 1.80 / 1.82 M | 3.91 / 3.93 M | 0.72 / 3.81 M | 1.84 / 9.60 M | 92 / 88 % |
-| census_vernacular | 1.69 / 1.68 M | 4.54 / 4.48 M | 1.14 / 2.44 M | 2.60 / 8.77 M | 91 / 86 % |
-| ukraine_autonomy_tricantonal | 1.84 / 1.86 M | 3.28 / 3.30 M | 0.96 / 3.28 M | 3.03 / 4.07 M | 91 / 88 % |
-| autonomy_grand_duchy_coofficial | 1.84 / 1.86 M | 3.56 / 3.54 M | 0.96 / 3.28 M | 3.09 / 4.12 M | 91 / 87 % |
-| no_official_language | 1.84 / 1.86 M | 4.23 / 4.21 M | 0.96 / 3.28 M | 4.20 / 4.44 M | 91 / 84 % |
-| wakar_poland | 1.20 / 1.13 M | 2.27 / 2.08 M | 0.91 / 1.13 M | 2.25 / 1.94 M | 94 / 90 % |
-| wakar_poland_belarus | 1.20 / 1.17 M | 3.32 / 3.33 M | 0.91 / 1.17 M | 3.72 / 2.51 M | 94 / 86 % |
-| nw_krai | 1.83 / 1.88 M | 4.89 / 4.74 M | 0.96 / 3.32 M | 2.58 / 6.97 M | 91 / 83 % |
-| lit_bel | 1.83 / 1.86 M | 4.48 / 4.48 M | 0.96 / 3.30 M | 2.49 / 6.69 M | 91 / 84 % |
-| curzon_exchange | 1.84 / 1.85 M | 3.53 / 3.48 M | 0.96 / 3.27 M | 1.79 / 8.33 M | 91 / 89 % |
+| baseline | 1.83 / 1.83 M | 3.87 / 3.82 M | 0.96 / 3.26 M | 2.12 / 7.89 M | 91 / 87 % |
+| ii_rp_only | 1.73 / 1.71 M | 3.76 / 3.63 M | 0.94 / 3.11 M | 2.07 / 7.74 M | 92 / 87 % |
+| federal_autonomy | 1.83 / 1.84 M | 4.15 / 4.33 M | 0.96 / 3.26 M | 3.16 / 6.05 M | 91 / 84 % |
+| integral_nationalism | 1.83 / 1.83 M | 3.68 / 3.70 M | 0.96 / 3.26 M | 1.61 / 9.38 M | 91 / 88 % |
+| polonizing_union | 1.83 / 1.83 M | 3.95 / 3.91 M | 0.96 / 3.26 M | 2.10 / 8.10 M | 91 / 87 % |
+| census_official | 1.76 / 1.80 M | 3.48 / 3.43 M | 0.72 / 3.79 M | 1.66 / 8.38 M | 92 / 89 % |
+| census_vernacular | 1.69 / 1.77 M | 4.01 / 3.97 M | 1.14 / 2.43 M | 2.31 / 7.67 M | 91 / 86 % |
+| ukraine_autonomy_tricantonal | 1.83 / 1.84 M | 2.95 / 2.93 M | 0.96 / 3.26 M | 2.71 / 3.66 M | 91 / 88 % |
+| autonomy_grand_duchy_coofficial | 1.83 / 1.84 M | 3.19 / 3.16 M | 0.96 / 3.27 M | 2.77 / 3.71 M | 91 / 87 % |
+| no_official_language | 1.83 / 1.84 M | 3.81 / 3.75 M | 0.96 / 3.27 M | 3.74 / 4.04 M | 91 / 84 % |
+| wakar_poland | 1.16 / 1.14 M | 2.03 / 1.86 M | 0.91 / 1.11 M | 1.97 / 1.75 M | 94 / 91 % |
+| wakar_poland_belarus | 1.20 / 1.16 M | 3.01 / 3.01 M | 0.91 / 1.15 M | 3.32 / 2.27 M | 93 / 87 % |
+| nw_krai | 1.88 / 1.83 M | 4.28 / 4.28 M | 0.96 / 3.35 M | 2.27 / 6.45 M | 91 / 84 % |
+| lit_bel | 1.83 / 1.86 M | 4.17 / 4.19 M | 0.96 / 3.29 M | 2.29 / 6.31 M | 91 / 85 % |
+| curzon_exchange | 1.83 / 1.83 M | 3.06 / 3.04 M | 0.96 / 3.26 M | 1.60 / 7.30 M | 91 / 89 % |
+| curzon_exchange_identity (counted by identity) | 2.02 / 2.04 M | 3.31 / 2.95 M | 0.92 / 3.88 M | 1.94 / 6.97 M | 91 / 89 % |
 
 The two numbers of the computed line differ by the residual of whole
-counties: under 70 k in most frames, up to 0.19 M (Wakar's Poland, 2032)
-and 0.44 M (`federal_autonomy`, 2032), where a large county lies on the
-line. The historical columns count the same people on either side of the
+counties: under 70 k in most frames, up to 0.17-0.18 M (Wakar's Poland and
+`federal_autonomy`, 2032) and 0.36 M (`curzon_exchange_identity`, 2032),
+where a large county lies on the line. `curzon_exchange_identity` counts
+Poles by identity (`curzon_count: identity`), so its row is not comparable
+with the others: more people count as Poles (Polish-identity speakers of
+Ukrainian, Belarusian and Lithuanian), and fewer as non-Poles. The historical columns count the same people on either side of the
 Curzon line of 1919-20 (line A in Galicia), which is not balanced: it leaves
 far more Poles east than non-Poles west, and more so as the east Polonises.
 In the scenarios with a Ukrainian autonomy, a Grand Duchy or no official
@@ -469,15 +473,16 @@ to balance by 2032.
 * **Over the century** the Polish side spreads east as Polesie (seven of
   its nine counties by 2032) and the north-east shift to Polish, while
   Tarnopol's Polish counties fall to the other side. The exchange grows to
-  4.4 M each way, because both sides grow more mixed.
+  about 4.1 M each way around 2000 and 3.9 M in 2032, because both sides
+  grow more mixed.
 * **With the autonomies**, Belarusian and Ukrainian schooling slow the
-  shift to Polish in the east, and the exchange grows less (3.3-3.6 M). By
+  shift to Polish in the east, and the exchange grows less (2.9-3.2 M). By
   2032 Lwów and Przemyśl, turned Ukrainian-plurality, are on the other
   side.
 * **Wakar's Poland** starts with the smallest exchange (1.2 M).
 * **Whole counties against free lines.** The earlier line, which could
   wind cell by cell through counties, needed 1.89 M each way in 1932. The
-  county line needs slightly fewer (1.84-1.85 M), because the cell search,
+  county line needs slightly fewer (1.83 M), because the cell search,
   a heuristic like the county one, stopped at a poorer solution. A version
   that allowed only straight lines needed 2.75 M.
 

@@ -292,14 +292,16 @@ def geometry_payload(res, sr, full) -> dict:
             "cellreg": base64.b64encode(cellreg.tobytes()).decode()}
 
 
-def curzon_payload(lines: list[dict]) -> dict:
+def curzon_payload(lines: list[dict], count: str = "language") -> dict:
     """Equal-exchange Curzon line of each frame (``plsim.curzon``): the line and,
     in thousands, [Poles, counted, Polish side, its Poles, its others, other side's Poles,
-    its others, not counted]."""
+    its others, not counted]; ``by`` says whether Poles are counted by home
+    language or by identity."""
     keys = ["poles", "people", "west", "west_poles", "west_others", "east_poles", "east_others", "excluded"]
     hist = ["hist_west_poles", "hist_west_others", "hist_east_poles", "hist_east_others"]
     from .curzon import HISTORICAL_LINE
-    return {"lines": [[[[round(float(x), 3), round(float(y), 3)] for x, y in ln] for ln in s["lines"]] for s in lines],
+    return {"by": count,
+            "lines": [[[[round(float(x), 3), round(float(y), 3)] for x, y in ln] for ln in s["lines"]] for s in lines],
             "stats": [[round(s[k] / 1e3) for k in keys] for s in lines],
             "hist": [[round(s[k] / 1e3) for k in hist] for s in lines],
             "histLine": [[round(float(lon), 3), round(float(lat), 3)] for lat, lon in HISTORICAL_LINE]}
