@@ -274,13 +274,17 @@ merged into its neighbours.
 `partition: []` runs the original 23-voivodeship model instead (20 s rather
 than 4 minutes). Details are in `docs/METHODOLOGY.md` §12.6.
 
-* **Data.** The 1931 county census by mother tongue covers the eight
-  eastern voivodeships and Pomorze (113 counties, grade A; Pomorze read from
-  the census volume). Lublin and a few eastern counties have county
-  populations only (grade B). The other counties have seats only and are
-  downscaled from their voivodeship (grade C). County figures are fitted
-  to the voivodeship totals of the starting point, so the county tables
-  decide *where* speakers live and the research estimate decides *how many*.
+* **Data.** Every Polish powiat has its 1931 census population and mother
+  tongue (grade A), read from the census volumes: the voivodeship volumes
+  (tabl. 12) for Łódź, Kielce, Kraków, Poznań, Silesia and Pomorze, and the
+  powiat pages of the short results for the Warsaw voivodeship, Lublin,
+  Nowogródek, Polesie and the large cities, with religion where printed
+  (`plsim/data/census1931_powiaty.csv`, with the page of every row; each
+  voivodeship read whole reproduces its census population). The east comes
+  from published secondary tables of the same census. Lithuania's
+  apskritys are still downscaled (grade C). County figures are fitted to the
+  voivodeship totals of the starting point, so the county tables decide
+  *where* speakers live and the research estimate decides *how many*.
 * **Consistency.** Migration, income, enclave concentration and random
   numbers are nested in the voivodeships, so the county run reproduces
   the voivodeship model:
