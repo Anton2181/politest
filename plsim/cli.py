@@ -52,6 +52,8 @@ def all_scenarios() -> list[str]:
 # modules whose code does not change a run's results (presentation, reporting)
 _NOT_IN_FINGERPRINT = {"cli.py", "maps.py", "webmap.py", "report.py", "publish.py", "export.py", "validate.py",
                        "ensemble.py", "curzon.py", "calibration.py", "history_check.py", "__main__.py"}
+# data files read only by the checks
+_DATA_NOT_IN_FINGERPRINT = {"census1921.py", "census1921_powiaty.csv"}
 
 
 def _code_fingerprint() -> str:
@@ -62,6 +64,8 @@ def _code_fingerprint() -> str:
                        + glob.glob(os.path.join(here, "data", "*.csv"))
                        + glob.glob(os.path.join(here, "data", "*.geojson"))):
         if os.path.basename(path) in _NOT_IN_FINGERPRINT and os.path.dirname(path) == here:
+            continue
+        if os.path.basename(path) in _DATA_NOT_IN_FINGERPRINT:
             continue
         with open(path, "rb") as fh:
             h.update(fh.read())

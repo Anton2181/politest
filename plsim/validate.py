@@ -167,7 +167,7 @@ def identity_1921(res: Results) -> list[Check]:
     for code, row in county_table().items():
         if code in res.region_codes:
             r = [res.region_codes.index(code)]
-            for k in ("pl", "uk", "be", "jw"):
+            for k in ("pl", "uk", "be", "jw", "de"):
                 if row["total"] > 0:
                     val = row[k] / row["total"] * 100
                     out.append(Check(f"1921 nationality, {code}, {k} (%)", share(r, k), val - 8, val + 8, "identity"))

@@ -17,15 +17,22 @@ census tables, used as a check only):
 * Tarnopol (A): Polish 49.3 %, Ukrainian and Ruthenian 45.5.
 * Polesie (A): Belarusian 42.6 % (375 thousand), Ruthenian 17.7 (156
   thousand), Jewish 10.5, "tutejszy" 4.4, Polish 24.3.
-* Lwów (C): Polish about 58 %, Ukrainian 34, Jewish 7.5.
+* Lwów (A): Polish 56.58 %, Ruthenian 35.88, Jewish 7.00, German 0.46
+  (2,718,014 persons; Table XI of the census volume, Statystyka Polski
+  t. XIII, nationality by religion). Of the Greek Catholics 13.9 % gave
+  Polish nationality, 86.1 % Ruthenian; of the Jews by religion 38.9 %
+  Polish, 60.8 % Jewish.
 * Nowogródek (C): Polish about 52 %, Belarusian 39, Jewish 7.6.
 * Białystok (C): Polish about 77 %, Belarusian 10, Jewish 11.
 
-County tables. The census volumes by voivodeship ("Pierwszy Powszechny Spis
-Rzeczypospolitej Polskiej z dnia 30 września 1921 roku: mieszkania, ludność,
-stosunki zawodowe", one volume per voivodeship) give nationality by powiat,
-and the "Skorowidz miejscowości" volumes give it by locality. They could not
-be read from this environment. A table put at
+County tables. The "Skorowidz miejscowości" volumes give nationality by
+locality, with a summary by powiat; the voivodeship volumes of the census
+("mieszkania, ludność, stosunki zawodowe") give it for the voivodeship only
+(Lwów, Table XI, above). ``census1921_powiaty.csv`` holds the powiaty of the
+Łódź voivodeship from the summary of the Skorowidz, t. II (1925; the Łódź
+county is the city and the powiat together; every row adds up to its total;
+the 430 "Ruthenians" of Kalisz were the Ukrainian army interned there). The
+table at
 ``plsim/data/census1921_powiaty.csv`` with the columns ``code`` (a county
 code of ``data.counties``, e.g. ``WOL.luck``), ``total``, ``pl``, ``uk``
 (Ukrainian and Ruthenian), ``be``, ``tut``, ``jw``, ``de``, ``ru``, ``lt``,
@@ -47,7 +54,7 @@ VOIVODESHIPS = {
     "STA": ({"uk": 70.2, "pl": 21.8, "jw": 6.8, "de": 1.1}, "A"),
     "TAR": ({"pl": 49.3, "uk": 45.5}, "A"),
     "POL": ({"be": 42.6, "uk": 17.7, "jw": 10.5, "tut": 4.4, "pl": 24.3}, "A"),
-    "LWO": ({"pl": 58.0, "uk": 34.0, "jw": 7.5}, "C"),
+    "LWO": ({"pl": 56.58, "uk": 35.88, "jw": 7.00, "de": 0.46}, "A"),
     "NOW": ({"pl": 52.0, "be": 39.0, "jw": 7.6}, "C"),
     "BIA": ({"pl": 77.0, "be": 10.0, "jw": 11.0}, "C"),
 }
