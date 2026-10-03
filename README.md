@@ -102,17 +102,17 @@ from the set the matching did not rule out.
 
 | Year | Population (M) | TFR | e0 m / f | Urban % | GDP/head (1990 GK$) |
 |---|---|---|---|---|---|
-| 1939 | 37.1 (Poland 34.5) | 3.20 | 50.5 / 54.2 | 29 | 2,070 |
-| 1960 | 43.2 [42.1-45.5] | 2.75 | 59.4 / 64.4 | 40 | 3,930 |
-| 1990 | 48.3 [44.0-53.3] | 1.83 | 67.6 / 74.1 | 58 | 9,700 |
-| 2032 | 45.3 [38.6-52.9] | 1.53 | 79.2 / 84.0 | 68 | 18,470 |
+| 1939 | 37.1 (Poland 34.5) | 3.22 | 50.7 / 54.3 | 29 | 2,070 |
+| 1960 | 43.9 [42.6-45.9] | 2.80 | 61.3 / 66.2 | 40 | 3,930 |
+| 1990 | 50.9 [47.2-56.0] | 1.91 | 69.7 / 76.1 | 57 | 9,700 |
+| 2032 | 50.9 [44.4-59.0] | 1.60 | 80.8 / 85.7 | 67 | 18,470 |
 
 **Demography**
 
-* The population peaks at ~48.5 M around 2000.
-* The Polish voivodeships alone reach ~46 M (the Second Republic alone:
-  45.9 M in its seeded run).
-* Net emigration of ~100-130 k/yr in the guest-worker era falls to ~40-65
+* The population peaks at ~52.4 M around 2010 and is 50.9 M in 2032.
+* The Polish voivodeships alone reach ~49 M (48.1 M in 2032; the Second
+  Republic alone: 47.6 M in its seeded run).
+* Net emigration of ~115-135 k/yr in the guest-worker era falls to ~35-65
   k/yr after 2000; net immigration appears only in the high-convergence
   runs.
 * Fertility falls late in the poorer east. In the seeded run Polesie and
@@ -128,50 +128,53 @@ start of 1931)
 
 | Language | 1933 | 2032 |
 |---|---|---|
-| Polish | 61.3 % | 67.6 % |
-| Ukrainian | 14.1 % | 14.6 % (6.6 M speakers [5.2-7.9]) |
-| Yiddish | 8.3 % | 4.4 % |
-| Belarusian | 3.9 % | 2.7 % |
-| Lithuanian | 5.7 % | 4.2 % |
-| West Polesian | 2.1 % | 1.5 % |
+| Polish | 61.3 % | 71.7 % |
+| Ukrainian | 14.1 % | 13.6 % (6.8 M speakers [5.4-7.9]) |
+| Yiddish | 8.3 % | 4.2 % |
+| Belarusian | 3.9 % | 2.4 % (1.2 M [0.6-1.6]) |
+| Lithuanian | 5.7 % | 5.2 % |
+| West Polesian | 2.1 % | 1.1 % |
 
-* **Ukrainian** grows faster than the population: high Galician and
-  Volhynian fertility and robust Greek Catholic institutions. Migrants'
-  children now assimilate (the diaspora term): Warsaw city ends 7 %
-  Ukrainian-speaking in the seeded run, against 13 % before the
-  calibration.
+* **Ukrainian** grows almost as fast as the population (4.9 → 6.8 M):
+  high Galician and Volhynian fertility and robust Greek Catholic
+  institutions, against the shift to Polish in lwowskie west of Lwów.
+  Migrants' children assimilate (the diaspora term): Warsaw city ends 6 %
+  Ukrainian-speaking in the seeded run.
 * **Yiddish** declines among acculturating Jews and survives through a
-  growing Haredi population (very uncertain). Jewish *identity* (7.6 % of
-  the union in 2032) outlasts Yiddish (4.4 %).
-* **Kashubian**: 202 k -> 76 k [49-115 k]. **Lemko**: 132 k -> 59 k
-  [43-87 k]. Both fall faster than before the calibration, which raised the
-  shift of same-faith minorities and the speed at which schools teach Polish.
-* **West Polesian**: persists in villages (0.7 M) as a declining share.
-* **Wymysorys**: 1,500 -> ~60 speakers [13-97], moribund even without the
+  growing Haredi population (very uncertain). Jewish *identity* (7.1 % of
+  the union in 2032) outlasts Yiddish (4.2 %).
+* **Kashubian**: 202 k -> 108 k [69-158 k]. **Lemko**: 132 k -> 84 k
+  [60-121 k].
+* **West Polesian**: persists in villages (0.56 M [0.25-1.0]) as a
+  declining share.
+* **Wymysorys**: 1,500 -> ~80 speakers [17-128], moribund even without the
   post-war ban.
-* **Karaim**: ~680 -> ~210 speakers.
+* **Karaim**: ~680 -> ~270 speakers.
 
-**Identity** (separate from home language): Polish 63 -> 65 %, Ukrainian
-12 -> 15 %, Belarusian 2.2 -> 3.1 %, "local" 4.0 -> 2.4 %, Jewish 8.1 ->
-7.6 %. Polish identity trails Polish speech (65 % against 68 % in 2032),
-because many who switch to Polish keep a Ukrainian, Belarusian or Jewish
-identity.
+**Identity** (separate from home language; the starting mix is fitted to
+the 1921 nationality census, METHODOLOGY §6.7): Polish 63.5 -> 66 %,
+Ukrainian 13 -> 14.5 %, Belarusian 3.2 -> 3.3 %, "local" 2.8 -> 1.2 %,
+Jewish 7.6 -> 7.1 %. Polish identity trails Polish speech (66 % against
+72 % in 2032), because many who switch to Polish keep a Ukrainian,
+Belarusian or Jewish identity.
 
 **Infrastructure**
 
 * Almost all inter-town roads are paved by ~1960.
-* By 2032: ~1,800 km of motorway and ~5,300 km of expressway (16 km per
-  1000 km², near Hungary; 23,800 km before the road appraisal counted
-  running costs and only part of the local traffic). Also ~10,500 km of
-  electrified main line and ~1,700 km of high-speed line.
+* By 2032: ~2,000 km of motorway [1,300-2,800] and ~6,700 km of
+  expressway [4,200-10,000], about 20 km per 1000 km², like Czechia and
+  Hungary (23,800 km before the road appraisal counted running costs and
+  only part of the local traffic). Also ~10,900 km of electrified main
+  line and ~1,700 km of high-speed line.
 * The 1939 plans are completed in the early 1940s: the Wilno-Gdynia shortcut
   Łapy-Ostrołęka-Przasnysz-Mława, Dębica-Jasło, and the COP Łódź-Dębica
   trunk.
 
 **Uncertainty on the map.** Every ensemble member is downscaled. In 2032,
-about one cell in twenty has a leading language that fewer than 80 % of runs
-agree on. These cells lie on the Belarusian-Polish frontier in the
-north-east and in the mixed Polish-Ukrainian belt of western Galicia
+about one cell in 25 has a leading language that fewer than 80 % of runs
+agree on (one in 19 in 1982, then mostly Polesie, Polish against West
+Polesian). These cells lie on the Polish-Ukrainian frontier of Tarnopol
+and lwowskie and on the Belarusian-Polish frontier of Nowogródek and Wilno
 (`outputs/maps/map_uncertainty.png`, and the atlas's Certainty layer).
 
 ## Maps: language shift and population on a 3.5 km grid

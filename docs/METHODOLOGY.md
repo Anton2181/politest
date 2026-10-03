@@ -860,9 +860,10 @@ Commercial speeds are set by class and era. Examples: secondary lines
   * Spain, France and Portugal about 35; Germany about 37 (motorways only).
   Runs with local shares of 0.3/0.1, 0.5/0.2, 0.8/0.4 and 1.0/0.6 gave 8.5,
   14, 29 and 37 km per 1000 km². The adopted 0.65/0.3 aimed at about 24. In
-  the recalibrated baseline it gives 19.4 km per 1000 km² (ensemble median
-  8,600 km, about 13-30 km per 1000 km² across the ensemble), at the level of
-  Czechia and Hungary and in the lower half of the band. A plausibility
+  the recalibrated baseline (with the fertility of §4.2) it gives 19.7 km
+  per 1000 km² (ensemble median 8,700 km, about 12-29 km per 1000 km² across
+  the ensemble), at the level of Czechia and Hungary and in the lower half
+  of the band. A plausibility
   check (15-35) guards it (§10.2).
 * **Dated projects**:
   * *historical*: Coal Trunk Line completion (1933), Warszawa-Radom (1934),
