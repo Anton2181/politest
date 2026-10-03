@@ -279,7 +279,7 @@ SECTIONS = [(11, "WAW"), (35, "WAR"), (97, "LOD"), (174, "KIE"), (230, "LUB"), (
             (662, "LWO"), (745, "STA"), (779, "TAR")]
 # towns with county rights (or towns tabulated apart) that are not county seats
 CITY_COUNTY = {"tomaszow": "LOD.brzeziny", "pabianice": "LOD.lask", "zgierz": "LOD.lodz", "zdunsk": "LOD.sieradz",
-               "zyrardow": "WAR.grodziskmazow", "pruszkow": "WAR.warszawa", "ostrowiec": "KIE.opatow",
+               "zyrardow": "WAR.grodziskmazowi", "pruszkow": "WAR.warszawa", "ostrowiec": "KIE.opatow",
                "sosnowiec": "KIE.bedzin", "czeladz": "KIE.bedzin", "boryslaw": "LWO.drohobycz",
                "myslowice": "SLA.katowice", "chorzow": "SLA.swietochlowice", "krolewsk": "SLA.swietochlowice",
                "gdynia": "POM.wejherowo", "morski": "POM.wejherowo", "baranowicze": "NOW.baranowicze",

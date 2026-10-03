@@ -1277,14 +1277,24 @@ Townspeople start less competent.
 
 By default (`partition: counties`) every voivodeship runs as its 1931
 powiaty, and the Lithuanian units as their apskritys. Warsaw city and Kaunas city stay whole,
-which gives 270 regions in place of 23. The county table is
+which gives 271 regions in place of 23. The county table is
 `plsim/data/counties.py` (sources and grades in `docs/DATA_SOURCES.md`).
-It has 269 counties. Węgrów's seat wins no cell on the approximate
-voivodeship map, so it is merged into its neighbours.
+It has 269 counties.
 
-**Initial state.** Cells and towns are assigned to the nearest county seat,
-as for the named splits. The county's population and languages are then
-set by its grade:
+**County land.** Cells and towns go to the county whose seat is nearest
+after a per-county weight: a power diagram (squared distance less the
+weight), with the weights fitted on the model grid so that each county's
+land matches its area in the 1931 census (`county_areas_1931.csv`,
+`tools/build_county_weights.py`; every county within 3 %, except the two
+smallest Silesian counties, about three grid cells each, within 11 %).
+Before, every place went to the nearest seat: counties with close seats
+were far off (Węgrów, wedged between Sokołów and Siedlce, won no land at
+all). Where a voivodeship of the approximate map has a detached piece
+(Tarnobrzeg's corner of Lwów, Działdowo's of Pomorze), the county there is
+in two pieces too.
+
+**Initial state.** The county's population and languages are set by its
+grade:
 
 * **Grade A** (113 counties: the eight eastern voivodeships and Pomorze).
   The seed is the 1931 county count by mother tongue. Merged categories are

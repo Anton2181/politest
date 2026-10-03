@@ -45,7 +45,7 @@ def test_snapshots_and_census_views(short_run):
 def test_county_run_accounts_and_back_validates(county_run):
     """The default (county-level) baseline adds up and passes the 1932-39 checks."""
     A = county_run.arrays()
-    assert len(county_run.region_codes) == 270
+    assert len(county_run.region_codes) == 271
     tot = A["pop"].sum(axis=(1, 2, 3))
     for i in range(1, len(tot)):
         expected = tot[i - 1] + A["births"][i].sum() - A["deaths"][i].sum() - A["emig"][i].sum() + A["immig"][i].sum()

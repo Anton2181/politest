@@ -73,7 +73,7 @@ def test_cantonal_scenario_short_run():
     p["end_year"] = 1935
     sim = Simulation(p)
     base = Simulation(load_scenario("baseline"))
-    assert len(sim.codes) == len(base.codes) == 270
+    assert len(sim.codes) == len(base.codes) == 271
     assert sim.P.sum() == pytest.approx(base.P.sum(), rel=1e-9)
     dom = dict(zip(sim.codes, sim.dominant))
     mem = dict(zip(sim.codes, sim.member))

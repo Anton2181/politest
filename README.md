@@ -264,13 +264,13 @@ Baseline, area where each language leads (thousand km²):
 
 ## County level (powiaty)
 
-Every scenario runs on 270 regions (199 and 211 in the Wakar scenarios,
-289 and 276 in `nw_krai` and `lit_bel`): the 1931 powiaty and the Lithuanian
+Every scenario runs on 271 regions (200 and 212 in the Wakar scenarios,
+299 and 284 in `nw_krai` and `lit_bel`): the 1931 powiaty and the Lithuanian
 apskritys, with Warsaw and Kaunas cities whole, plus the okrugs of Soviet
 Belarus and the krai's eastern uezds where a scenario holds them, and the
-groups of German Kreise in `plebiscite_poland` and `historical`. One
-county, Węgrów, wins no cell on the approximate voivodeship map and is
-merged into its neighbours.
+groups of German Kreise in `plebiscite_poland` and `historical`. County
+land is fitted to the area of each powiat in the 1931 census (a weighted
+Voronoi diagram of the seats; every county within 3 % of its census area).
 `partition: []` runs the original 23-voivodeship model instead (20 s rather
 than 4 minutes). Details are in `docs/METHODOLOGY.md` §12.6.
 
