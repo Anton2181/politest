@@ -223,11 +223,20 @@ unitary union (§6.6).
 
 ### 3.6 Urban/rural split, ages, bilingualism
 
-* **Urban split.** Groups differ by fixed urban-residence odds ratios (Jews
+* **Urban split.** Groups differ by urban-residence odds ratios (Jews
   ~12-22x the local baseline; Polish-speakers in the Kresy 1.5-3x;
-  Polesians, Lemkos and Ukrainian peasants 0.1-0.25x). A per-region base
-  odds is solved so that the regional urban share matches the census and the
-  Polish total matches 27.4 %.
+  Polesians, Lemkos and Ukrainian peasants 0.1-0.25x). In the sixteen
+  voivodeships the census prints every powiat's towns and countryside by
+  mother tongue and religion (`census1931_strata.csv`); there the odds are
+  raked, a factor per census language and per religion, until each has its
+  census urban share (religions first, so where the two disagree the
+  languages hold), and the base odds then give the census urban share of the
+  voivodeship. Kashubian, Lemko and the other languages the census counted
+  inside Polish or Ukrainian take that category's factor and keep their
+  odds relative to it. Elsewhere a per-region base odds is solved so that
+  the regional urban share matches the census and the Polish total matches
+  27.4 %. The voivodeship religions are the pages' too wherever the pages
+  printing a religion hold 90 % of the voivodeship (`RELIGION_1931`).
 * **Age-sex structure.** Each cell is a stable population whose fertility
   blends current and pre-1914 levels (35 %/65 %). This reflects the fact that
   1931 age structures were shaped by earlier fertility and by young-adult
@@ -1279,47 +1288,72 @@ By default (`partition: counties`) every voivodeship runs as its 1931
 powiaty, and the Lithuanian units as their apskritys. Warsaw city and Kaunas city stay whole,
 which gives 271 regions in place of 23. The county table is
 `plsim/data/counties.py` (sources and grades in `docs/DATA_SOURCES.md`).
-It has 269 counties.
+It has 269 counties: 247 Polish powiaty (241 census units, since six
+powiaty abolished in 1932 are printed with their successors) and 22
+Lithuanian apskritys.
 
 **County land.** Cells and towns go to the county whose seat is nearest
-after a per-county weight: a power diagram (squared distance less the
-weight), with the weights fitted on the model grid so that each county's
-land matches its area in the 1931 census (`county_areas_1931.csv`,
-`tools/build_county_weights.py`; every county within 3 %, except the two
-smallest Silesian counties, about three grid cells each, within 11 %).
-Before, every place went to the nearest seat: counties with close seats
-were far off (Węgrów, wedged between Sokołów and Siedlce, won no land at
-all). Where a voivodeship of the approximate map has a detached piece
-(Tarnobrzeg's corner of Lwów, Działdowo's of Pomorze), the county there is
-in two pieces too.
+after a per-county weight: the distance less the weight (an additively
+weighted Voronoi diagram), with the weights fitted on the model grid so
+that each county's land matches its area in the 1931 census
+(`county_areas_1931.csv`, `tools/build_county_weights.py`; every county
+within 4 %, except Świętochłowice, about three grid cells, at 14 %; in
+Nowogródek and Wilno the 1897 governorate rule below costs more: Słonim
++51 %, Brasław −22 %). With additive weights every county holds its seat and
+is star-shaped around it: were seat i in county j (w_j − w_i > d_ij), every
+place would be nearer j and i would have no land. The first version used a
+power diagram (squared distance less the weight), which meets the areas as
+well but put some seats in their neighbours (Katowice in Tarnowskie Góry,
+Mińsk Mazowiecki 28 km from its own land, Lublin's town in Lubartów), and
+made the governorate rule ineffective (it compared km² with a slack in km).
+Before both, every place went to the nearest seat, and counties with close
+seats were far off (Węgrów won no land at all). In the formerly Russian
+north-east a place goes to a county of its own 1897 governorate where one
+lies within 30 km of its nearest seat (the 1931 powiaty mostly kept the
+uezd borders; Baranowicze, carved from two uezds, is the main exception,
+hence Słonim's surplus). Where a voivodeship of the approximate map has a
+detached piece (Tarnobrzeg's corner of Lwów, Działdowo's of Pomorze), the
+county there is in two pieces.
 
-**Initial state.** The county's population and languages are set by its
-grade:
+**Initial state.** Every Polish county is at grade A: its population and
+mother tongue from the census volumes (tabl. 12 of the voivodeship volumes,
+or the powiat pages of the short results), and its towns, countryside and
+religions from the powiat pages (`census1931_strata.csv`). The Lithuanian
+apskritys are at grade C (downscaled from their unit) until the 1923
+apskritis tables are supplied.
 
-* **Grade A** (113 counties: the eight eastern voivodeships and Pomorze).
-  The seed is the 1931 county count by mother tongue. Merged categories are
-  split by the downscaled pattern: Belarusian + tutejszy + Russian in
-  Nowogródek and Polesie, "other", and the unenumerated Kashubian, Lemko and
-  Wymysorys speakers inside "Polish" and "Ukrainian". The census "other"
-  holds only the languages the census could name elsewhere (Czech, Latvian,
-  Karaim ...): until this version it also took in Kashubian, so a county
-  table with an "other" column lost the Kashubians of the downscaled
-  pattern, which mattered once Pomorze had its county table (Kartuzy would
-  have been 20 % Kashubian; it is now 69 %). Two IPFs follow:
-  1. Over (county × language), fitting the county populations and the
-     voivodeship's latent language totals for the chosen census variant.
-  2. Over (county × stratum × language), splitting rural and urban by the
-     downscaled split of each language in each county, and matching the
-     voivodeship by stratum.
+1. **Seed.** The 1931 county count by mother tongue. Merged categories are
+   split by the downscaled pattern: Belarusian + tutejszy + Russian where a
+   table merges them, "other", and the unenumerated Kashubian, Lemko and
+   Wymysorys speakers inside "Polish" and "Ukrainian". The census "other"
+   holds only the languages the census could name elsewhere (Czech,
+   Latvian, Karaim ...).
+2. **Fit to the voivodeship.** IPF over (county × language), fitting the
+   county populations and the voivodeship's latent language totals for the
+   chosen census variant.
+3. **Towns.** IPF over (county × stratum × language): each language's urban
+   share in the county is the census's (from the powiat page; Kashubian and
+   the other carved-out languages keep the downscaled split), and the
+   voivodeship is matched by stratum. The voivodeship's split is itself
+   fitted to the same pages (§3.6), so the two agree: the county urban
+   shares are the census's to 0.3 points on average.
+4. **Communities.** Each language's split into communities starts as the
+   voivodeship's; IPF then fits, in turn, the county's census religions by
+   stratum (the shares among the religions its pages print; "other
+   Christian" counts as Orthodox in the north-east, where it is mostly Old
+   Believers, as Protestant in Volhynia and Polesie, and as Catholic
+   elsewhere), the voivodeship's totals by stratum and group, and the
+   county's languages; a last run of the two latter makes both exact. The
+   county religions are then the census's to 0.3 points on average (95 %
+   within 1.1 points); the largest misses are towns where the census
+   religion and language cannot both hold within the voivodeship's groups
+   (Dubno: Orthodox Russian speakers).
 
-  The census variant therefore keeps its voivodeship totals, and the county
-  table decides where the speakers live. Under the religion-corrected
-  variant, a county with many Greek Catholics declaring Polish keeps more
-  Ukrainian speakers than its printed figure.
-* **Grade B** (19: Lublin, part of Polesie). The county population is
-  known. Its languages come from the downscaled pattern.
-* **Grade C** (153: centre, west, Lithuania). Fully downscaled from the
-  voivodeship.
+The census variant therefore keeps its voivodeship totals, and the county
+table decides where the speakers live, how urban they are and which church
+they belong to. Under the religion-corrected variant, a county with many
+Greek Catholics declaring Polish keeps more Ukrainian speakers than its
+printed figure.
 
 Seats come from the table (`lat`/`lon`). Fertility, mortality and literacy
 parameters are inherited from the voivodeship.

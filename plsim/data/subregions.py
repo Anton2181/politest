@@ -10,11 +10,16 @@ Sub-region codes are ``PARENT.CHILD``.  Settings given for the parent apply
 to the children unless overridden (``params.region_lookup``).
 
 County areas.  The 1931 census prints the area of every powiat
-(``data/county_areas_1931.csv``).  County cells are a power diagram of
-the seats (a place goes to the county with the least squared distance less
-the county's weight; ``data/county_weights.json``, fitted by
+(``data/county_areas_1931.csv``).  A place goes to the county with the least
+distance to its seat less the county's weight (an additively weighted
+Voronoi diagram; ``data/county_weights.json``, fitted by
 ``tools/build_county_weights.py`` on the model grid), so that each county's
-land matches its census area. A power diagram can meet any set of areas.
+land matches its census area. Such a diagram can meet any set of areas, and
+every county holds its seat and is star-shaped around it: if a seat i fell in
+county j (w_j - w_i > d_ij), every place would be nearer j, and i would have
+no land. A power diagram (squared distance less the weight) fits the areas
+too, but put the seats of Katowice, Grudziądz and Mińsk Mazowiecki in their
+neighbours.
 
 Real county borders.  When ``data/powiaty_1931.geojson`` exists (polygon
 features with a ``plsim_code`` property naming the county, e.g. digitised
@@ -52,7 +57,7 @@ _WEIGHTS: dict | None = None
 
 
 def county_weights() -> dict:
-    """{county code: power-diagram weight, km2} fitted to the census areas (0 if absent)."""
+    """{county code: additive weight, km} fitted to the census areas (0 if absent)."""
     global _WEIGHTS
     if _WEIGHTS is None:
         _WEIGHTS = {}
@@ -168,16 +173,16 @@ def seat_table(parent: str, child_codes=None) -> list[tuple]:
 
 
 def assign(parent: str, lat, lon, child_codes=None, weights: dict | None = None) -> np.ndarray:
-    """Sub-region code of each place: the nearest seat, the distance divided
-    by the county's weight (``county_weights``; or ``weights`` when fitting)."""
+    """Sub-region code of each place: the nearest seat, the distance less the
+    county's weight (``county_weights``; or ``weights`` when fitting)."""
     anc = seat_table(parent, child_codes)
     lat, lon = np.atleast_1d(np.asarray(lat, float)), np.atleast_1d(np.asarray(lon, float))
-    D = haversine_matrix(lat, lon, np.array([a[0] for a in anc]), np.array([a[1] for a in anc]))
+    D = D0 = haversine_matrix(lat, lon, np.array([a[0] for a in anc]), np.array([a[1] for a in anc]))
     named = parent in SPLITS and (child_codes is None or set(child_codes) <= set(children(parent)))
     if not named:
-        # power diagram: squared distance less the county's weight (km2), fitted to the census areas
+        # additively weighted Voronoi: distance less the county's weight (km), fitted to the census areas
         wt = county_weights() if weights is None else weights
-        D = D ** 2 - np.array([wt.get(a[2], 0.0) for a in anc])[None, :]
+        D = D - np.array([wt.get(a[2], 0.0) for a in anc])[None, :]
     if (len(GOV_ALLOWED.get(parent, "x")) > 1 and not named and len(lat)
             and not parent.startswith(("LT", "BY_", "LV_", "RU_"))):
         # the 1931 powiaty of the formerly Russian north-east kept the uezd
@@ -186,7 +191,7 @@ def assign(parent: str, lat, lon, child_codes=None, weights: dict | None = None)
         from .governorates import letter
         gl = letter(lat, lon)
         sl = letter([a[0] for a in anc], [a[1] for a in anc])
-        D = gov_constrain(D, gl[:, None] != sl[None, :])
+        D = gov_constrain(D, gl[:, None] != sl[None, :], raw=D0)
     out = np.array([anc[k][2] for k in D.argmin(axis=1)], dtype=object)
     polys = county_polygons()
     if polys:

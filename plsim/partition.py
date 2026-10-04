@@ -8,7 +8,8 @@ towns of each sub-region are then summed.
 * **Languages.** Each sub-region gets the rural and urban speakers of every
   language found on its cells and in its towns.
 * **Communities.** Within a language, the split between communities
-  (Catholic, Orthodox, Greek Catholic ...) is the parent's.
+  (Catholic, Orthodox, Greek Catholic ...) is the parent's (in county mode,
+  fitted to the county's census religions: step 4 below).
 * **Other inputs.** Fertility, mortality and literacy are the parent's.
   Area is the parent's official area times the sub-region's share of the
   parent's cells. Income: see the end of this docstring.
@@ -29,12 +30,22 @@ pattern:
    and to the voivodeship's latent language totals. The census variants
    (official, religion-corrected, vernacular) therefore keep their
    voivodeship totals, and the county table decides where speakers live.
-3. **Rural/urban split.** Rural and urban come from the downscaled split of
-   each language in the county, then a final IPF matches the voivodeship by
-   stratum.
+3. **Rural/urban split.** The census prints every powiat's towns and
+   countryside separately (``data.counties.STRATA``, the short results), so
+   the urban share of each language in the county is the census's (Kashubian,
+   Lemko and other languages the census counted inside Polish or Ukrainian
+   keep the downscaled split); a final IPF matches the voivodeship by
+   stratum. The voivodeship's own split is fitted to the same pages
+   (``data.census1931.census_urban_targets``).
+4. **Communities.** The start is the parent's split of each language into
+   communities. IPF then fits, in turn, the county's census religions by
+   stratum (shares among the religions printed for it; "other Christian" is
+   Orthodox in the north-east, Protestant in Volhynia and Polesie, Catholic
+   elsewhere), the parent's totals by stratum and group, and the county's
+   languages; a last run of the two latter makes both exact.
 
 Counties with only a population (grade B) use the downscaled language
-pattern at that population. Counties with neither (grade C) are fully
+pattern at that population (no Polish county is left at grade B). Counties with neither (grade C) are fully
 downscaled. Powiaty merged in 1932 have one census row for the group
 (``data.counties.GROUPS``): the group's population is split by the
 downscaled pattern, and each member takes the group's language shares.
@@ -54,9 +65,11 @@ import numpy as np
 from .data import subregions
 from .data.counties import BY_CODE as COUNTY_BY_CODE
 from .data.counties import GROUPS as COUNTY_GROUPS
-from .data.census1931 import build_initial_composition
+from .data.counties import STRATA as COUNTY_STRATA
+from .data.census1931 import (BIN_COMMUNITIES, CENSUS_CATEGORY, OTHER_CHRISTIAN_BIN, RELIGION_BIN,
+                               build_initial_composition)
 from .data.geography import MODEL_DLAT, MODEL_DLON, build_grid, haversine_matrix
-from .data.languages import GROUPS, LANG_INDEX, NL
+from .data.languages import COMM_INDEX, GROUPS, LANG_INDEX, NL
 from .data.network import NODES
 from .economy import piecewise
 from .spatial import Downscaler, lang_totals
@@ -81,7 +94,7 @@ _HOST = {"csb": "pl", "wym": "pl", "rom": "pl", "rue": "uk", "kdr": "oth"}   # u
 # a piece of a unit cut along a governorate border is kept only if it holds
 # at least 5 % of the unit and this many people (smaller ones are slivers of
 # the 300 m governorate outlines against the 1932 borders)
-MIN_PIECE = 5000.0
+MIN_PIECE = 10000.0
 
 
 def _census_seed(cty, ds: np.ndarray, pop: float) -> np.ndarray:
@@ -126,6 +139,90 @@ def _census_seed(cty, ds: np.ndarray, pop: float) -> np.ndarray:
         if h is not None:
             seed[h] = max(seed[h] - n, 0.0)
     return seed
+
+
+# languages the census counted inside another category (their urban share is not that category's)
+_CARVED = {"csb", "rue", "rom", "kdr", "wym", "lv"}
+
+
+def _strata_key(k: str) -> str:
+    """Key of a county in ``data.counties.STRATA`` (a powiat merged in 1932: its group)."""
+    return "+".join(COUNTY_GROUPS[k][0]) if k in COUNTY_GROUPS else k
+
+
+def _urban_share(k: str) -> dict | None:
+    """{latent language index: urban share} in county ``k`` from the census strata, or None. A language with
+    fewer than 50 census speakers takes the county's urban share; one the census counted inside another
+    category (Kashubian, Lemko ...) is left out."""
+    st = COUNTY_STRATA.get(_strata_key(k))
+    if st is None:
+        return None
+    urb, rur = st.get("urban", (0, {}, {}, set())), st.get("rural", (0, {}, {}, set()))
+    whole = urb[0] / max(urb[0] + rur[0], 1e-9)
+    out = {}
+    for name, j in _L.items():
+        if name in _CARVED:
+            continue
+        c = CENSUS_CATEGORY.get(name, "oth")
+        u, r = urb[1].get(c, 0.0), rur[1].get(c, 0.0)
+        out[j] = u / (u + r) if u + r >= 50 else whole
+    return out
+
+
+def _fit_communities(parent: str, comp_i: np.ndarray, child_lang: dict, group_lang: np.ndarray,
+                     n_iter: int = 100) -> dict:
+    """{county: (2, G)} communities of every county of voivodeship ``parent``. The start is the parent's split
+    of each language into communities; IPF then fits, in turn, the county's census religions by stratum
+    (shares among the religions printed for it), the parent's (stratum, group) totals, and the county's
+    languages (``child_lang``, exact)."""
+    kids = list(child_lang)
+    parent_lang = lang_totals(comp_i)
+    X = np.array([comp_i * np.where(parent_lang > 0, child_lang[k] / np.maximum(parent_lang, 1e-12), 0.0)[:, group_lang]
+                  for k in kids])                                            # (K, 2, G)
+    comm = np.array([COMM_INDEX[c] for c, _ in GROUPS])
+    masks = {b: np.isin(comm, [COMM_INDEX[c] for c in cs]) for b, cs in BIN_COMMUNITIES.items()}
+    rel_bin = dict(RELIGION_BIN, xc=OTHER_CHRISTIAN_BIN.get(parent, "RC"))
+    # census shares among the printed religions, by county and stratum
+    targets = []
+    for j, k in enumerate(kids):
+        st = COUNTY_STRATA.get(_strata_key(k))
+        for s, name in enumerate(("rural", "urban")):
+            if st is None or name not in st:
+                continue
+            _, _, rel, printed = st[name]
+            bins = {rel_bin[c] for c in printed if c in rel_bin}
+            cnt = {b: 0.0 for b in bins}
+            for c, v in rel.items():
+                if rel_bin.get(c) in cnt:
+                    cnt[rel_bin[c]] += v
+            tot = sum(cnt.values())
+            if tot > 0 and len(cnt) > 1:
+                targets.append((j, s, {b: v / tot for b, v in cnt.items()}))
+    if not targets:
+        return {k: X[j] for j, k in enumerate(kids)}
+    lang_of = [np.where(group_lang == l)[0] for l in range(NL)]
+    L = np.array([child_lang[k] for k in kids])                              # (K, 2, NL)
+
+    def to_parent_and_languages():
+        X[:] *= np.where(X.sum(axis=0) > 0, comp_i / np.maximum(X.sum(axis=0), 1e-12), 0.0)[None]
+        for l, gs in enumerate(lang_of):
+            if len(gs):
+                cur = X[:, :, gs].sum(axis=2)
+                X[:, :, gs] *= np.where(cur > 0, L[:, :, l] / np.maximum(cur, 1e-12), 0.0)[:, :, None]
+
+    for _ in range(n_iter):
+        for j, s, share in targets:
+            row = X[j, s]
+            mass = sum(row[masks[b]].sum() for b in share)
+            for b, sh in share.items():
+                cur = row[masks[b]].sum()
+                if cur > 0:
+                    row[masks[b]] *= sh * mass / cur
+        to_parent_and_languages()
+    # the two remaining margins agree (both give the voivodeship's languages by stratum): settle them exactly
+    for _ in range(4 * n_iter):
+        to_parent_and_languages()
+    return {k: X[j] for j, k in enumerate(kids)}
 
 
 def _fit_counties(parent_lang: np.ndarray, child_lang: dict, n_iter: int = 60, absorbed: dict | None = None) -> dict:
@@ -180,10 +277,14 @@ def _fit_counties(parent_lang: np.ndarray, child_lang: dict, n_iter: int = 60, a
     for _ in range(n_iter):
         X *= np.where(X.sum(axis=0) > 0, col / np.maximum(X.sum(axis=0), 1e-12), 0.0)[None, :]
         X *= (pops / np.maximum(X.sum(axis=1), 1e-12))[:, None]
-    # rural / urban split by language from the downscaled pattern, then fit the strata
+    # rural / urban split by language: the census strata of the county where printed, else the
+    # downscaled pattern; then fit the strata
     ru = np.array([child_lang[k] for k in kids])                             # (K, 2, NL)
     frac = np.where(ru.sum(axis=1, keepdims=True) > 0, ru / np.maximum(ru.sum(axis=1, keepdims=True), 1e-12),
                     (parent_lang / np.maximum(parent_lang.sum(axis=0), 1e-12))[None])
+    for j, k in enumerate(kids):
+        for l, u in (_urban_share(k) or {}).items():
+            frac[j, 1, l], frac[j, 0, l] = u, 1.0 - u
     Y = X[:, None, :] * frac
     for _ in range(n_iter):
         Y *= np.where(Y.sum(axis=0) > 0, parent_lang / np.maximum(Y.sum(axis=0), 1e-12), 0.0)[None]
@@ -210,7 +311,7 @@ def _cut(code, lang, cells, towns, g, ds, C, groups):
     unit that is not cut keeps its code; the pieces of a cut unit are coded by
     the letters they cover (``data.governorates.piece_code``), the largest
     taking every letter the others do not. A piece smaller than 5 % of the
-    unit (or 2,000 people) stays with the largest."""
+    unit (or 10,000 people) stays with the largest."""
     from .data.governorates import letter, piece_code, piece_letters
     lets = piece_letters(groups)
     grp_of = {c: gname for gname, ls in lets.items() for c in ls}
@@ -303,6 +404,7 @@ def apply_partition(regions, params: dict):
                     near = min(child_lang, key=lambda k: (seat[k][0] - la0) ** 2 + ((seat[k][1] - lo0) * 0.63) ** 2)
                     absorbed.setdefault(near, []).append(d)
                 child_lang = _fit_counties(parent_lang, child_lang, absorbed=absorbed)
+                fitted = _fit_communities(reg.code, comp[i], child_lang, group_lang)
             units, base_of = [], {}
             for k, cl in child_lang.items():
                 mc, mt = cells[cell_child == k], towns[town_child == k]
@@ -312,12 +414,18 @@ def apply_partition(regions, params: dict):
                     base_of[pc] = k
         area_all = g.cell_km2[cells].sum()
         u_par = comp[i][1].sum() / max(comp[i].sum(), 1e-9)
+        if reg.code not in parents or mode != "county":
+            fitted, child_lang = {}, {}
         for k, cl, mc, mt, gname in units:
             labels[k] = gname
             for n in mt:
                 node_region[ds.town_names[n]] = str(k)
-            ratio = np.where(parent_lang > 0, cl / np.maximum(parent_lang, 1e-12), 0.0)
-            cc = comp[i] * ratio[:, group_lang]                           # (2, G)
+            if base_of[k] in fitted:        # a county (or a piece of one): its fitted communities
+                bl = child_lang[base_of[k]]
+                cc = fitted[base_of[k]] * np.where(bl > 0, cl / np.maximum(bl, 1e-12), 0.0)[:, group_lang]
+            else:
+                ratio = np.where(parent_lang > 0, cl / np.maximum(parent_lang, 1e-12), 0.0)
+                cc = comp[i] * ratio[:, group_lang]                       # (2, G)
             total = cc.sum()
             base = base_of[k]
             if base == k and (mode == "county" or reg.code not in parents) and base in seat:

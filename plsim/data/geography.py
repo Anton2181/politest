@@ -235,12 +235,14 @@ GOV_SLACK_KM = 30.0
 REACH_KM = 60.0
 
 
-def gov_constrain(D: np.ndarray, banned: np.ndarray) -> np.ndarray:
+def gov_constrain(D: np.ndarray, banned: np.ndarray, raw: np.ndarray | None = None) -> np.ndarray:
     """Distances ``D`` (places x options) with the ``banned`` options (another
     governorate's) ruled out for the places that keep an allowed option within
-    ``GOV_SLACK_KM`` of their nearest option."""
+    ``GOV_SLACK_KM`` of their nearest option. With weighted distances, ``raw``
+    gives the plain ones (km) for that test."""
     D2 = np.where(banned, np.inf, D)
-    ok = D2.min(axis=1) <= D.min(axis=1) + GOV_SLACK_KM
+    R = D if raw is None else raw
+    ok = np.where(banned, np.inf, R).min(axis=1) <= R.min(axis=1) + GOV_SLACK_KM
     out = D.copy()
     out[ok] = D2[ok]
     return out

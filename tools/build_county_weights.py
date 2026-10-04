@@ -1,13 +1,14 @@
 """Fit the county Voronoi weights to the census areas of the powiaty.
 
 Reads plsim/data/county_areas_1931.csv and writes plsim/data/county_weights.json:
-one power-diagram weight per county (km2), so that the cells of the model grid that
+one additive weight per county (km), so that the cells of the model grid that
 ``data.subregions.assign`` gives each county add up to its census area. Targets
 are relative: each voivodeship's cells are shared in proportion to the areas of
 its counties (towns with county rights print no area and are small). Powiaty
 merged in 1932 are printed with one area, which their members share as the
-unweighted diagram does. Run from the repository
-root:  python tools/build_county_weights.py
+unweighted diagram does. With additive weights (distance less weight) every
+county keeps its seat and is star-shaped around it (``data.subregions``). Run
+from the repository root:  python tools/build_county_weights.py
 """
 from __future__ import annotations
 
@@ -59,7 +60,7 @@ def fit(n_iter: int = 700):
             del goal[u]
         units = list(goal)
         w = {k: 0.0 for k in kids}
-        step = 0.5 * total / len(units)              # km2 of weight per unit of relative error
+        step = 0.5 * np.sqrt(total / len(units))     # km of weight per unit of relative error
         for it in range(n_iter):
             child = subregions.assign(par, g.lat[cells], g.lon[cells], kids, weights=w)
             for u in units:

@@ -269,8 +269,9 @@ Every scenario runs on 271 regions (200 and 212 in the Wakar scenarios,
 apskritys, with Warsaw and Kaunas cities whole, plus the okrugs of Soviet
 Belarus and the krai's eastern uezds where a scenario holds them, and the
 groups of German Kreise in `plebiscite_poland` and `historical`. County
-land is fitted to the area of each powiat in the 1931 census (a weighted
-Voronoi diagram of the seats; every county within 3 % of its census area).
+land is fitted to the area of each powiat in the 1931 census (an additively
+weighted Voronoi diagram of the seats, which keeps every seat in its county;
+nearly every county within 4 % of its census area).
 `partition: []` runs the original 23-voivodeship model instead (20 s rather
 than 4 minutes). Details are in `docs/METHODOLOGY.md` §12.6.
 
@@ -280,11 +281,19 @@ than 4 minutes). Details are in `docs/METHODOLOGY.md` §12.6.
   powiat pages of the short results for the Warsaw voivodeship, Lublin,
   Nowogródek, Polesie and the large cities, with religion where printed
   (`plsim/data/census1931_powiaty.csv`, with the page of every row; each
-  voivodeship read whole reproduces its census population). The east comes
-  from published secondary tables of the same census. Lithuania's
-  apskritys are still downscaled (grade C). County figures are fitted to the
-  voivodeship totals of the starting point, so the county tables decide
-  *where* speakers live and the research estimate decides *how many*.
+  voivodeship read whole reproduces its census population). Every powiat
+  page of the short results is also read by stratum: the towns and the
+  countryside of each powiat by religion and mother tongue
+  (`plsim/data/census1931_strata.csv`, 241 powiaty, every voivodeship
+  adding up to its census population). It gives each county its census
+  urban share by language and its religions by stratum, and the six
+  eastern voivodeships their mother tongue: they replace the secondary
+  tables used before, which in Galicia had given the religions as the
+  languages (Turka: 6,301 Roman Catholics read as Polish speakers; 26,123
+  spoke Polish). Lithuania's apskritys are still downscaled (grade C).
+  County figures are fitted to the voivodeship totals of the starting
+  point, so the county tables decide *where* speakers live and the research
+  estimate decides *how many*.
 * **Consistency.** Migration, income, enclave concentration and random
   numbers are nested in the voivodeships, so the county run reproduces
   the voivodeship model:

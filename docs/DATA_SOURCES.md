@@ -374,7 +374,15 @@ volume and page:
   skróconej*, GUS; MBC edition 14481): one page per powiat with population
   by religion and mother tongue for towns and villages. Its language columns
   are those of the powiat's main languages; the remainder ("unk") is shared
-  pro rata.
+  pro rata. Every powiat page and city page of the volume is in
+  `census1931_strata.csv` (536 rows, 241 powiaty: towns, countryside and
+  cities with their own page, by religion and mother tongue; checked by
+  `tools/check_census1931_strata.py`). About a quarter of the pages were
+  read by machine (`tools/parse_census1931.py`) and kept only where they
+  reproduced the county totals; the rest were read from the page images,
+  each row against its printed total and each powiat against its county
+  population. Every voivodeship adds up to its census population (Warsaw's
+  is short the city of Płock, whose page is missing).
 
 Every row adds up to its printed total. Each voivodeship read whole
 reproduces the census population of the voivodeship: Łódź, Kielce, Lublin,
@@ -386,12 +394,7 @@ from the page images.
 
 | Voivodeship | Counties | Grade | What is known | Source / check |
 |---|---|---|---|---|
-| Tarnopol | 17 | A | population, mother tongue | Polish Wikipedia voivodeship article, from the 1931 census (Statystyka Polski, seria C); reproduces the voivodeship totals exactly |
-| Stanisławów | 12 | A | population, mother tongue | ditto (1932 county division); exact |
-| Lwów | 25 A + 1 B | A | population, mother tongue | ditto; Lwów city merged into powiat lwowski (455,031: Polish 278,924, Ukrainian 93,532, Yiddish 76,885); population within 0.3 %, but Polish and Ukrainian are about 35 k and 27 k off the voivodeship totals (rounding in the source tables) |
-| Volhynia | 11 | A | population, mother tongue | ditto |
-| Wilno | 7 A + 1 B | A | population, mother tongue | ditto; Wilno city merged into wileńsko-trocki (409,543, grade B) |
-| Białystok | 12 | A | population, mother tongue | ditto; Białystok city merged into białostocki (231,179). The Augustów Yiddish figure is derived from the voivodeship residual |
+| Tarnopol, Stanisławów, Lwów, Volhynia, Wilno, Białystok | 17, 12, 26, 11, 8, 12 | A | population, mother tongue, religion, towns and countryside | the short results by powiat (below). Until now these rows came from the county tables of the Polish Wikipedia voivodeship articles; the pages showed those to be off by up to 6,000 persons a county (Augustów, Równe, Łuck, Kowel, Rawa Ruska) and, for Galicia, to give the religions as the languages: Turka's "6,301 Polish speakers" are its Roman Catholics (26,123 spoke Polish), Żółkiew's 20,279 likewise. Cities merged into their powiat (Lwów into lwowski, Wilno into wileńsko-trocki, Białystok into białostocki). Bóbrka's page is missing from the scan (only its continuation is there): its towns and countryside are the voivodeship without the city of Lwów (PDF p. 663 prints towns over 20,000, smaller towns and villages) less every other county |
 | Nowogródek | 8 | A | population, mother tongue (Belarusian, Russian and Lithuanian separately), religion | the short results by powiat (below) |
 | Polesie | 9 | A | population, mother tongue (Belarusian, "tutejszy", Ukrainian, Russian separately), religion | ditto |
 | Lublin | 17 | A | population, mother tongue, religion | ditto |
@@ -406,11 +409,22 @@ In short:
 * **Fitting.** County figures are fitted to the voivodeship totals of the
   selected census variant by iterative proportional fitting. A county table
   therefore decides *where* speakers live, not how many there are.
+* **Towns and religions.** The pages give the urban share of every
+  language and the religions of the towns and of the countryside of every
+  county; the county split follows both (`docs/METHODOLOGY.md` §12.6).
+  They also give the voivodeships' religions and urban split, which the
+  1931 reconstruction now uses (§3.6): they corrected the older
+  approximate religion table, most in Lwów (Jewish 10.9 %, not 12.8 %;
+  Greek Catholic 41.6 %, not 38.6 %), Lublin (Jewish 12.7 %, not 10.6 %)
+  and Białystok (Orthodox 19 %, not 21.5 %), and the German speakers of
+  the Warsaw voivodeship (2.9 %, not 1.9 %).
 * **Data repairs.** A few published rows do not add up. Rohatyń's
   languages exceed its population by 0.7 %. Przeworsk's Polish count was
-  recomputed from its percentage (58,632). Rawa Ruska's total was estimated
-  (121,800). The "other" languages of Dolina (4,013) and Horodenka (16) are
-  German.
+  recomputed from its percentage (58,632). The "other" languages of Dolina
+  (4,013) and Horodenka (16) are German. On the pages: two cells of the
+  Kopyczyńce towns are smudged (the Roman Catholics are the rest of the
+  row), and the machine reading mislabelled a few columns (Brzeziny,
+  Końskie, Płock, Nieśwież, Słonim), corrected by eye.
 
 The county table also corrected one of the older anchors in
 `data.geography`. The "Szczuczyn" anchor had Belarusian at 0.2 %, which

@@ -226,8 +226,97 @@ def test_counties_add_up_and_follow_the_census(county_split):
         assert np.allclose(comp[kids].sum(axis=0), old[i], rtol=1e-5, atol=1.0), r.code
     j = codes.index("LWO.turka")
     L = lang_totals(comp[j]).sum(axis=0)
-    assert L[LANG_INDEX["uk"]] / L.sum() == pytest.approx(0.844, abs=0.02)        # census 84.4 %
+    assert L[LANG_INDEX["uk"]] / L.sum() == pytest.approx(0.704, abs=0.02)        # census 70.4 %
     j = codes.index("WIL.swieciany")
     L = lang_totals(comp[j]).sum(axis=0)
     assert L[LANG_INDEX["lt"]] / L.sum() == pytest.approx(0.315, abs=0.03)         # census 31.5 %
     assert nodes["Lwów"] == "LWO.lwow" and nodes["Pińsk"] == "POL.pinsk"
+
+
+def test_census_strata_add_up():
+    """census1931_strata.csv: every voivodeship adds up to its census population (Warsaw voivodeship is short
+    the city of Płock, whose page is missing) and every row's religions and languages to its population."""
+    import collections
+    import csv
+    import os
+    path = os.path.join(os.path.dirname(__file__), "..", "plsim", "data", "census1931_strata.csv")
+    tot = collections.Counter()
+    with open(path, encoding="utf-8") as fh:
+        for r in csv.DictReader(l for l in fh if not l.startswith("#")):
+            pop = int(r["pop"])
+            tot[r["county"][:3]] += pop
+            for cols in (("rc", "gc", "or", "ev", "xc", "jw", "xn", "ro"),
+                         ("pl", "uk", "rue", "be", "pls", "ru", "cs", "lt", "de", "yi", "he", "oth", "unk")):
+                s = sum(int(r[c] or 0) for c in cols)
+                assert pop - 0.02 * pop <= s <= pop + max(0.001 * pop, 100), (r["county"], r["page"], cols[0])
+    census = {"WAR": 2_529_228 - 32_998, "LOD": 2_632_010, "KIE": 2_935_697, "LUB": 2_464_936, "BIA": 1_643_844,
+              "WIL": 1_275_939, "NOW": 1_057_147, "POL": 1_131_939, "WOL": 2_085_574, "POZ": 2_106_500,
+              "POM": 1_080_138, "SLA": 1_295_027, "KRA": 2_297_807, "LWO": 3_127_409, "STA": 1_480_285,
+              "TAR": 1_600_406}
+    assert dict(tot) == census
+
+
+def test_counties_follow_the_census_religions_and_towns(county_split):
+    """The county split reproduces the census religions by stratum (shares among the printed religions) and
+    the census urban share of every county."""
+    from plsim.data.census1931 import OTHER_CHRISTIAN_BIN, RELIGION_BIN, BIN_COMMUNITIES
+    from plsim.data.counties import STRATA
+    from plsim.data.languages import COMM_INDEX, GROUPS
+    from plsim.partition import _strata_key
+    regions, (new, comp, nodes, _), p = county_split
+    comm = np.array([COMM_INDEX[c] for c, _ in GROUPS])
+    rel_err, urb_err = [], []
+    for j, r in enumerate(new):
+        st = STRATA.get(_strata_key(r.code))
+        if st is None:
+            continue
+        cens_u = st["urban"][0] / sum(v[0] for v in st.values()) if "urban" in st else 0.0
+        urb_err.append(abs(comp[j][1].sum() / comp[j].sum() - cens_u))
+        rb = dict(RELIGION_BIN, xc=OTHER_CHRISTIAN_BIN.get(r.code[:3], "RC"))
+        for s, name in enumerate(("rural", "urban")):
+            if name not in st:
+                continue
+            _, _, rel, printed = st[name]
+            bins = {rb[c] for c in printed if c in rb}
+            cen = {b: sum(v for c, v in rel.items() if rb.get(c) == b) for b in bins}
+            mod = {b: comp[j][s][np.isin(comm, [COMM_INDEX[c] for c in BIN_COMMUNITIES[b]])].sum() for b in bins}
+            if len(bins) > 1 and sum(cen.values()) > 0:
+                rel_err += [abs(mod[b] / sum(mod.values()) - cen[b] / sum(cen.values())) for b in bins]
+    assert np.mean(rel_err) < 0.01 and np.percentile(rel_err, 95) < 0.03
+    assert np.mean(urb_err) < 0.01 and np.max(urb_err) < 0.1
+
+
+def test_voivodeship_towns_follow_the_census():
+    """The reconstruction's urban share of each census language and religion is the census strata's."""
+    from plsim.data.census1931 import CENSUS_CATEGORY, URBAN_TARGETS_1931, build_initial_composition
+    from plsim.data.languages import LANG_INDEX
+    from plsim.spatial import lang_totals
+    regions = select_regions(True)
+    comp = build_initial_composition(regions, "official", "census_1923").pop
+    for i, r in enumerate(regions):
+        if r.code not in URBAN_TARGETS_1931:
+            continue
+        u, lang, rel = URBAN_TARGETS_1931[r.code]
+        assert comp[i][1].sum() / comp[i].sum() == pytest.approx(u, abs=0.002), r.code
+        L = lang_totals(comp[i])
+        for cat in ("pl", "uk", "yi", "de", "be"):
+            idx = [LANG_INDEX[l] for l, c in CENSUS_CATEGORY.items() if c == cat]
+            if lang.get(cat, 0) > 0 and L[:, idx].sum() > 0.02 * L.sum():
+                assert L[1, idx].sum() / L[:, idx].sum() == pytest.approx(lang[cat], abs=0.02), (r.code, cat)
+
+
+def test_every_county_holds_its_seat_and_its_town():
+    """The weighted diagram keeps each county's seat, and the town of that name, inside the county."""
+    from plsim.data import subregions as sr
+    from plsim.data.network import NODES
+    weights = sr.county_weights()
+    for par in {c.parent for c in COUNTIES if c.parent in REGION_POP}:
+        kids = sr.children(par, "county")
+        if len(kids) < 2 or not any(k in weights for k in kids):      # the Polish voivodeships
+            continue
+        seats = {c: (la, lo) for c, _, la, lo in sr.county_seats(par)}
+        got = sr.assign(par, [seats[k][0] for k in kids], [seats[k][1] for k in kids], kids)
+        assert list(got) == kids, par
+        towns = [n for n in NODES if n.region == par and f"{par}.{sr.slug(n.name)}" in kids]
+        got = sr.assign(par, [n.lat for n in towns], [n.lon for n in towns], kids)
+        assert [f"{par}.{sr.slug(n.name)}" for n in towns] == list(got), par

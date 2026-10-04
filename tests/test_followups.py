@@ -101,7 +101,7 @@ def test_road_density_check_is_reported():
 # ---------------------------------------------------------------- real county borders
 def test_county_polygons_override_voronoi(tmp_path, monkeypatch):
     from plsim.data import subregions as sr
-    lat, lon = 49.30, 25.00                       # Voronoi: Podhajce
+    lat, lon = 49.27, 25.13                       # the seat of Podhajce: always in its own county
     assert sr.assign("TAR", [lat], [lon])[0] == "TAR.podhajce"
     sq = [[lon - .05, lat - .05], [lon + .05, lat - .05], [lon + .05, lat + .05], [lon - .05, lat + .05], [lon - .05, lat - .05]]
     path = tmp_path / "powiaty_1931.geojson"
@@ -166,9 +166,11 @@ def test_krai_follows_the_governorates(krai_sim):
         assert mem[code] == krai, code
     for code in ["BIA.lomza", "BIA.wysokiemazowie", "WOL.luck", "LUB.wlodawa", "WAW"]:
         assert mem[code] == "PL", code
-    # Kamień Koszyrski (1930) reaches into the krai's governorates: its main piece stays Polish
+    # Kamień Koszyrski (1930) was carved from Pińsk (Minsk governorate) and Kowel (Volhynia) uezds: on
+    # the county land fitted to the census areas its piece in the krai's governorates is a sliver, and
+    # the county stays Polish whole
     kk = [c for c in sim.codes if c.startswith("POL.kamienkoszyrsk")]
-    assert sorted(mem[c] for c in kk) == sorted(["PL", krai])
+    assert [mem[c] for c in kk] == ["PL"]
     assert not any(c.startswith("LT_KLA") for c in sim.codes)         # Prussian before 1920
     # the Suwałki governorate: Poland's in the krai scenario, Lit-Bel's in Lit-Bel
     suw = "PL" if name == "nw_krai" else krai

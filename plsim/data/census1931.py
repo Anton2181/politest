@@ -71,7 +71,7 @@ from .regions import REGIONS, Region
 # ---------------------------------------------------------------------------------
 DECLARED_1931: dict[str, dict[str, float]] = {
     "WAW": {"pl": .707, "yi": .245, "he": .038, "ru": .005, "de": .003, "uk": .001, "other": .001},
-    "WAR": {"pl": .889, "yi": .077, "he": .007, "de": .019, "ru": .003, "uk": .001, "other": .004},
+    "WAR": {"pl": .880, "yi": .078, "he": .008, "de": .029, "ru": .002, "uk": .001, "other": .002},   # powiat pages
     "LOD": {"pl": .797, "yi": .130, "he": .008, "de": .058, "ru": .001, "other": .006},
     "KIE": {"pl": .887, "yi": .097, "he": .008, "de": .004, "ru": .001, "other": .003},
     "LUB": {"pl": .851, "uk": .030, "ruth": .012, "yi": .089, "he": .008, "de": .007, "ru": .002, "be": .001},
@@ -90,25 +90,28 @@ DECLARED_1931: dict[str, dict[str, float]] = {
     "TAR": {"pl": .493, "uk": .251, "ruth": .204, "yi": .045, "he": .004, "de": .002, "other": .001},
 }
 
-# Religion, 1931 (approximate voivodeship shares).
+# Religion, 1931, voivodeship shares. From the powiat pages of the short results (census1931_strata.csv)
+# wherever the pages printing the religion hold 90 % of the voivodeship ("other Christian" counted with the Orthodox in the
+# north-east, the Protestants in Volhynia and Polesie, the Catholics elsewhere); the rest, and Warsaw (city and
+# voivodeship: a city page is missing), are the earlier approximate shares; each row is scaled to 1.
 RELIGION_1931: dict[str, dict[str, float]] = {
     "WAW": {"RC": .655, "GC": .002, "OR": .010, "J": .301, "PR": .025, "OT": .007},
     "WAR": {"RC": .880, "J": .091, "PR": .024, "OR": .004, "OT": .001},
-    "LOD": {"RC": .768, "J": .147, "PR": .081, "OR": .003, "OT": .001},
+    "LOD": {"RC": .781, "J": .144, "PR": .071, "OR": .003, "OT": .001},
     "KIE": {"RC": .887, "J": .108, "PR": .003, "OR": .001, "OT": .001},
-    "LUB": {"RC": .782, "OR": .087, "J": .106, "PR": .015, "GC": .009, "OT": .001},
-    "BIA": {"RC": .652, "OR": .215, "J": .123, "PR": .007, "OT": .003},
-    "WIL": {"RC": .615, "OR": .290, "J": .087, "PR": .003, "OT": .005},
-    "NOW": {"RC": .399, "OR": .522, "J": .073, "PR": .003, "OT": .003},
-    "POL": {"OR": .774, "RC": .112, "J": .100, "PR": .008, "OT": .006},
-    "WOL": {"OR": .701, "RC": .159, "J": .099, "PR": .025, "OT": .016},
-    "POZ": {"RC": .893, "PR": .100, "J": .004, "OT": .003},
-    "POM": {"RC": .893, "PR": .104, "J": .003},
-    "SLA": {"RC": .914, "PR": .064, "J": .016, "OT": .006},
-    "KRA": {"RC": .889, "GC": .036, "J": .073, "PR": .002},
-    "LWO": {"RC": .474, "GC": .386, "J": .128, "PR": .006, "OR": .004, "OT": .002},
-    "STA": {"GC": .733, "RC": .163, "J": .095, "PR": .006, "OT": .003},
-    "TAR": {"GC": .530, "RC": .379, "J": .084, "PR": .003, "OT": .004},
+    "LUB": {"RC": .762, "J": .127, "OR": .086, "PR": .015, "GC": .009, "OT": .001},
+    "BIA": {"RC": .663, "OR": .210, "J": .117, "PR": .007, "OT": .003},
+    "WIL": {"RC": .627, "OR": .278, "J": .087, "OT": .005, "PR": .003},
+    "NOW": {"OR": .514, "RC": .402, "J": .078, "PR": .003, "OT": .003},
+    "POL": {"OR": .775, "RC": .111, "J": .101, "PR": .008, "OT": .006},
+    "WOL": {"OR": .699, "RC": .158, "J": .100, "PR": .040, "OT": .003},      # "other Christian" (sects): PR
+    "POZ": {"RC": .896, "PR": .097, "J": .004, "OT": .003},
+    "POM": {"RC": .903, "PR": .094, "J": .003},
+    "SLA": {"RC": .919, "PR": .059, "J": .016, "OT": .006},
+    "KRA": {"RC": .887, "J": .075, "GC": .036, "PR": .002},
+    "LWO": {"RC": .462, "GC": .416, "J": .109, "PR": .006, "OR": .004, "OT": .002},
+    "STA": {"GC": .730, "RC": .166, "J": .095, "PR": .006, "OT": .003},
+    "TAR": {"GC": .544, "RC": .366, "J": .084, "OT": .004, "PR": .003},
 }
 
 # ---------------------------------------------------------------------------------
@@ -357,9 +360,79 @@ REGION_SPECIFIC_ODDS = {("LOD", "de"): 2.2, ("SLA", "de"): 1.8, ("LT_KLA", "de")
                         ("DE_OPO", "cs"): 0.3, ("CS_CIE", "de"): 2.5, ("CS_CIE", "pl"): 0.8, ("CS_SPO", "de"): 3.0}
 
 
-def _urban_split(code: str, shares: dict, urban_target: float) -> dict:
+# census category of each latent language (the census strata are by census category)
+CENSUS_CATEGORY = {"pl": "pl", "uk": "uk", "be": "be", "pls": "pls", "yi": "yi", "de": "de", "ru": "ru", "lt": "lt",
+                   "csb": "pl", "rue": "uk", "cs": "cs", "lv": "oth", "rom": "pl", "kdr": "oth", "wym": "pl",
+                   "oth": "oth"}
+
+
+# a census religion -> community bin; "other Christian" holds the Old Believers in the north-east, Baptists and
+# other sects in Volhynia and Polesie, and the Mariavites elsewhere
+RELIGION_BIN = {"rc": "RC", "gc": "GC", "or": "OR", "jw": "J", "ev": "PR"}
+OTHER_CHRISTIAN_BIN = {"WIL": "OR", "NOW": "OR", "BIA": "OR", "WOL": "PR", "POL": "PR"}
+BIN_COMMUNITIES = {"RC": ("RC",), "GC": ("GC",), "OR": ("OR",), "J": ("JW", "JH"), "PR": ("PR",)}
+
+
+def census_urban_targets() -> dict:
+    """{voivodeship: (urban share, {census language: urban share}, {religion bin: urban share})} from the
+    1931 census by powiat and stratum (``data.counties.STRATA``: the towns and cities of every powiat page).
+    A religion counts where it is printed for both strata of a powiat. A city whose page is missing (Płock)
+    is counted as urban in the total but not in the languages and religions."""
+    import csv
+    import os
+    from .counties import CENSUS_1931, STRATA
+    from .regions import REGIONS as _ALL
+    pop = {r.code: r.pop_1931 for r in _ALL}
+    acc: dict = {}
+    for code, st in STRATA.items():
+        par = code[:3]
+        a = acc.setdefault(par, {"u": 0.0, "t": 0.0, "lu": {}, "lt": {}, "ru": {}, "rt": {}})
+        xc = OTHER_CHRISTIAN_BIN.get(par, "RC")
+        both = set.intersection(*(v[3] for v in st.values())) if len(st) == 2 else set()
+        for name, (p, lang, rel, _) in st.items():
+            a["t"] += p
+            a["u"] += p if name == "urban" else 0.0
+            for k, v in lang.items():
+                a["lt"][k] = a["lt"].get(k, 0.0) + v
+                if name == "urban":
+                    a["lu"][k] = a["lu"].get(k, 0.0) + v
+            for k, v in rel.items():
+                b = xc if k == "xc" else RELIGION_BIN.get(k)
+                if b is None or k not in both:
+                    continue
+                a["rt"][b] = a["rt"].get(b, 0.0) + v
+                if name == "urban":
+                    a["ru"][b] = a["ru"].get(b, 0.0) + v
+    # a powiat without its city page: its rows count in the total only
+    path = os.path.join(os.path.dirname(__file__), "census1931_strata.csv")
+    partial = {c for c, v in CENSUS_1931.items() if v[3]}
+    with open(path, encoding="utf-8") as fh:
+        for r in csv.DictReader(l for l in fh if not l.startswith("#")):
+            if r["county"] in partial:
+                a = acc[r["county"][:3]]
+                a["t"] += int(r["pop"])
+                a["u"] += int(r["pop"]) if r["stratum"] != "R" else 0
+    out = {}
+    for par, a in acc.items():
+        missing = max(pop.get(par, a["t"]) - a["t"], 0.0)
+        out[par] = ((a["u"] + missing) / (a["t"] + missing),
+                    {k: a["lu"].get(k, 0.0) / v for k, v in a["lt"].items() if v >= 200},
+                    {k: a["ru"].get(k, 0.0) / v for k, v in a["rt"].items() if v >= 200})
+    return out
+
+
+URBAN_TARGETS_1931 = census_urban_targets()
+
+
+def _urban_split(code: str, shares: dict, urban_target: float, lang_targets: dict | None = None,
+                 rel_targets: dict | None = None) -> dict:
     """Split each group's population into urban/rural so that the regional urban
-    share equals ``urban_target``; groups differ by fixed odds ratios."""
+    share equals ``urban_target``; groups differ by fixed odds ratios. With the
+    census strata (``lang_targets`` {census language: urban share},
+    ``rel_targets`` {religion bin: urban share}), the odds are first raked, a
+    factor per census language and per religion, to give each its census share.
+    Languages carved out of a census category (Kashubian, Lemko ...) keep their
+    odds relative to the rest of it."""
     if urban_target >= 0.999:
         return {k: (0.0, v) for k, v in shares.items()}
     odds = {}
@@ -370,21 +443,36 @@ def _urban_split(code: str, shares: dict, urban_target: float) -> dict:
         o *= REGION_SPECIFIC_ODDS.get((code, l), 1.0)
         odds[(c, l)] = o
 
-    def urban_share(base):
+    def urban_share(base, keys=None):
         tot = 0.0
-        for k, v in shares.items():
+        for k in keys if keys is not None else shares:
             q = base * odds[k]
-            tot += v * q / (1 + q)
+            tot += shares[k] * q / (1 + q)
         return tot
 
-    lo, hi = 1e-6, 1e3
-    for _ in range(100):
-        mid = np.sqrt(lo * hi)
-        if urban_share(mid) < urban_target:
-            lo = mid
-        else:
-            hi = mid
-    base = np.sqrt(lo * hi)
+    def solve(target, keys=None):
+        lo, hi = 1e-6, 1e6
+        for _ in range(100):
+            mid = np.sqrt(lo * hi)
+            if urban_share(mid, keys) < target:
+                lo = mid
+            else:
+                hi = mid
+        return np.sqrt(lo * hi)
+
+    # religions first, languages last: where the two disagree, the languages hold
+    margins = [([k for k in shares if k[0] in BIN_COMMUNITIES[b] and shares[k] > 0], u)
+               for b, u in (rel_targets or {}).items()]
+    margins += [([k for k in shares if CENSUS_CATEGORY.get(k[1], "oth") == cat and shares[k] > 0], u)
+                for cat, u in (lang_targets or {}).items()]
+    for _ in range(30 if rel_targets else 1):
+        for keys, u in margins:
+            tot = sum(shares[k] for k in keys)
+            if tot > 0 and 0.0 < u < 1.0:
+                m = solve(u * tot, keys)
+                for k in keys:
+                    odds[k] *= m
+    base = solve(urban_target)
     out = {}
     for k, v in shares.items():
         q = base * odds[k]
@@ -411,7 +499,10 @@ def build_initial_composition(regions: list[Region], variant: str = "official",
     for i, reg in enumerate(regions):
         shares = build_region_shares(reg.code, variant, lt_variant)
         u_target = reg.urban_1931 if (reg.code == "WAW" or reg.country != "PL") else min(reg.urban_1931 * k, 0.95)
-        split = _urban_split(reg.code, shares, u_target)
+        lang_targets = rel_targets = None
+        if reg.code in URBAN_TARGETS_1931:      # the census towns and countryside of the voivodeship's powiaty
+            u_target, lang_targets, rel_targets = URBAN_TARGETS_1931[reg.code]
+        split = _urban_split(reg.code, shares, u_target, lang_targets, rel_targets)
         total = reg.pop_1931 * (scale_overrides or {}).get(reg.code, 1.0)
         for grp, (rur, urb) in split.items():
             g = GROUP_INDEX[grp]

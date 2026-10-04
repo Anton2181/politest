@@ -12,13 +12,20 @@ Sources and grades
     total, and each voivodeship read whole reproduces its census population.
     The short results also give religion, and for Nowogródek and Polesie
     they separate Belarusian, "tutejszy", Russian and Ukrainian.
-  * Tarnopol, Stanisławów, Lwów, Volhynia, Wilno and Białystok: the county
-    tables of the Polish Wikipedia voivodeship articles (from the same
-    census), read through search summaries; checked against the voivodeship
-    totals (Tarnopol and Stanisławów exactly; the others within 0.3 %).
+  * Every powiat, by stratum (``census1931_strata.csv``, ``STRATA``): the
+    towns and the countryside of each powiat page of the short results, by
+    religion and mother tongue, and the cities with their own page. They
+    give the urban/rural split and the religions of every county, and the
+    mother tongue of Tarnopol, Stanisławów, Lwów, Volhynia, Wilno and
+    Białystok, which replace the county tables of the Polish Wikipedia
+    articles used before (those disagreed with the pages by up to 6,000
+    persons a county, and in Galicia gave the religions as the languages:
+    Turka's "6,301 Polish speakers" are its Roman Catholics; 26,123 spoke
+    Polish). Every voivodeship of the pages adds up to its census
+    population; Warsaw's is short the city of Płock.
 * **B**: population from the 1931 administrative tables (rounded), language
-  shares from the county anchors of ``data.geography`` (Rawa Ruska and one
-  Wilno county).
+  shares from the county anchors of ``data.geography``. No Polish county is
+  left at this grade.
 * **C**: county seat only. Population and languages are downscaled from the
   voivodeship (``partition``), so they are estimates. Only Lithuania's
   apskritys are left at this grade.
@@ -45,7 +52,8 @@ Conventions
 * ``lang`` keys: pl, uk (Ukrainian + Ruthenian), yi (Yiddish + Hebrew), be,
   pls (tutejszy), ru, lt, de, cs, oth, and ``bepr`` for the merged
   Belarusian + tutejszy + Russian category (no longer used by any row).
-  ``rel`` (where read): rc, gc, or, ev, jw, orel (other or none).
+  ``rel``: rc, gc, or, ev, xc (other Christian), jw, orel (other or not
+  stated); a religion a page does not print is inside orel.
 * Powiaty abolished in 1932 (Słupca, Oświęcim, Pleszew, Ostrzeszów,
   Grodzisk, Odolanów) were printed with the powiat that absorbed them:
   ``GROUPS`` holds the pair and its population, and the partition splits it
@@ -54,6 +62,7 @@ Conventions
 """
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass, field
 
 from . import bssr as _bssr
@@ -164,7 +173,7 @@ COUNTIES: list[County] = [
     _a("WOL", "rówieński", "Równe", 50.68, 26.15, 258589, {"pl": 36990, "uk": 166286, "yi": 37484, "de": 7458, "oth": 10371}),
     _a("WOL", "sarneński", "Sarny", 51.38, 26.75, 181284, {"pl": 30426, "uk": 129637, "yi": 16019, "de": 922, "oth": 4280}),
     _a("WOL", "włodzimierski", "Włodzimierz", 50.85, 24.32, 150384, {"pl": 40286, "uk": 88174, "yi": 17236, "de": 2788, "oth": 1900}),
-    _a("WOL", "zdołbunowski", "Zdołbunów", 50.42, 26.30, 118334, {"pl": 17826, "uk": 81650, "yi": 10787, "de": 856, "oth": 7215}),
+    _a("WOL", "zdołbunowski", "Zdołbunów", 50.51, 26.25, 118334, {"pl": 17826, "uk": 81650, "yi": 10787, "de": 856, "oth": 7215}),
     # ---------------------------------------------------------------- Wilno (A; city merged into wileńsko-trocki)
     _a("WIL", "brasławski", "Brasław", 55.64, 27.04, 143161, {"pl": 93958, "be": 23138, "lt": 3490, "yi": 7181, "ru": 15394}),
     _a("WIL", "dziśnieński", "Głębokie", 55.35, 27.85, 159886, {"pl": 62282, "be": 79984, "ru": 5067, "yi": 11762, "oth": 609}),
@@ -302,7 +311,7 @@ COUNTIES: list[County] = [
     _a("POM", "tucholski", "Tuchola", 53.59, 17.86, 41249, {"pl": 37990, "uk": 14, "yi": 3, "be": 2, "ru": 7, "lt": 1, "de": 3151, "oth": 81}),
     _a("POM", "wąbrzeski", "Wąbrzeźno", 53.28, 18.95, 49852, {"pl": 42346, "uk": 31, "yi": 259, "be": 3, "ru": 18, "lt": 5, "de": 7051, "oth": 139}),
     # ---------------------------------------------------------------- Silesia (C)
-    _c("SLA", "bielski", "Bielsko", 49.82, 19.00), _c("SLA", "cieszyński", "Cieszyn", 49.75, 18.63),
+    _c("SLA", "bielski", "Bielsko", 49.82, 19.04), _c("SLA", "cieszyński", "Cieszyn", 49.75, 18.63),
     _c("SLA", "katowicki", "Katowice", 50.26, 19.02), _c("SLA", "lubliniecki", "Lubliniec", 50.67, 18.69),
     _c("SLA", "pszczyński", "Pszczyna", 49.98, 18.95), _c("SLA", "rybnicki", "Rybnik", 50.10, 18.54),
     _c("SLA", "świętochłowicki", "Świętochłowice", 50.29, 18.92), _c("SLA", "tarnogórski", "Tarnowskie Góry", 50.44, 18.86),
@@ -387,6 +396,73 @@ for _code, (_pop, _lang, _rel, _shares, _src) in CENSUS_1931.items():
                                    {k: round(v) for k, v in _lang.items()}, _rel, "A")
         if len(_members) > 1:
             GROUPS[_m] = (_members, float(_pop))
+
+
+# ------------------------------------------------- the 1931 census by powiat and stratum (short results)
+# plsim/data/census1931_strata.csv: religion and mother tongue of the towns and the countryside of every powiat,
+# from the powiat and city pages of the short results (MBC 14481). They give the county's urban/rural split by
+# language and its religions by stratum, and they replace the Wikipedia rows of the six eastern voivodeships
+# (which disagree with the census pages by up to 6,000 persons a county, and in Galicia give the religions as
+# the languages). "Other" and "not stated" religions are kept together as "orel"; "other Christian" (xc) as its
+# own key, since what it holds differs by region.
+FROM_WIKIPEDIA = ("TAR", "STA", "LWO", "WOL", "WIL", "BIA")
+STRATA_REL = {"rc": "rc", "gc": "gc", "or": "or", "ev": "ev", "xc": "xc", "jw": "jw", "xn": "orel", "ro": "orel"}
+
+
+def census_1931_strata(path=None) -> dict:
+    """{county code or "a+b": {"urban" | "rural": (pop, {lang: persons}, {religion: persons}, printed)}}.
+    Towns (T) and cities with their own page (C) are urban, the countryside (R) rural. Unstated languages
+    are shared pro rata. ``printed``: the religions printed on every page of the stratum (a religion not
+    printed is inside "other")."""
+    import csv
+    import os
+    path = path or os.path.join(os.path.dirname(__file__), "census1931_strata.csv")
+    out: dict = {}
+    with open(path, encoding="utf-8") as fh:
+        for r in csv.DictReader(l for l in fh if not l.startswith("#")):
+            st = "rural" if r["stratum"] == "R" else "urban"
+            pop = int(r["pop"])
+            lang: dict = {}
+            for col, key in CENSUS_KEYS.items():
+                if r.get(col):
+                    lang[key] = lang.get(key, 0) + int(r[col])
+            known = sum(lang.values())
+            lang = {k: v * pop / known for k, v in lang.items() if v > 0}
+            rel: dict = {}
+            for col, key in STRATA_REL.items():
+                if r[col]:
+                    rel[key] = rel.get(key, 0) + int(r[col])
+            printed = {STRATA_REL[c] for c in STRATA_REL if r[c] and STRATA_REL[c] != "orel"}
+            p0, l0, r0, pr0 = out.setdefault(r["county"], {}).get(st, (0, {}, {}, None))
+            for k, v in lang.items():
+                l0[k] = l0.get(k, 0) + v
+            for k, v in rel.items():
+                r0[k] = r0.get(k, 0) + v
+            out[r["county"]][st] = (p0 + pop, l0, r0, printed if pr0 is None else pr0 & printed)
+    return out
+
+
+STRATA = census_1931_strata()
+for _code, _st in list(STRATA.items()):
+    _pop = sum(v[0] for v in _st.values())
+    _lang: dict = {}
+    _rel: dict = {}
+    for _p, _l, _r, _pr in _st.values():
+        for _k, _v in _l.items():
+            _lang[_k] = _lang.get(_k, 0) + _v
+        for _k, _v in _r.items():
+            _rel[_k] = _rel.get(_k, 0) + _v
+    if CENSUS_1931.get(_code, (0, {}, {}, False))[3]:
+        del STRATA[_code]           # a page missing (Płock's city): the split and religions are not the county's
+        continue
+    for _m in _code.split("+"):
+        _c = COUNTIES[_by[_m]]
+        if _c.parent not in FROM_WIKIPEDIA:     # mother tongue from the county tables already; add the religions
+            COUNTIES[_by[_m]] = dataclasses.replace(_c, rel=_c.rel or {k: round(v) for k, v in _rel.items()})
+        else:                                   # the Wikipedia rows: the census pages instead
+            COUNTIES[_by[_m]] = County(_c.parent, _c.name, _c.seat, _c.lat, _c.lon, _pop,
+                                       {k: round(v) for k, v in _lang.items()},
+                                       {k: round(v) for k, v in _rel.items()}, "A")
 
 BY_PARENT: dict[str, list[County]] = {}
 for _cty in COUNTIES:
