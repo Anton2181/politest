@@ -22,6 +22,11 @@ applied in the year it names:
 * ``immigrate``: ``number`` people of group ``group`` (and identity
   ``identity``) arrive from outside (repatriation from the Soviet interior,
   return from the West).
+* ``away``: the selected people leave for a time (forced labour in the
+  Reich, prisoners of war) and come back to the region and stratum they
+  left: ``back`` gives the share of the event's people returning in each
+  later year, aged by the years away and thinned by ``survive`` (yearly
+  survival abroad). Leaving counts as emigration, returning as immigration.
 * ``identity``: a share of the selected people change national identity
   (``to``).
 
@@ -66,6 +71,7 @@ class History:
         self.vacated = np.zeros((sim.R, 2))                 # people removed by events, by region and stratum
         self.log: list[dict] = []
         self._inside = None
+        self.away: list[dict] = []                          # people abroad for a time (``away`` events)
 
     # ------------------------------------------------------------------ selection
     def inside_1946(self) -> np.ndarray:
@@ -198,7 +204,7 @@ class History:
             if e.get("year") != year or e.get("kind") == "border":
                 continue
             kind = e["kind"]
-            if kind in ("deaths", "emigrate", "transfer"):
+            if kind in ("deaths", "emigrate", "transfer", "away"):
                 src = self.regions(e.get("where", e.get("from", "*")))
                 if e.get("within"):
                     src &= self.regions(e["within"])
@@ -211,10 +217,14 @@ class History:
                     acc["deaths"] += moved.sum(axis=(1, 2, 3, 4, 5))
                     if e.get("vacate", False):
                         self.vacated += u_rem
-                elif kind == "emigrate":
+                elif kind in ("emigrate", "away"):
                     acc["emigrants"] += moved.sum(axis=(1, 3, 4, 5))
                     if e.get("vacate", False):
                         self.vacated += u_rem
+                    if kind == "away":
+                        self.away.append({"year": year, "P": moved, "I": id_moved, "label": e.get("label", ""),
+                                          "back": {int(k): float(v) for k, v in (e.get("back") or {}).items()},
+                                          "survive": float(e.get("survive", 1.0))})
                 else:
                     w = self._dest_weights(e.get("to"), u_rem)
                     self._place(moved, id_moved, w, acc)
@@ -225,6 +235,9 @@ class History:
                 self._immigrate(e, acc)
             elif kind == "identity":
                 self._identity(e)
+        for a in self.away:
+            if year in a["back"]:
+                self._return(a, year, acc)
 
     def _place(self, moved, id_moved, w: np.ndarray, acc: dict) -> None:
         """Put movers (by origin) into destinations with weights w (R,2)."""
@@ -272,6 +285,23 @@ class History:
         self.vacated = np.maximum(self.vacated - w * n, 0.0) if e.get("to") == "@vacated" else self.vacated
         sim.mig.reset_competence(sim.P)
         self.log.append({"year": e["year"], "kind": "immigrate", "label": e.get("label", ""), "people": n})
+
+    def _return(self, a: dict, year: int, acc: dict) -> None:
+        """People of an ``away`` event come back to where they left."""
+        sim = self.sim
+        k = year - a["year"]
+        f = a["back"][year] * a["survive"] ** k
+        back = a["P"] * f
+        if k > 0:                                                               # aged by the years away
+            aged = np.zeros_like(back)
+            aged[..., k:] = back[..., :-k]
+            aged[..., -1] += back[..., -k:].sum(axis=-1)                       # past 100: kept at 100
+            back = aged
+        sim.P = sim.P + back
+        sim.ident.I = sim.ident.I + a["I"] * f
+        acc["immigrants"] += back.sum(axis=(1, 3, 4, 5))
+        sim.mig.reset_competence(sim.P)
+        self.log.append({"year": year, "kind": "return", "label": a["label"], "people": float(back.sum())})
 
     def _identity(self, e: dict) -> None:
         sim = self.sim

@@ -255,8 +255,14 @@ DEFAULTS: dict[str, Any] = {
     "identity": {                      # plsim/identity.py
         "follow": 0.6,                 # language switchers taking the identity of the new language
         "nation_building": 0.02,       # yearly rate x modernisation: "local" -> national identity
-        "assimilation": 0.008,         # yearly rate x pressure x modernisation: pull of the state nation
-        "anchor": 0.85,                # reduction of that pull when identity matches home language
+        # yearly rate x pressure x modernisation: pull of the state nation. Calibrated on the historical
+        # scenario against the 2002 census, on the Lithuanians and Kashubians, whose home language the model
+        # gets about right (2002: 5.8 and 4.7 thousand, census 6 and 5; it was 0.008, giving 12 and 37)
+        "assimilation": 0.05,
+        "anchor": 0.85,                # reduction of that pull when identity matches home language...
+        # ...in full only where that language has this status or this own-language schooling, in proportion
+        # below (a stigmatised, unschooled language anchors identity less)
+        "anchor_status": 0.35, "anchor_schooling": 0.3,
         "compat": {"RC": 1.0, "GC": 0.25, "OR": 0.3, "JW": 0.6, "JH": 0.0, "PR": 0.5, "OT": 0.5},
     },
 

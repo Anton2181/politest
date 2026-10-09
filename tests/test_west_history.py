@@ -71,6 +71,17 @@ def test_border_change_and_war(hist_run):
     assert pop[t50][rt][:, :, pl].sum() > 3 * pop[t44][rt][:, :, pl].sum()
 
 
+def test_forced_labour_comes_back(hist_run):
+    """``away`` events: 2.1 M taken in 1940-44, 92 % of them due back in
+    1945-48, fewer for the deaths abroad."""
+    log = hist_run.history_log
+    away = sum(e["people"] for e in log if e["kind"] == "away")
+    back = sum(e["people"] for e in log if e["kind"] == "return")
+    assert abs(away - 2.1e6) < 1e3
+    assert 0.80 * away < back < 0.92 * away
+    assert {e["year"] for e in log if e["kind"] == "return"} == {1945, 1946, 1947, 1948}
+
+
 def test_identity_1921(short_run):
     from plsim.validate import identity_1921
     failed = [c.row() for c in identity_1921(short_run) if not c.ok]

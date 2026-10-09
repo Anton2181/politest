@@ -96,7 +96,7 @@ economy:
 fertility:
   # the war, the post-war compensation and People's Poland's pro-natalist policy (1970s-80s)
   period: [[1931, 1.0], [1933, 0.965], [1938, 0.91], [1939, 0.88], [1940, 0.80], [1944, 0.80], [1945, 0.90],
-           [1946, 1.25], [1947, 1.36], [1955, 1.38], [1960, 1.22], [1965, 1.08], [1970, 1.05], [1975, 1.12],
+           [1946, 1.25], [1947, 1.36], [1955, 1.42], [1960, 1.30], [1965, 1.10], [1970, 1.05], [1975, 1.12],
            [1980, 1.18], [1985, 1.18], [1988, 1.12], [1990, 1.08], [1993, 0.98], [1998, 0.86], [2003, 0.78],
            [2010, 0.84], [2020, 0.86], [2032, 0.9]]
   baby_boom: {amplitude: 0.0}
@@ -112,6 +112,9 @@ infrastructure:
   enable_planned: false
 migration:
   urban_kappa: 0.16
+  # occupation, 1939-45: the demarcation lines and the General Government's controls stop voluntary moves
+  # between regions (the wartime moves are the deportations, flights and transfers of the history below)
+  internal_intensity: [[1931, 1.0], [1939, 1.0], [1940, 0.2], [1944, 0.2], [1946, 1.15], [1960, 1.3], [2000, 1.0]]
   member_friction:
     _replace: true
     "PL|DE": 0.03
@@ -138,6 +141,12 @@ language:
     BIA: [[1931, 1.0], [1944, 1.0], [1945, 2.5], [1956, 2.0], [1970, 1.8], [1989, 0.8]]
   status:
     de: [[1931, 0.55], [1944, 0.55], [1945, 0.05], [1956, 0.15], [1990, 0.40]]
+    # People's Poland: the minority languages stigmatised after the war (the UPA, Operation Vistula, the
+    # Greek Catholic Church banned 1946-89), a little room after 1956 and again after 1989
+    uk: [[1931, 0.35], [1944, 0.35], [1945, 0.08], [1956, 0.12], [1990, 0.25]]
+    rue: [[1931, 0.12], [1944, 0.12], [1945, 0.04], [1990, 0.10]]
+    be: [[1931, 0.15], [1944, 0.15], [1945, 0.08], [1956, 0.10], [1990, 0.15]]
+    lt: [[1931, 0.35], [1944, 0.35], [1945, 0.20], [1990, 0.30]]
   status_regions:
     _replace: true
     "DE_*": {pl: [[1931, 0.15], [1944, 0.10], [1945, 1.0]]}
@@ -167,6 +176,14 @@ history:
   # ---- 1940-41: Soviet deportations; Germans of the Soviet zone resettled
   - {year: 1940, kind: emigrate, where: "@outside_1946", who: {identity: [pl]}, number: 200000, label: "Soviet deportations"}
   - {year: 1940, kind: emigrate, where: "@outside_1946", who: {language: [de]}, rate: 0.85, label: "Germans of Volhynia and Galicia resettled"}
+  # ---- forced labour in the Reich: about 2.1 M Poles of the post-war territory, 15-45, taken in 1940-44;
+  # most were back by the end of 1945, but about 0.6 M were still in the West at the census of February
+  # 1946 and came back in 1946-48 (UNRRA repatriation); about 8 % stayed abroad, and some died there
+  - {year: 1940, kind: away, where: "@inside_1946", within: "@member:PL", who: {identity: [pl], ages: [15, 45]}, number: 300000, back: {1945: 0.68, 1946: 0.17, 1947: 0.05, 1948: 0.02}, survive: 0.985, label: "forced labour in the Reich"}
+  - {year: 1941, kind: away, where: "@inside_1946", within: "@member:PL", who: {identity: [pl], ages: [15, 45]}, number: 450000, back: {1945: 0.68, 1946: 0.17, 1947: 0.05, 1948: 0.02}, survive: 0.985, label: "forced labour in the Reich"}
+  - {year: 1942, kind: away, where: "@inside_1946", within: "@member:PL", who: {identity: [pl], ages: [15, 45]}, number: 650000, back: {1945: 0.68, 1946: 0.17, 1947: 0.05, 1948: 0.02}, survive: 0.985, label: "forced labour in the Reich"}
+  - {year: 1943, kind: away, where: "@inside_1946", within: "@member:PL", who: {identity: [pl], ages: [15, 45]}, number: 450000, back: {1945: 0.68, 1946: 0.17, 1947: 0.05, 1948: 0.02}, survive: 0.985, label: "forced labour in the Reich"}
+  - {year: 1944, kind: away, where: "@inside_1946", within: "@member:PL", who: {identity: [pl], ages: [15, 45]}, number: 250000, back: {1945: 0.68, 1946: 0.17, 1947: 0.05, 1948: 0.02}, survive: 0.985, label: "forced labour in the Reich"}
   # ---- occupation: deaths of non-Jewish citizens of Poland, about 7 % over the war
   - {year: 1940, kind: deaths, where: "@member:PL", who: {community: [RC, GC, OR, PR, OT]}, rate: 0.0029, label: "occupation"}
   - {year: 1940, kind: deaths, where: "@member:PL", who: {community: [RC, GC, OR, PR, OT], sex: m, ages: [16, 60]}, rate: 0.0062, label: "occupation (men)"}
@@ -180,6 +197,10 @@ history:
   - {year: 1944, kind: deaths, where: "@member:PL", who: {community: [RC, GC, OR, PR, OT], sex: m, ages: [16, 60]}, rate: 0.0146, label: "occupation and front (men)"}
   - {year: 1943, kind: deaths, where: WOL, who: {identity: [pl]}, rate: 0.18, label: "Volhynia massacres"}
   - {year: 1944, kind: deaths, where: [LWO, TAR, STA], who: {identity: [pl]}, rate: 0.025, label: "Eastern Galicia massacres"}
+  # Poles who fled the massacres west, into the General Government (Motyka 2011: some 300,000 left Volhynia and
+  # Eastern Galicia, many of them only to Lwów and the towns); they are not among the repatriates of 1944-46
+  - {year: 1943, kind: transfer, from: WOL, who: {identity: [pl]}, number: 50000, to: {LUB: 0.7, WAR: 0.15, KIE: 0.15}, label: "Poles flee Volhynia"}
+  - {year: 1944, kind: transfer, from: [LWO, TAR, STA], within: "@outside_1946", who: {identity: [pl]}, number: 100000, to: {KRA: 0.5, KIE: 0.3, LUB: 0.2}, label: "Poles flee Eastern Galicia"}
   - {year: 1944, kind: deaths, where: WAW, who: {community: [RC, GC, OR, PR, OT]}, rate: 0.16, label: "Warsaw Uprising"}
   - {year: 1944, kind: transfer, from: WAW, who: {community: [RC, GC, OR, PR, OT]}, rate: 0.55, to: {WAR: 0.7, KRA: 0.1, KIE: 0.1, LOD: 0.1}, label: "Warsaw emptied after the Uprising"}
   # ---- the Holocaust
@@ -201,7 +222,7 @@ history:
   - {year: 1945, kind: deaths, where: ["DE_*", "DZ_*"], who: {language: [de]}, rate: 0.05, label: "deaths in the flight", vacate: true}
   - {year: 1945, kind: deaths, where: "@member:PL", who: {community: [RC, GC, OR, PR, OT], not_group: ["RC:de", "PR:de"]}, rate: 0.006, label: "front, 1945"}
   # flight and expulsion of the Germans
-  - {year: 1945, kind: emigrate, where: "@member:PL", who: {language: [de], identity: [de, jw]}, rate: 0.62, label: "flight and wild expulsions", vacate: true}
+  - {year: 1945, kind: emigrate, where: "@member:PL", who: {language: [de], identity: [de, jw]}, rate: 0.70, label: "flight and wild expulsions", vacate: true}
   - {year: 1945, kind: emigrate, where: ["DE_*", "DZ_*"], who: {language: [pl, csb, cs], identity: [de]}, rate: 0.35, label: "autochthons flee", vacate: true}
   - {year: 1945, kind: emigrate, where: [DE_MAZ, DE_WAR], who: {language: [pl], identity: [de, loc]}, rate: 0.35, label: "Masurians flee", vacate: true}
   - {year: 1946, kind: emigrate, where: "@member:PL", who: {language: [de], identity: [de, jw]}, rate: 0.62, label: "expulsion", vacate: true}
@@ -211,8 +232,9 @@ history:
   - {year: 1949, kind: emigrate, where: "@member:PL", who: {language: [de], identity: [de, jw]}, rate: 0.25, label: "expulsion", vacate: true}
   - {year: 1950, kind: emigrate, where: "@member:PL", who: {language: [de], identity: [de, jw]}, rate: 0.25, label: "expulsion, Operation Link", vacate: true}
   # Poles: losses to the West, repatriation, settlement
-  - {year: 1945, kind: emigrate, where: "@member:PL", who: {identity: [pl], sex: m, ages: [18, 45]}, number: 250000, label: "soldiers, DPs and labourers stay in the West"}
-  - {year: 1945, kind: emigrate, where: "@member:PL", who: {identity: [pl], sex: f, ages: [16, 40]}, number: 100000, label: "displaced persons stay in the West"}
+  # the forced labourers who never came back are the "away" events above; here the soldiers of the Polish forces
+  # in the West who stayed abroad (about 250,000 in 1945, 105,000 back by 1948, many of them from the east)
+  - {year: 1945, kind: emigrate, where: "@member:PL", who: {identity: [pl], sex: m, ages: [18, 45]}, number: 120000, label: "soldiers stay in the West"}
   - {year: 1945, kind: transfer, from: "@member:SU", who: {identity: [pl]}, number: 800000, to: "@vacated", label: "repatriation from the Soviet Union"}
   - {year: 1946, kind: transfer, from: "@member:SU", who: {identity: [pl]}, number: 600000, to: "@vacated", label: "repatriation from the Soviet Union"}
   - {year: 1947, kind: transfer, from: "@member:SU", who: {identity: [pl]}, number: 100000, to: "@vacated", label: "repatriation from the Soviet Union"}
@@ -231,10 +253,12 @@ history:
   - {year: 1946, kind: transfer, from: [WAR, KRA, KIE, LOD, LUB], who: {identity: [pl]}, number: 120000, to: {WAW: 1.0}, within: "@member:PL", label: "return to Warsaw"}
   - {year: 1947, kind: transfer, from: [WAR, KRA, KIE, LOD, LUB], who: {identity: [pl]}, number: 80000, to: {WAW: 1.0}, within: "@member:PL", label: "return to Warsaw"}
   # Ukrainians, Lemkos and Belarusians
-  - {year: 1945, kind: transfer, from: "@member:PL", who: {community: [GC, OR], language: [uk]}, rate: 0.50, to: {"@member:SU": 1.0}, label: "Ukrainians to the Soviet Union", vacate: true}
-  - {year: 1946, kind: transfer, from: "@member:PL", who: {community: [GC, OR], language: [uk, rue]}, rate: 0.50, to: {"@member:SU": 1.0}, label: "Ukrainians to the Soviet Union", vacate: true}
+  # 482,880 people to the Ukrainian SSR in 1944-46 (Lemkos among them), from the Lublin, Rzeszów and Kraków
+  # voivodeships
+  - {year: 1945, kind: transfer, from: [LWO, KRA, LUB], within: "@member:PL", who: {community: [GC, OR], language: [uk]}, number: 320000, to: {"@member:SU": 1.0}, label: "Ukrainians to the Soviet Union", vacate: true}
+  - {year: 1946, kind: transfer, from: [LWO, KRA, LUB], within: "@member:PL", who: {community: [GC, OR], language: [uk, rue]}, number: 163000, to: {"@member:SU": 1.0}, label: "Ukrainians to the Soviet Union", vacate: true}
   - {year: 1946, kind: transfer, from: BIA, within: "@member:PL", who: {identity: [be]}, number: 36000, to: {"@member:SU": 1.0}, label: "Belarusians to the BSSR", vacate: true}
-  - {year: 1947, kind: transfer, from: [LWO, KRA, LUB], within: "@member:PL", who: {community: [GC, OR], language: [uk, rue]}, rate: 0.90, to: {DE_MAZ: 0.3, DE_WAR: 0.15, DE_OBL: 0.1, DE_KOS: 0.15, DE_SZC: 0.1, DE_LEG: 0.1, DE_WRO: 0.1}, label: "Operation Vistula", vacate: true}
+  - {year: 1947, kind: transfer, from: [LWO, KRA, LUB], within: "@member:PL", who: {community: [GC, OR], language: [uk, rue]}, number: 140660, to: {DE_MAZ: 0.3, DE_WAR: 0.15, DE_OBL: 0.1, DE_KOS: 0.15, DE_SZC: 0.1, DE_LEG: 0.1, DE_WRO: 0.1}, label: "Operation Vistula", vacate: true}
   # second repatriation, 1955-59
   - {year: 1956, kind: transfer, from: "@member:SU", who: {identity: [pl]}, number: 80000, to: {"@member:PL": 1.0}, label: "second repatriation"}
   - {year: 1957, kind: transfer, from: "@member:SU", who: {identity: [pl]}, number: 100000, to: {"@member:PL": 1.0}, label: "second repatriation"}

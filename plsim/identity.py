@@ -265,8 +265,12 @@ class IdentityModel:
         I += (inc * (1 - w_loc[:, None, :]))[..., None] * pool[None, None]
         self.I = np.maximum(I, 0.0)
 
-    def drift(self, M: np.ndarray, pressure: np.ndarray) -> None:
-        """Nation-building of "local" identities; pull of the state nation."""
+    def drift(self, M: np.ndarray, pressure: np.ndarray, status: np.ndarray | None = None,
+              schooling: np.ndarray | None = None) -> None:
+        """Nation-building of "local" identities; pull of the state nation.
+        ``status`` (R,NL) and ``schooling`` (R,G) are the language module's:
+        a national identity is anchored in its home language only as far as
+        that language is supported (``anchor_status``, ``anchor_schooling``)."""
         p = self.p
         I = self.I
         loc = ID_INDEX["loc"]
@@ -282,6 +286,15 @@ class IdentityModel:
         st = self.state                                                                   # (R,)
         anchor = np.zeros((self.R, NG, NI))
         anchor[:, np.arange(NG), self.nat_idx] = p["anchor"]
+        if status is not None and p.get("anchor_status"):
+            # a stigmatised, unschooled language anchors its speakers' identity less (the "local"
+            # identity of the Polesians is left as it was: nation-building moves it)
+            sup = status[:, self.group_lang] / p["anchor_status"]                         # (R,G)
+            if schooling is not None and p.get("anchor_schooling"):
+                sup = np.maximum(sup, schooling / p["anchor_schooling"])
+            sup = np.clip(sup, 0.0, 1.0)
+            sup[:, self.nat_idx == loc] = 1.0
+            anchor[:, np.arange(NG), self.nat_idx] *= sup
         h = 1 - np.exp(-rate[..., None] * (1 - anchor[:, None]))                          # (R,2,G,NI)
         h[np.arange(self.R), :, :, st] = 0.0
         moved = I * h

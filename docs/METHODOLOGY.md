@@ -755,9 +755,16 @@ cell and group; identity is not tracked by age.
   Weber 1976, Hroch 1985).
 * **Pull of the state nation.** Any other identity moves to the identity of
   the region's contact language at
-  `0.008 x pressure x M x compat(community)` per year. The rate is cut by
+  `0.05 x pressure x M x compat(community)` per year. The rate is cut by
   85 % when the identity is the one that goes with the person's own home
-  language. Compatibility: Catholics 1, Jews 0.6, Protestants and others
+  language, but in full only where that language has a status of at least
+  0.35 or own-language schooling of at least 0.3 (`anchor_status`,
+  `anchor_schooling`), and in proportion below. A stigmatised, unschooled
+  language anchors its speakers' identity less: in the baseline Ukrainian
+  and Lithuanian (status 0.35) anchor in full, Belarusian (0.15) at 43 %,
+  Kashubian (0.10) at 29 %; in People's Poland Ukrainian (0.08-0.12)
+  anchored a quarter to a third, German after 1945 (0.05) a seventh. The
+  "local" identity is left to nation-building. Compatibility: Catholics 1, Jews 0.6, Protestants and others
   0.5, Orthodox 0.3, Greek Catholics 0.25, Haredim 0. `pressure` is the
   language policy of the scenario. **Lithuanisation** in the Lithuanian
   member can now run through identity as well as language. How fast depends
@@ -771,12 +778,29 @@ cell and group; identity is not tracked by age.
 
 Outputs: identity by region and year, identity by home language at the
 snapshot years, the nationality censuses, an identity map in the report and
-the atlas's "Identity" layer (by county). The dynamic parameters are
-judgements, not fits; the starting mixes are tied to data (1921, 1923,
-1926). The historical scenario (§12.10) is a check on the dynamics: it keeps
-minority identities in People's Poland more stable than they were (2002:
-Belarusians and Ukrainians several times too many; Germans and Silesians
-about right).
+the atlas's "Identity" layer (by county). The starting mixes are tied to
+data (1921, 1923, 1926).
+
+**Calibration of the pull on the 2002 census.** The rate of the pull is
+fitted on the historical scenario (§12.10), against the national identities
+of the 2002 census, and used in every scenario. It is fitted on the
+minorities whose home language the model gets about right in 2002, so that
+the identity mechanism is tested alone: the Lithuanians (home language 9
+thousand, census 6) and the Kashubians. At `assimilation` 0.008, the earlier
+judgement, the model had 12 thousand Lithuanians and 37 thousand Kashubians
+by identity in 2002 (census 6 and 5); at 0.035, 0.05 and 0.07 it has 7, 5.8
+and 5 thousand Lithuanians, and at 0.05 4.7 thousand Kashubians. With 0.05
+the Germans are 101 thousand (census 153) and the Silesians 131 thousand
+(173). The Belarusians (140 thousand, census 49), Ukrainians (283, census 31)
+and Lemkos (36, census 6) stay too many, and that is their home language:
+the model has 223, 337 and 75 thousand speakers in 2002 against the census's
+40, 23 and 6. Raising the pull further to match them (0.12-0.25) would take
+the Lithuanians to 1-3 thousand and leave Ukrainian identity well below
+Ukrainian speech, the opposite of the census. The language side is the open
+problem: once dispersed (Operation Vistula) the children of Ukrainian
+mothers are raised in Polish at 70-80 % per birth in the model, but adults
+learn Polish and switch home language slowly, and there is no term for
+mixed marriages, which carried most of the real shift (§13).
 
 ## 7. Transport networks
 
@@ -997,9 +1021,11 @@ county table when one is supplied.
 
 `historical` replays the real century with the shared behaviour and is
 compared with the censuses of 1946-2021 (§12.10; results in SCENARIOS). It
-calibrated the fertility transition (§4.2) and the post-war mortality shift
-(§4.1), and shows that the identity layer keeps minority identities too
-stable (§6.7).
+calibrated the fertility transition (§4.2), the post-war mortality shift
+(§4.1) and the pull of the state nation on national identity (§6.7). It
+also shows the dispersed minorities of People's Poland (Ukrainians,
+Lemkos, the Belarusians of Podlasie) keeping their home language several
+times longer than they did (§6.7, §13).
 
 ## 11. Uncertainty
 
@@ -1718,6 +1744,7 @@ community, home language, national identity, sex and age:
 | `emigrate` | they leave the territory |
 | `transfer` | they move to other regions, by weight or to the homes earlier events vacated (`@vacated`) |
 | `immigrate` | a number arrive from outside, with a group and identity |
+| `away` | they leave for a while (forced labour in the Reich) and come back to the same region and stratum in the given shares of later years, aged and thinned by a yearly survival |
 | `identity` | a share change national identity |
 
 Removals take people in proportion to their cohorts; with an identity
@@ -1726,17 +1753,24 @@ their age, sex, group and identity. Every event enters the year's
 accounts (deaths, emigrants, immigrants, inter-regional flows), so the
 accounting identity of the projection still holds. The events of the
 scenario: the September campaign, Soviet deportations and the resettlement
-of the Volhynian Germans; deaths under occupation (60 % of them spread over
-everyone, the rest on men of 16-60), Volhynia 1943, the Warsaw Uprising and
-the emptying of Warsaw; the Holocaust (about 95 % of the Jews who did not
+of the Volhynian Germans; forced labour in the Reich (2.1 M Poles of the
+post-war territory taken in 1940-44, 68 % back in 1945, 24 % in 1946-48 with
+the UNRRA repatriation, the rest stay abroad or die there; the census of
+February 1946 counted none of those still away); deaths under occupation (60 %
+of them spread over everyone, the rest on men of 16-60), Volhynia 1943 and
+the flight of 150,000 Poles from Volhynia and Eastern Galicia into the
+General Government, the Warsaw Uprising and the emptying of Warsaw; no
+voluntary moves between regions in 1940-44 (demarcation lines, the General
+Government's controls); the Holocaust (about 95 % of the Jews who did not
 flee east); Wehrmacht losses and deaths in the flight of 1945; flight and
 expulsion of the Germans (62 % in 1945, most of the rest by 1950), the
 autochthons fleeing at lower rates and leaving later as Aussiedler (by
 rate, 1951-1992); the repatriation of Poles from the Soviet Union (1.5 M
 in 1945-47, 0.25 M in 1956-58) and from its interior; settlers from central
 Poland (2.5 M in 1945-50) into the vacated homes; the transfer of the
-Greek Catholic and Orthodox Ukrainian and Lemko speakers to the Soviet
-Union and Operation Vistula (selected by faith, as the authorities did,
+Greek Catholic and Orthodox Ukrainian and Lemko speakers of the Lublin,
+Rzeszów and Kraków voivodeships to the Soviet Union (482,880 in 1944-46) and
+Operation Vistula (140,660 in 1947) (selected by faith, as the authorities did,
 not by declared nationality); the Jewish emigration waves; and, after
 1989, the German minority and a Silesian identity declared again.
 
@@ -1793,6 +1827,12 @@ fertility and mortality settings of §4.1-4.2 come from this comparison.
 * **Language.** Language use is binary per person (home vernacular plus
   competence in the dominant language). Diglossia, dialect levelling and
   literacy in a third language are not represented.
+* **Mixed marriages.** Children take their mother's language or shift by a
+  rate that depends on the local share of the languages, not on the
+  father's language. Where a minority is scattered, most of its children
+  have a parent of the majority, and the real shift is faster than the
+  model's: Ukrainian, Lemko and Belarusian home language in People's Poland
+  last several times longer in the model than in the censuses (§6.7).
 
 ## 14. References
 

@@ -75,6 +75,26 @@ def test_state_pull_moves_identity_before_language():
     assert im.I.sum() == pytest.approx(2000.0)
 
 
+def test_unsupported_language_anchors_identity_less():
+    """A home language without status or schools anchors its speakers'
+    identity less: Ukrainian speakers in a Polish region keep a Ukrainian
+    identity longer when Ukrainian has status than when it is stigmatised."""
+    from plsim.identity import ID_INDEX, IdentityModel
+    from plsim.data.languages import LANG_INDEX, LANGUAGES
+    g = GROUP_INDEX[("GC", "uk")]
+    pop = np.zeros((1, 2, NG))
+    pop[0, :, g] = 1000.0
+    kept = {}
+    for st in (0.35, 0.05):
+        im = IdentityModel(DEFAULTS["identity"], ["LUB"], ["pl"], pop)
+        status = np.full((1, len(LANGUAGES)), 0.1)
+        status[0, LANG_INDEX["pl"]], status[0, LANG_INDEX["uk"]] = 1.0, st
+        for _ in range(30):
+            im.drift(np.array([[0.6, 0.8]]), np.array([1.3]), status, np.zeros((1, NG)))
+        kept[st] = im.I[0, :, g, ID_INDEX["uk"]].sum()
+    assert kept[0.05] < kept[0.35] < 2000.0
+
+
 # ---------------------------------------------------------------- Curzon line of 1919-20
 def test_historical_curzon_line_sides():
     from plsim.curzon import historical_side

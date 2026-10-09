@@ -610,7 +610,7 @@ class Simulation:
             np.maximum(self.P, 0.0, out=self.P)
             P = self.P
         # ---- national identity: nation-building and the pull of the state nation
-        self.ident.drift(M, self.lang.pressure(year))
+        self.ident.drift(M, self.lang.pressure(year), self.lang.status(year), self.lang.own_schooling(year))
         # ---- vital-rate diagnostics
         women_tot = P[:, :, :, :, 1, 15:50].sum(axis=3)                      # (R,2,G,35)
         w_c = np.zeros((R, 2, NC, 35))
