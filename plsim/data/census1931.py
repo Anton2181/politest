@@ -117,22 +117,39 @@ RELIGION_1931: dict[str, dict[str, float]] = {
 # ---------------------------------------------------------------------------------
 # Lithuania: latent (community, language) shares under the 1923-census reading.
 # ---------------------------------------------------------------------------------
-LT_GROUPS_1923: dict[str, dict[tuple[str, str], float]] = {
-    "LT_KAU": {("RC", "lt"): .675, ("JW", "yi"): .150, ("RC", "pl"): .070, ("OR", "ru"): .050,
-               ("PR", "de"): .030, ("OT", "pl"): .005, ("RC", "rom"): .002, ("PR", "lt"): .005,
-               ("OT", "oth"): .013},
-    "LT_LAU": {("RC", "lt"): .855, ("JW", "yi"): .070, ("RC", "pl"): .045, ("OR", "ru"): .020,
-               ("PR", "de"): .005, ("PR", "lv"): .002, ("OT", "kdr"): .0001, ("OT", "oth"): .0029},
-    "LT_ZEM": {("RC", "lt"): .880, ("JW", "yi"): .065, ("RC", "pl"): .010, ("OR", "ru"): .010,
-               ("PR", "de"): .010, ("PR", "lv"): .012, ("PR", "lt"): .010, ("OT", "oth"): .003},
-    "LT_SUV": {("RC", "lt"): .860, ("JW", "yi"): .060, ("RC", "pl"): .020, ("OR", "ru"): .010,
-               ("PR", "de"): .040, ("RC", "be"): .005, ("RC", "rom"): .002, ("OT", "oth"): .003},
-    "LT_NEA": {("RC", "lt"): .780, ("JW", "yi"): .060, ("RC", "pl"): .045, ("OR", "ru"): .060,
-               ("PR", "lv"): .020, ("PR", "lt"): .020, ("RC", "be"): .010, ("PR", "de"): .002,
-               ("OT", "oth"): .003},
-    "LT_KLA": {("PR", "de"): .430, ("PR", "lt"): .250, ("RC", "lt"): .270, ("JW", "yi"): .020,
-               ("OR", "ru"): .010, ("RC", "de"): .010, ("OT", "oth"): .010},
-}
+def _lt_groups_1923() -> dict[str, dict[tuple[str, str], float]]:
+    """Shares of every Lithuanian region from the 1923 census by apskritis
+    (``census1923_apskritys.csv``): nationality (by language) with religion.
+    Germans and Latvians are taken as Protestant and the other Protestants as
+    Lithuanian (the Lutherans of the Prussian border and the Reformed of
+    Biržai); Russians as Orthodox or Old Believers; Poles and Belarusians as
+    Catholic; Jews as Yiddish speakers. The Klaipėda Territory, not
+    enumerated in 1923, keeps its earlier estimate."""
+    import csv
+    import os
+    path = os.path.join(os.path.dirname(__file__), "census1923_apskritys.csv")
+    agg: dict[str, dict[str, float]] = {}
+    with open(path, encoding="utf-8") as fh:
+        for r in csv.DictReader(l for l in fh if not l.startswith("#")):
+            a = agg.setdefault(r["county"].split(".")[0], {})
+            f = int(r["pop"]) / int(r["citizens"])                   # foreigners take the citizens' mix
+            for k in ("lt", "jw", "pl", "ru", "de", "lv", "be", "oth"):
+                a[k] = a.get(k, 0.0) + int(r[k]) * f
+            a["ev"] = a.get("ev", 0.0) + int(r["r_luth"]) + int(r["r_ref"]) + int(r["r_bapt"])
+    out = {}
+    for code, a in agg.items():
+        pr_lt = min(max(a["ev"] - a["de"] - a["lv"], 0.0), a["lt"])
+        g = {("RC", "lt"): a["lt"] - pr_lt, ("PR", "lt"): pr_lt, ("JW", "yi"): a["jw"], ("RC", "pl"): a["pl"],
+             ("OR", "ru"): a["ru"], ("PR", "de"): a["de"], ("PR", "lv"): a["lv"], ("RC", "be"): a["be"],
+             ("OT", "oth"): a["oth"]}
+        tot = sum(g.values())
+        out[code] = {k: v / tot for k, v in g.items() if v > 0}
+    out["LT_KLA"] = {("PR", "de"): .430, ("PR", "lt"): .250, ("RC", "lt"): .270, ("JW", "yi"): .020,
+                     ("OR", "ru"): .010, ("RC", "de"): .010, ("OT", "oth"): .010}
+    return out
+
+
+LT_GROUPS_1923: dict[str, dict[tuple[str, str], float]] = _lt_groups_1923()
 
 # Extra Polish-speakers (share of region population, moved from RC:lt) implied by
 # the Polish electoral committee's 1923 claim (~202 k, ~10 % nationally; held

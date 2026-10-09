@@ -194,8 +194,13 @@ def test_krai_follows_the_governorates(krai_sim):
     assert not any(c.startswith("LT_KLA") for c in sim.codes)         # Prussian before 1920
     # the Suwałki governorate: Poland's in the krai scenario, Lit-Bel's in Lit-Bel
     suw = "PL" if name == "nw_krai" else krai
-    for code in ["LT_SUV.marijampole", "LT_SUV.vilkaviskis", "BIA.suwalki", "BIA.augustow"]:
+    for code in ["LT_SUV.vilkaviskis", "LT_SUV.sakiai", "BIA.suwalki", "BIA.augustow"]:
         assert mem[code] == suw, code
+    # Marijampolė lay west of the Niemen; on the county land fitted to the 1923 areas a sliver of the right
+    # bank (Vilna governorate) can fall to it and is cut off: the county's main piece is the Suwałki one
+    pop = {c: r.pop_1931 for c, r in zip(sim.codes, sim.regions)}
+    mar = max((c for c in sim.codes if c.startswith("LT_SUV.marijampole")), key=pop.get)
+    assert mem[mar] == suw, mar
     assert sorted(sim.official[sim.codes.index("WIL.wilno")]) == ["be", "lt", "pl", "ru", "yi"]
     if name == "nw_krai":                    # Latgale and the Nevel lands join; the BSSR whole
         for code in ["LV_LAT.dyneburg", "RU_VIT.newel", "RU_MOH", "BY_WIT.witebsk", "BY_MOH.mohylew"]:

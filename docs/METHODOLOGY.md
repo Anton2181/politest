@@ -203,7 +203,13 @@ regime would have recorded them.
 
 The 1923 Lithuanian census (2.03 M without Klaipėda) and the 1925 Klaipėda
 census (141.6 k: 43.5 % German, 27.6 % Lithuanian, 25.2 % "Memellanders")
-are carried forward to end-1931 (~2.39 M) and split into six units. Klaipėda's
+are carried forward to end-1931 (~2.39 M; Kaunas city to ~115 k, the rest
+at ~1.1 % a year) and split into six units. The five units of the Kaunas
+state add up their apskritys of 1923 (`census1923_apskritys.csv`): their
+areas, and their (community, language) shares from nationality and
+religion. Germans and Latvians are taken as Protestant, the other
+Protestants as Lithuanian (the Lutherans of the Prussian border, the
+Reformed of Biržai), Russians as Orthodox or Old Believers. Klaipėda's
 Memellanders become Lutheran Lithuanian-vernacular speakers who are highly
 bilingual in German. The Polish-speaking population has three variants
 (`lt_variant`):
@@ -1322,7 +1328,8 @@ Lithuanian apskritys.
 after a per-county weight: the distance less the weight (an additively
 weighted Voronoi diagram), with the weights fitted on the model grid so
 that each county's land matches its area in the 1931 census
-(`county_areas_1931.csv`, `tools/build_county_weights.py`; every county
+(`county_areas_1931.csv`; the Lithuanian apskritys their area in the 1923
+census, all within 1 %; `tools/build_county_weights.py`; every county
 within 4 %, except Świętochłowice, about three grid cells, at 14 %; in
 Nowogródek and Wilno the 1897 governorate rule below costs more: Słonim
 +51 %, Brasław −22 %). With additive weights every county holds its seat and
@@ -1345,8 +1352,14 @@ county there is in two pieces.
 mother tongue from the census volumes (tabl. 12 of the voivodeship volumes,
 or the powiat pages of the short results), and its towns, countryside and
 religions from the powiat pages (`census1931_strata.csv`). The Lithuanian
-apskritys are at grade C (downscaled from their unit) until the 1923
-apskritis tables are supplied.
+apskritys of the Kaunas state are at grade A from the 1923 census
+(`census1923_apskritys.csv`): population, nationality (determined by
+language; Jews counted as Yiddish speakers), religion and towns. Their
+populations are of 1923 and are scaled to their unit's 1931 total; with no
+town/village split printed, their religions are fitted over the whole
+county, and their towns come from the downscaled pattern (Trakai apskritis,
+with no town in 1923, has none). The three Kreise of the Klaipėda Territory,
+not enumerated in 1923, stay at grade C.
 
 1. **Seed.** The 1931 county count by mother tongue. Merged categories are
    split by the downscaled pattern: Belarusian + tutejszy + Russian where a
@@ -1841,8 +1854,8 @@ fertility and mortality settings of §4.1-4.2 come from this comparison.
 * Główny Urząd Statystyczny (1936-38). *Drugi Powszechny Spis Ludności z
   dn. 9 XII 1931 r.* (voivodeship volumes); *Mały Rocznik Statystyczny 1939*.
 * Centralinis statistikos biuras (1926). *Lietuvos gyventojai. Pirmojo 1923 m.
-  rugsėjo 17 d. visuotinojo gyventojų surašymo duomenys*; 1925 Klaipėda
-  census.
+  rugsėjo 17 d. visuotinojo gyventojų surašymo duomenys* (Tables I, III and IV
+  by apskritis read for this model); 1925 Klaipėda census.
 * *Первая всеобщая перепись населения Российской империи 1897 г.*
   (native-language tables, Vilna, Kovno, Grodno, Volhynia governorates).
 * Tomaszewski, J. (1985). *Rzeczpospolita wielu narodów*. Warsaw: Czytelnik.

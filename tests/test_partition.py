@@ -320,3 +320,62 @@ def test_every_county_holds_its_seat_and_its_town():
         towns = [n for n in NODES if n.region == par and f"{par}.{sr.slug(n.name)}" in kids]
         got = sr.assign(par, [n.lat for n in towns], [n.lon for n in towns], kids)
         assert [f"{par}.{sr.slug(n.name)}" for n in towns] == list(got), par
+
+
+def test_census_1923_apskritys():
+    """The 1923 Lithuanian census by apskritis: every row's religions add up to
+    its population, the units to the national total, and the apskritys of the
+    Kaunas state are grade-A counties."""
+    import csv
+    import os
+    from plsim.data.census1931 import LT_GROUPS_1923
+    from plsim.data.counties import CENSUS_1923
+    path = os.path.join(os.path.dirname(__file__), "..", "plsim", "data", "census1923_apskritys.csv")
+    rel = [c for c in ("r_rc", "r_bapt", "r_luth", "r_ref", "r_oldbel", "r_orth", "r_xc", "r_jw", "r_kar", "r_mus",
+                       "r_xn", "r_unk")]
+    nat = ["lt", "jw", "pl", "ru", "de", "lv", "be", "oth"]
+    with open(path, encoding="utf-8") as fh:
+        rows = list(csv.DictReader(l for l in fh if not l.startswith("#")))
+    assert len(rows) == 24
+    for r in rows:
+        assert sum(int(r[c]) for c in rel) == int(r["pop"]), r["unit"]
+        assert sum(int(r[c]) for c in nat) == int(r["citizens"]), r["unit"]
+    assert sum(int(r["pop"]) for r in rows) == 2_028_971
+    for c in COUNTIES:
+        if c.parent in ("LT_LAU", "LT_ZEM", "LT_SUV", "LT_NEA"):
+            assert c.grade == "A" and c.lang and c.rel and c.pop == CENSUS_1923[c.code]["pop"], c.code
+    assert sum(v["pop"] for v in CENSUS_1923.values()) == 2_028_971
+    for code, shares in LT_GROUPS_1923.items():
+        assert sum(shares.values()) == pytest.approx(1.0), code
+    assert LT_GROUPS_1923["LT_LAU"][("RC", "pl")] == pytest.approx(0.051, abs=0.001)
+    assert LT_GROUPS_1923["LT_NEA"][("PR", "lt")] > 0.02               # the Reformed of Biržai
+
+
+def test_lithuanian_counties_follow_the_1923_census():
+    """Read through the 1923 census (``lt_variant`` census_1923), the model's
+    apskritys reproduce its nationalities, religions and towns."""
+    from plsim.data.counties import CENSUS_1923
+    from plsim.data.languages import GROUPS
+    from plsim.params import load_scenario
+    from plsim.partition import apply_partition
+    p = load_scenario("baseline")
+    p["lt_variant"] = "census_1923"
+    regs, comp, _, _ = apply_partition(select_regions(True), p)
+    for r, c in zip(regs, comp):
+        row = CENSUS_1923.get(r.code)
+        if row is None or "." not in r.code:
+            continue
+        tot = c.sum()
+        lang = {}
+        for g, (cm, l) in enumerate(GROUPS):
+            lang[l] = lang.get(l, 0.0) + c[:, g].sum() / tot
+        for key, n in row["lang"].items():
+            if key != "oth":
+                assert lang.get(key, 0.0) == pytest.approx(n / row["pop"], abs=0.01), (r.code, key)
+        jw = sum(c[:, g].sum() for g, (cm, _) in enumerate(GROUPS) if cm in ("JW", "JH")) / tot
+        pr = sum(c[:, g].sum() for g, (cm, _) in enumerate(GROUPS) if cm == "PR") / tot
+        assert jw == pytest.approx(row["rel"]["jw"] / row["pop"], abs=0.01), r.code
+        assert pr == pytest.approx(row["rel"]["ev"] / row["pop"], abs=0.015), r.code
+    by = {r.code: r for r in regs}
+    assert by["LT_NEA.kaisiadorys"].urban_1931 < 0.01             # Trakai apskritis had no town in 1923
+    assert by["LT_LAU.panevezys"].urban_1931 > 0.12               # Panevėžys, Kupiškis, Šeduva

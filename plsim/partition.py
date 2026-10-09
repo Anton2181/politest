@@ -173,8 +173,8 @@ def _fit_communities(parent: str, comp_i: np.ndarray, child_lang: dict, group_la
                      n_iter: int = 100) -> dict:
     """{county: (2, G)} communities of every county of voivodeship ``parent``. The start is the parent's split
     of each language into communities; IPF then fits, in turn, the county's census religions by stratum
-    (shares among the religions printed for it), the parent's (stratum, group) totals, and the county's
-    languages (``child_lang``, exact)."""
+    (shares among the religions printed for it; for a county with religions but no town/village split, the
+    whole county's), the parent's (stratum, group) totals, and the county's languages (``child_lang``, exact)."""
     kids = list(child_lang)
     parent_lang = lang_totals(comp_i)
     X = np.array([comp_i * np.where(parent_lang > 0, child_lang[k] / np.maximum(parent_lang, 1e-12), 0.0)[:, group_lang]
@@ -186,6 +186,17 @@ def _fit_communities(parent: str, comp_i: np.ndarray, child_lang: dict, group_la
     targets = []
     for j, k in enumerate(kids):
         st = COUNTY_STRATA.get(_strata_key(k))
+        cty = COUNTY_BY_CODE.get(k)
+        if st is None and cty is not None and cty.rel:
+            # religions of the whole county, no town/village split (the Lithuanian apskritys of 1923)
+            cnt: dict = {}
+            for c, v in cty.rel.items():
+                if c in rel_bin:
+                    cnt[rel_bin[c]] = cnt.get(rel_bin[c], 0.0) + v
+            tot = sum(cnt.values())
+            if tot > 0 and len(cnt) > 1:
+                targets.append((j, None, {b: v / tot for b, v in cnt.items()}))
+            continue
         for s, name in enumerate(("rural", "urban")):
             if st is None or name not in st:
                 continue
@@ -212,12 +223,12 @@ def _fit_communities(parent: str, comp_i: np.ndarray, child_lang: dict, group_la
 
     for _ in range(n_iter):
         for j, s, share in targets:
-            row = X[j, s]
-            mass = sum(row[masks[b]].sum() for b in share)
+            row = X[j] if s is None else X[j, s]          # (2, G) for a whole-county target
+            mass = sum(row[..., masks[b]].sum() for b in share)
             for b, sh in share.items():
-                cur = row[masks[b]].sum()
+                cur = row[..., masks[b]].sum()
                 if cur > 0:
-                    row[masks[b]] *= sh * mass / cur
+                    row[..., masks[b]] *= sh * mass / cur
         to_parent_and_languages()
     # the two remaining margins agree (both give the voivodeship's languages by stratum): settle them exactly
     for _ in range(4 * n_iter):

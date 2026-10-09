@@ -290,7 +290,9 @@ than 4 minutes). Details are in `docs/METHODOLOGY.md` §12.6.
   eastern voivodeships their mother tongue: they replace the secondary
   tables used before, which in Galicia had given the religions as the
   languages (Turka: 6,301 Roman Catholics read as Polish speakers; 26,123
-  spoke Polish). Lithuania's apskritys are still downscaled (grade C).
+  spoke Polish). Lithuania's apskritys come from the 1923 census
+  (`plsim/data/census1923_apskritys.csv`: nationality, religion, towns and
+  area of each apskritis, read from the census volume).
   County figures are fitted to the voivodeship totals of the starting
   point, so the county tables decide *where* speakers live and the research
   estimate decides *how many*.

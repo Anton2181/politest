@@ -14,10 +14,14 @@ depends most on the counterfactual language regime.
 Figures
 -------
 * ``pop_1931``: Polish units - census of 9 Dec 1931 (GUS, Drugi Powszechny
-  Spis Ludności).  Lithuanian units - 1923 Lithuanian census (and 1925
-  Klaipėda census) carried forward to end-1931 at ~1.1 %/yr so that the
-  national total (~2.38 M) is consistent with the 2.56 M reported for 1938.
-* ``area_km2``: 1931 areas (Poland total 388.6 k km²; Lithuania 55.7 k km²).
+  Spis Ludności).  Lithuanian units - the 1923 census by apskritis
+  (``census1923_apskritys.csv``; the 1925 census for Klaipėda) carried
+  forward to end-1931: Kaunas city to ~115 k (1923: 92 k; 1939: 152 k), the
+  rest at ~1.1 %/yr, so that the national total (~2.38 M) is consistent with
+  the 2.56 M reported for 1938.
+* ``area_km2``: 1931 areas (Poland total 388.6 k km²); the Lithuanian units
+  add up the apskritys of the 1923 census (Kaunas state 53,242 km²; with
+  Klaipėda 56.1 k km²).
 * ``urban_1931``: legal-urban share.  The national Polish figure (27.4 %) is
   from the census; regional values are approximate reconstructions and are
   rescaled at start-up so that the national total matches.
@@ -95,13 +99,13 @@ REGIONS: list[Region] = [
     Region("STA", "stanisławowskie", "PL", "AT", 16_894, 1_480_285, 0.16, 0.65, 3.95, 2.60, 48.5, 0.65, 48.80, 24.50, "mountain"),
     Region("TAR", "tarnopolskie", "PL", "AT", 16_533, 1_600_406, 0.16, 0.62, 3.65, 2.50, 49.0, 0.68, 49.40, 25.40),
     # --- Lithuania (Kaunas state + Klaipėda Territory) -----------------------------
-    Region("LT_KAU", "Kaunas (city & county)", "LT", "RU", 2_900, 265_000, 0.45, 1.15, 3.40, 2.20, 58.0, 0.85, 54.90, 23.95,
+    Region("LT_KAU", "Kaunas (city & county)", "LT", "RU", 2_652, 223_500, 0.51, 1.15, 3.40, 2.20, 58.0, 0.85, 54.90, 23.95,
            notes="Kaunas city ~115k (1923: 92k; 1939: 152k)"),
-    Region("LT_LAU", "Lauda / central Lithuania", "LT", "RU", 12_500, 505_000, 0.10, 0.80, 3.60, 2.40, 56.5, 0.80, 55.45, 24.00,
+    Region("LT_LAU", "Lauda / central Lithuania", "LT", "RU", 12_661, 504_000, 0.115, 0.80, 3.60, 2.40, 56.5, 0.80, 55.45, 24.00,
            notes="Kėdainiai, Panevėžys, Ukmergė, Raseiniai apskritys; Lauda gentry"),
-    Region("LT_ZEM", "Samogitia", "LT", "RU", 14_000, 570_000, 0.10, 0.80, 3.65, 2.45, 56.5, 0.78, 55.85, 22.60),
-    Region("LT_SUV", "Suvalkija / Dzūkija", "LT", "RU", 11_500, 470_000, 0.08, 0.80, 3.50, 2.35, 57.0, 0.82, 54.60, 23.40),
-    Region("LT_NEA", "Northeast Lithuania", "LT", "RU", 12_000, 430_000, 0.07, 0.72, 3.65, 2.40, 56.0, 0.74, 55.75, 25.30,
+    Region("LT_ZEM", "Samogitia", "LT", "RU", 16_315, 608_400, 0.08, 0.80, 3.65, 2.45, 56.5, 0.78, 55.85, 22.60),
+    Region("LT_SUV", "Suvalkija / Dzūkija", "LT", "RU", 9_496, 433_600, 0.115, 0.80, 3.50, 2.35, 57.0, 0.82, 54.60, 23.40),
+    Region("LT_NEA", "Northeast Lithuania", "LT", "RU", 12_118, 470_400, 0.03, 0.72, 3.65, 2.40, 56.0, 0.74, 55.75, 25.30,
            notes="Biržai, Rokiškis, Zarasai, Utena, Lithuanian part of Trakai"),
     Region("LT_KLA", "Klaipėda Territory", "LT", "DE", 2_848, 150_000, 0.30, 1.30, 3.00, 2.10, 59.5, 0.95, 55.55, 21.35,
            notes="1925 census 141,645"),

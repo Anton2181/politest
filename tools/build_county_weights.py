@@ -1,6 +1,7 @@
-"""Fit the county Voronoi weights to the census areas of the powiaty.
+"""Fit the county Voronoi weights to the census areas of the powiaty and apskritys.
 
-Reads plsim/data/county_areas_1931.csv and writes plsim/data/county_weights.json:
+Reads plsim/data/county_areas_1931.csv (and the areas of the Lithuanian apskritys
+in census1923_apskritys.csv) and writes plsim/data/county_weights.json:
 one additive weight per county (km), so that the cells of the model grid that
 ``data.subregions.assign`` gives each county add up to its census area. Targets
 are relative: each voivodeship's cells are shared in proportion to the areas of
@@ -8,7 +9,8 @@ its counties (towns with county rights print no area and are small). Powiaty
 merged in 1932 are printed with one area, which their members share as the
 unweighted diagram does. With additive weights (distance less weight) every
 county keeps its seat and is star-shaped around it (``data.subregions``). Run
-from the repository root:  python tools/build_county_weights.py
+from the repository root:  python tools/build_county_weights.py [PARENT ...]
+(with parents named, only theirs are refitted; the other weights are kept).
 """
 from __future__ import annotations
 
@@ -33,15 +35,21 @@ def targets() -> dict:
     with open(os.path.join(HERE, "county_areas_1931.csv"), encoding="utf-8") as fh:
         for r in csv.DictReader(l for l in fh if not l.startswith("#")):
             out[tuple(r["county"].split("+"))] = float(r["area_km2"])
+    from plsim.data.counties import CENSUS_1923
+    for code, row in CENSUS_1923.items():
+        if "." in code and row["area"] > 0:
+            out[(code,)] = float(row["area"])
     return out
 
 
-def fit(n_iter: int = 700):
+def fit(n_iter: int = 700, only=None):
     codes = [r.code for r in select_regions(True)]
     g = build_grid(codes)
     tg = targets()
     weights, report = {}, {}
     for i, par in enumerate(codes):
+        if only and par not in only:
+            continue
         cells = np.where(g.region == i)[0]
         kids = subregions.children(par, "county") if len(subregions.county_seats(par)) > 1 else []
         units = [u for u in tg if u[0].split(".")[0] == par]
@@ -77,9 +85,15 @@ def fit(n_iter: int = 700):
 
 
 if __name__ == "__main__":
-    weights, report = fit()
+    only = sys.argv[1:]
+    weights, report = fit(only=only)
+    if only:
+        with open(os.path.join(HERE, "county_weights.json"), encoding="utf-8") as fh:
+            old = json.load(fh)["weights"]
+        weights = {**{k: v for k, v in old.items() if k.split(".")[0] not in only}, **weights}
     with open(os.path.join(HERE, "county_weights.json"), "w", encoding="utf-8") as fh:
-        json.dump({"source": "tools/build_county_weights.py from county_areas_1931.csv", "weights": weights}, fh,
+        json.dump({"source": "tools/build_county_weights.py from county_areas_1931.csv and census1923_apskritys.csv",
+                   "weights": weights}, fh,
                   indent=1, sort_keys=True, ensure_ascii=False)
     for par, (worst, err) in report.items():
         bad = {k: v for k, v in err.items() if abs(v) > 0.05}

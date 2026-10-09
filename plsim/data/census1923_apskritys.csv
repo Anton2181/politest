@@ -1,0 +1,37 @@
+# The first Lithuanian census, 17 September 1923, by enumeration unit (20 apskritys and 4 towns with county rights;
+# the Klaipeda Territory was not enumerated): Lietuvos gyventojai. Pirmojo 1923 m. rugsejo 17 d. visuotinojo
+# gyventoju surasymo duomenys (Centralinis statistikos biuras, Kaunas 1926), read from the page images.
+# pop: Table III, p. 18 (citizens and foreigners). lt..oth: Table III, p. 13-15, citizens by nationality (determined
+# by language); oth is the citizens' total less the seven named (English, Tatars, Roma, Karaim and the other small
+# nationalities, p. 13-15); foreigners (by state, p. 16-18) are not split by nationality. r_*: Table IV, p. 35-36,
+# everyone by religion (Roman Catholic, Baptist, Lutheran, Reformed, Old Believer, Orthodox, other Christian,
+# Jewish, Karaim, Muslim, other, not stated). towns, urban: Table I, p. 1-4, the 27 towns (miestai) and their
+# population; area_km2: Table I (0 for the towns with county rights, which print none; Kaunas prints 34).
+# Every row's religions add up to its population and every column to the printed national total; the named
+# nationalities fall short of the citizens' total by the small nationalities alone (0-400 a row).
+# county: the model's county (a town with county rights goes with its apskritis; Kaunas and its apskritis are LT_KAU).
+unit,county,pop,citizens,foreigners,lt,jw,pl,ru,de,lv,be,oth,r_rc,r_bapt,r_luth,r_ref,r_oldbel,r_orth,r_xc,r_jw,r_kar,r_mus,r_xn,r_unk,towns,urban,area_km2
+Alytaus apskr.,LT_SUV.alytus,109678,109427,251,95648,7729,3974,757,419,9,190,701,99630,0,629,13,201,672,0,7798,2,732,1,0,Alytus:6322,6322,2849
+Biržų-Pasvalio apskr.,LT_NEA.birzai,115186,114912,274,104068,4945,936,1268,169,3421,28,77,95364,15,3799,9642,474,869,11,4964,29,1,14,4,Biržai:5315,5315,3268
+Kauno apskr.,LT_KAU,98918,98652,266,75629,6384,10092,5761,592,14,117,63,85636,0,938,1,4607,1299,0,6416,1,18,1,1,Jonava:4115,4115,2618
+Kauno miestas,LT_KAU,92446,90349,2097,54520,25044,4193,2914,3269,123,171,115,57107,78,4821,619,901,3030,132,25619,4,91,40,4,Kaunas:92446,92446,34
+Kėdainių apskr.,LT_LAU.kedainiai,86099,85852,247,71987,5464,6390,1624,271,67,43,6,78436,0,407,35,975,765,0,5473,5,1,2,0,Kėdainiai:7415,7415,2403
+Kretingos apskr.,LT_ZEM.kretinga,93875,93694,181,84624,5816,121,270,479,2275,109,0,83622,80,3913,8,56,330,19,5846,0,0,1,0,,0,2579
+Marijampolės apskr.,LT_SUV.marijampole,99220,98799,421,87236,6407,1296,331,3395,18,105,11,87218,1,4947,15,26,446,0,6554,0,2,11,0,Kalvarija:4529;Marijampolė:9488;Prienai:3260,17277,2199
+Mažeikių apskr.,LT_ZEM.mazeikiai,71104,70861,243,61707,3999,112,1361,341,3157,161,23,61810,183,3504,2,852,731,10,4012,0,0,0,0,Mažeikiai:4300,4300,2070
+Panevėžio apskr.,LT_LAU.panevezys,119720,119607,113,106787,5610,4397,2406,137,147,101,22,111334,0,274,14,1776,711,7,5594,3,0,7,0,Kupiškis:2672;Šeduva:3186,5858,3972
+Panevėžio miestas,LT_LAU.panevezys,19197,19000,197,10236,6845,976,633,109,50,30,121,11133,4,260,28,277,455,4,6925,110,1,0,0,Panevėžys:19197,19197,0
+Raseinių apskr.,LT_LAU.raseiniai,108024,107750,274,93532,8149,2372,1465,2029,32,170,1,93759,0,4206,51,459,1317,29,8197,0,0,0,6,Jurbarkas:4409;Raseiniai:5270,9679,3087
+Rokiškio apskr.,LT_NEA.rokiskis,83220,82965,255,71258,5108,502,5478,57,525,32,5,71905,0,670,7,5146,348,0,5141,0,1,0,2,Rokiškis:4325,4325,2255
+Seinų apskr.,LT_SUV.lazdijai,38207,38142,65,33353,2172,1689,676,169,3,61,19,34814,0,489,9,496,218,0,2173,0,8,0,0,,0,1263
+Šakių apskr.,LT_SUV.sakiai,67474,67318,156,60968,2978,155,190,2861,2,159,5,58583,7,5564,95,43,163,35,2983,0,0,1,0,Kudirkos Naumiestis:3067;Šakiai:2044,5111,1773
+Šiaulių apskr.,LT_ZEM.siauliai,176628,176249,379,156567,8161,1187,4669,576,4716,340,33,157554,4,5639,104,2935,2184,10,8191,0,7,0,0,Žagarė:4730,4730,5714
+Šiaulių miestas,LT_ZEM.siauliai,21387,21160,227,15058,5338,119,304,198,96,30,17,15080,2,439,13,58,395,3,5382,0,5,10,0,Šiauliai:21387,21387,0
+Tauragės apskr.,LT_ZEM.taurage,110965,110771,194,99547,6168,400,849,3731,29,44,3,90345,0,13317,9,252,838,4,6198,1,0,1,0,Tauragė:5470,5470,3351
+Telšių apskr.,LT_ZEM.telsiai,80452,80346,106,71731,6308,294,1431,215,54,310,3,72026,0,289,0,487,1272,44,6334,0,0,0,0,Plungė:4236;Telšiai:4691,8927,2601
+Trakų apskr.,LT_NEA.kaisiadorys,78636,78473,163,59601,4338,9712,2602,63,11,1946,200,71070,0,106,1,802,2177,1,4357,0,122,0,0,,0,2191
+Utenos apskr.,LT_NEA.utena,108960,108828,132,90091,8043,5605,4923,46,43,65,12,95771,0,96,2,3079,1920,0,8076,0,16,0,0,,0,3090
+Vilkaviškio apskr.,LT_SUV.vilkaviskis,80609,80024,585,61363,7161,638,658,10045,6,116,37,60252,5,12073,1,10,960,63,7241,0,1,2,1,Kybartai:6300;Vilkaviškis:7263;Virbalis:4018,17581,1412
+Vilkmergės apskr.,LT_LAU.ukmerge,115705,115561,144,99944,4289,8392,2782,24,17,59,54,108421,0,72,6,1787,1077,0,4298,0,44,0,0,,0,3199
+Vilkmergės miestas,LT_LAU.ukmerge,10604,10517,87,5243,3885,801,551,19,9,4,5,6030,0,53,3,267,328,2,3921,0,0,0,0,Ukmergė:10604,10604,0
+Zarasų apskr.,LT_NEA.zarasai,42657,42535,122,31165,3402,1246,6557,17,59,30,59,32493,0,73,0,6183,420,0,3432,0,56,0,0,Zarasai:3785,3785,1314

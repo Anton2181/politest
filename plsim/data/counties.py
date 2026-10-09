@@ -26,9 +26,12 @@ Sources and grades
 * **B**: population from the 1931 administrative tables (rounded), language
   shares from the county anchors of ``data.geography``. No Polish county is
   left at this grade.
+* **A (Lithuania)**: the 1923 census by apskritis (``census1923_apskritys.csv``,
+  loaded at the end of this module): population, nationality (determined by
+  language), religion, towns and area.
 * **C**: county seat only. Population and languages are downscaled from the
-  voivodeship (``partition``), so they are estimates. Only Lithuania's
-  apskritys are left at this grade.
+  voivodeship (``partition``), so they are estimates. Only the three Kreise
+  of the Klaipėda Territory (not enumerated in 1923) are left at this grade.
 
 Coverage: every Polish voivodeship but Warsaw city (one unit) at grade A;
 Płock's town page is missing from the scan, so powiat Płock has shares only
@@ -463,6 +466,45 @@ for _code, _st in list(STRATA.items()):
             COUNTIES[_by[_m]] = County(_c.parent, _c.name, _c.seat, _c.lat, _c.lon, _pop,
                                        {k: round(v) for k, v in _lang.items()},
                                        {k: round(v) for k, v in _rel.items()}, "A")
+
+# ---------------------------------------------------------------- the 1923 Lithuanian census by apskritis (grade A)
+# plsim/data/census1923_apskritys.csv: nationality (determined by language) and religion of the 20 apskritys, read
+# from the census volume. The towns with county rights (Panevėžys, Šiauliai, Vilkmergė) go with their apskritis;
+# Kaunas and its apskritis are one region (LT_KAU). Foreigners (0.4 %) take the citizens' mix. Jews are counted
+# as Yiddish speakers. The populations are of 1923: the partition scales them to the region's 1931 total.
+CENSUS_1923_LANG = {"lt": "lt", "jw": "yi", "pl": "pl", "ru": "ru", "de": "de", "lv": "lv", "be": "be", "oth": "oth"}
+CENSUS_1923_REL = {"rc": ("r_rc",), "ev": ("r_luth", "r_ref", "r_bapt"), "or": ("r_orth", "r_oldbel"), "xc": ("r_xc",),
+                   "jw": ("r_jw",), "orel": ("r_kar", "r_mus", "r_xn", "r_unk")}
+
+
+def census_1923_rows(path=None) -> dict:
+    """{county: {"pop", "lang", "rel", "urban", "area", "units"}}: the 1923 census merged by model county."""
+    import csv
+    import os
+    path = path or os.path.join(os.path.dirname(__file__), "census1923_apskritys.csv")
+    out: dict = {}
+    with open(path, encoding="utf-8") as fh:
+        for r in csv.DictReader(l for l in fh if not l.startswith("#")):
+            o = out.setdefault(r["county"], {"pop": 0, "lang": {}, "rel": {}, "urban": 0, "area": 0, "units": []})
+            pop, cit = int(r["pop"]), int(r["citizens"])
+            o["pop"] += pop
+            o["urban"] += int(r["urban"])
+            o["area"] += int(r["area_km2"])
+            o["units"].append(r["unit"])
+            for col, key in CENSUS_1923_LANG.items():
+                o["lang"][key] = o["lang"].get(key, 0) + int(r[col]) * pop / cit
+            for key, cols in CENSUS_1923_REL.items():
+                o["rel"][key] = o["rel"].get(key, 0) + sum(int(r[c]) for c in cols)
+    return out
+
+
+CENSUS_1923 = census_1923_rows()
+_by = {c.code: i for i, c in enumerate(COUNTIES)}
+for _code, _row in CENSUS_1923.items():
+    if _code in _by:
+        _c = COUNTIES[_by[_code]]
+        COUNTIES[_by[_code]] = dataclasses.replace(_c, pop=_row["pop"], lang={k: round(v) for k, v in _row["lang"].items()},
+                                                   rel=dict(_row["rel"]), grade="A")
 
 BY_PARENT: dict[str, list[County]] = {}
 for _cty in COUNTIES:
