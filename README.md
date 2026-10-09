@@ -435,7 +435,8 @@ in the autonomy and in every canton. By 2032:
 
 **Historical Poland, for calibration** (`historical`). The same model, run
 through the real events: the September campaign, occupation deaths, the
-Holocaust, Volhynia, the Warsaw Uprising, the Soviet deportations; the
+Holocaust, Volhynia, the Warsaw Uprising, the Soviet deportations, forced
+labour in the Reich and its return in 1945-48; the
 border moved west in 1945 (the Recovered Territories and Danzig become
 Polish, the land east of the Bug becomes Soviet); the flight and expulsion
 of the Germans, the repatriation of Poles from the east, the resettlement
@@ -446,19 +447,29 @@ transition. It reproduces (model / observed):
 
 | | 1946 | 1950 | 1970 | 2002 | 2021 |
 |---|---|---|---|---|---|
-| Population (M) | 24.1 / 23.9 | 23.8 / 25.0 | 30.4 / 32.6 | 35.6 / 38.2 | 34.4 / 38.0 |
-| Urban % | | 38.5 / 36.9 | 50.9 / 52.3 | 58.9 / 61.8 | 62.4 / 60.2 |
-| TFR | | 3.70 / 3.71 | 2.19 / 2.20 | 1.41 / 1.37 (2000) | 1.41 / 1.39 (2020) |
+| Population (M) | 22.8 / 23.9 | 23.7 / 25.0 | 30.9 / 32.6 | 36.3 / 38.2 | 35.2 / 38.0 |
+| Urban % | | 38.0 / 36.9 | 51.0 / 52.3 | 59.0 / 61.8 | 62.4 / 60.2 |
+| TFR | | 3.76 / 3.71 | 2.19 / 2.20 | 1.41 / 1.37 (2000) | 1.41 / 1.39 (2020) |
 
-* The Recovered Territories hold 5.3 M in 1946 (5.0 M) and 5.6 M in 1950
-  (5.9 M); e0 stays within 1.5 years of the life tables.
-* The population is 5-10 % short after 1946: the model's post-war
-  population is older than the real one (1-1.5 deaths per thousand too
-  many in the 1950s), and the return of displaced people in 1946-48 is not
-  modelled. Minority identities are too stable: in 2002 the run keeps
-  350 k Ukrainians and 230 k Belarusians, against 31 k and 49 k declared;
-  Silesians and Germans come out close (240 k and 190 k, against 173 k and
-  153 k).
+* The Recovered Territories hold 4.6 M in 1946 (5.0 M) and 5.5 M in 1950
+  (5.9 M); e0 stays within 1.5 years of the life tables (2 in 2019).
+* The population is 1.1 M short in 1946 and 1.3 M in 1950, and 1.9 M by
+  2002. Fertility and mortality after the war follow the record, so the gap
+  was opened before 1946: interwar Poland is already 0.35 M short in 1939,
+  and the old territory lost more in the war than it did. The 1946 census
+  did not count the forced labourers still in the West; the model brings
+  them back in 1946-48, as UNRRA did.
+* National identity is calibrated on the 2002 census (the pull of the state
+  nation, METHODOLOGY §6.7). Lithuanians and Kashubians, whose home
+  language the model gets about right, match (5.8 k and 4.7 k against 6 k
+  and 5 k); Germans and Silesians come out 25-35 % low (101 k and 131 k,
+  against 153 k and 173 k). Ukrainians (283 k against 31 k), Belarusians
+  (140 k against 49 k) and Lemkos (36 k against 6 k) stay too many because
+  their home language does: the model keeps 337 k Ukrainian, 223 k
+  Belarusian and 75 k Lemko speakers in 2002, against 23 k, 40 k and 6 k.
+  Once scattered, their children are raised in Polish at 70-80 % per birth,
+  but adults learn Polish and switch slowly, and mixed marriages, which
+  carried most of the real shift, are not modelled.
 * `outputs/history/` holds the comparison table and chart; METHODOLOGY
   §12.10 the events and their sources.
 
