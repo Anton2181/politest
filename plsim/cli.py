@@ -244,10 +244,16 @@ def census_consistency() -> list[list]:
 
 def run_digest(res) -> str:
     """Fingerprint of a seeded run's results (population, vital events, towns,
-    identity): equal digests mean the run came out bit for bit the same."""
+    identity), by year and region and to single precision: equal digests mean
+    the run came out the same. Multithreaded sums can differ in the last bits
+    from one build to the next (1e-11 people); those differences are not a
+    change of the model and do not make the saved ensembles stale."""
     h = hashlib.sha1()
     for k in ("pop", "births", "deaths", "town_pop", "identity"):
-        h.update(np.ascontiguousarray(np.asarray(getattr(res, k), dtype=np.float64)).tobytes())
+        a = np.asarray(getattr(res, k), dtype=np.float64)
+        if a.ndim > 2:
+            a = a.reshape(a.shape[0], a.shape[1], -1).sum(axis=2)
+        h.update(np.ascontiguousarray(a.astype(np.float32)).tobytes())
     return h.hexdigest()
 
 

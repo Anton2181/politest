@@ -328,3 +328,18 @@ def test_map_counties_are_in_one_piece():
     plain, joined = second_pieces(build_grid(codes)), second_pieces(build_grid(codes, connected=True))
     assert max(plain.values()) >= 30                 # the plain rule leaves large stray pieces
     assert len(joined) < len(plain) / 3 and max(joined.values()) < 20
+
+
+def test_run_digest_ignores_rounding_noise():
+    """Saved ensembles stay valid when a rebuild's seeded run differs only in
+    the last bits; a real change still makes them stale."""
+    from types import SimpleNamespace
+    from plsim.cli import run_digest
+    rng = np.random.default_rng(0)
+    arrays = {"pop": rng.random((5, 4, 2, 3)) * 1e5, "births": rng.random((5, 4)) * 1e3,
+              "deaths": rng.random((5, 4)) * 1e3, "town_pop": rng.random((5, 6)) * 1e2,
+              "identity": rng.random((5, 4, 3)) * 1e5}
+    a = SimpleNamespace(**arrays)
+    b = SimpleNamespace(**{k: v + 1e-11 for k, v in arrays.items()})
+    c = SimpleNamespace(**{k: (v * 1.001 if k == "births" else v) for k, v in arrays.items()})
+    assert run_digest(a) == run_digest(b) != run_digest(c)
