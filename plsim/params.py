@@ -251,9 +251,10 @@ DEFAULTS: dict[str, Any] = {
         "h0": 0.0025,
         # marriage across languages (language.horizontal): yearly rate for bilingual adults of 20-34, times
         # the chance of a partner from outside the group (homogamy odds H against the local own share) and
-        # the pull of the other language; Jews hardly married out. Half the mixed households raise their
+        # the pull of the other language; Jews, Roma and the small faiths (Karaites, Muslim Tatars) hardly
+        # married out. Half the mixed households raise their
         # children in the partner's religion (the Galician rule: sons the father's rite, daughters the mother's)
-        "exogamy": 0.20, "exogamy_homophily": 38.0, "exogamy_mult": {"JW": 0.1, "JH": 0.0},
+        "exogamy": 0.20, "exogamy_homophily": 38.0, "exogamy_mult": {"JW": 0.1, "JH": 0.0, "RC:rom": 0.1, "OT": 0.2},
         "exogamy_rite": 0.5,            # mixed households raising their children in the partner's religion
         "acq_school": 0.36, "acq_adult": 0.022, "acq_urban_bonus": 0.8, "acq_military": 0.35,
         "conscription": [[1931, 1.0], [1990, 0.8], [2008, 0.0]],

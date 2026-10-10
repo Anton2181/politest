@@ -14,7 +14,12 @@ probability maps from the ensemble (§11), a calibrated road programme
 (§7.3), second-generation assimilation (the diaspora term, §6.4), the
 historical Curzon line and a population-exchange scenario (§12.8).
 
-Done in this round: the Pomorze county tables, from the census volume
+Done since: marriage across languages, history-matched with a case of
+dispersed Ukrainians (1950-2002), the dispersal of Operation Vistula, and
+migration units that follow the 1945 border (METHODOLOGY §6.3, §6.4,
+§12.6).
+
+Done in an earlier round: the Pomorze county tables, from the census volume
 (§12.6); the governorates of 1897 as borders for the krai scenarios and as
 constraints on the north-eastern voivodeship and county shapes (§12.1,
 §12.5), with the krai's lands outside the 1932 states (§12.7); separate
@@ -31,7 +36,7 @@ Poland (§4.2).
 | 4 | Calibrate identity further | The pull of the state nation is now fitted on the 2002 census (Lithuanians and Kashubians; METHODOLOGY §6.7) and anchored by the home language's support. Nation-building and `follow` are still judgements: county-level 1921 nationality against 1931 mother tongue, and the 1923 -> 1942 Lithuanian series, would let them be history-matched too. Identity by age would let the "follow" rule act on cohorts. | medium |
 | 5 | Downscaling uncertainty | The probability maps vary the model's parameters and shocks but not the spatial downscaling (kernel widths, town seeding, the share of shift placed by neighbourhood). Drawing those per member would widen the bands on the frontiers. | small |
 | 6 | "As a census would print it" maps | The observation model (`language.census_view`, `identity.identity_census`) applied per cell would show what a 1931-style census, a 1921-style nationality census or a modern self-identification census would record, for the same population. | small |
-| 7 | **Mixed marriages and adult shift in dispersed minorities** | The historical scenario keeps the Ukrainian, Lemko and Belarusian home languages of People's Poland 5-15 times too long (2002: 337 k Ukrainian speakers against 23 k). Once scattered (Operation Vistula), their children are already raised in Polish at 70-80 % per birth; what is missing is adults: they learn Polish and switch home language slowly, and there is no term for marriage across languages, which carried most of the real shift. An exogamy term (a partner of the majority with probability rising as the local own share falls; the household then shifts) would need the history-matched cases re-run, since the diaspora target already absorbs part of it. | medium |
+| 7 | **A marriage market** | Marriage across languages is now a hazard on young bilingual adults, with homogamy odds and half the mixed households counted in the partner's religion (METHODOLOGY §6.3). It brought the 2002 home languages of the eastern minorities in People's Poland to the census (Ukrainian 39 k against 23 k, from 431 k). Left: Ukrainian and Lemko identity stays two to three times the census's, and German speech in Opole falls to half the census count, because the hazard sees language groups, not the communities people married within (the Upper Silesian natives across the German and Silesian-Polish line). Pairing by identity or community, with the partner's language and rite, would address both. | medium |
 
 ## Spatial resolution and geography
 
@@ -65,11 +70,10 @@ Poland (§4.2).
   (2017) would let linguistic borders sharpen or blur, and could represent
   dialect levelling inside Polish (Silesian, Podhale) and the Polesian
   continuum, which is now a single category.
-* **Mixed marriages.** Polish-Ukrainian and Polish-Belarusian mixed
-  marriages were common in Galicia and the north-east, with rite rules
-  (sons follow the father, daughters the mother). Transmission is now
-  mother-based. A marriage market with an intermarriage rate would add a
-  realistic shift channel.
+* **Mixed marriages.** Done as a hazard (METHODOLOGY §6.3): bilingual
+  adults marry out by homogamy odds against their local share, and half the
+  mixed households take the partner's religion (the Galician rite rule). A
+  full marriage market would pair people by community and identity.
 * **Municipal language rules.** Finnish-style thresholds (a municipality is
   bilingual if the minority exceeds 8 % or 3,000 people) give minority
   schooling and status locally rather than per voivodeship. They need the

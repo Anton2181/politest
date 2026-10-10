@@ -363,12 +363,12 @@ Poland in each year's borders against the censuses (model / recorded;
 
 | | 1946 | 1950 | 1960 | 1970 | 1988 | 2002 | 2021 |
 |---|---|---|---|---|---|---|---|
-| Population (M) | 22.83 / 23.93 | 23.74 / 25.01 | 28.33 / 29.80 | 30.90 / 32.64 | 36.05 / 37.88 | 36.34 / 38.23 | 35.24 / 38.04 |
-| Urban (%) | | 38.0 / 36.9 | 45.4 / 48.3 | 51.0 / 52.3 | 57.0 / 61.0 | 59.0 / 61.8 | 62.4 / 60.2 |
+| Population (M) | 22.85 / 23.93 | 23.78 / 25.01 | 28.39 / 29.80 | 30.97 / 32.64 | 36.12 / 37.88 | 36.39 / 38.23 | 35.26 / 38.04 |
+| Urban (%) | | 37.9 / 36.9 | 45.3 / 48.3 | 50.9 / 52.3 | 57.0 / 61.0 | 59.1 / 61.8 | 62.6 / 60.2 |
 
 | | 1950 | 1960 | 1970 | 1980 | 1990 | 2000 | 2010 | 2020 |
 |---|---|---|---|---|---|---|---|---|
-| Total fertility | 3.76 / 3.71 | 2.97 / 2.98 | 2.19 / 2.20 | 2.29 / 2.28 | 1.99 / 2.04 | 1.41 / 1.37 | 1.37 / 1.38 | 1.41 / 1.39 |
+| Total fertility | 3.76 / 3.71 | 2.98 / 2.98 | 2.19 / 2.20 | 2.29 / 2.28 | 1.99 / 2.04 | 1.41 / 1.37 | 1.37 / 1.38 | 1.41 / 1.39 |
 
 Life expectancy (men, women): 1952-53 60.1/65.7 against 58.6/64.2;
 1960-61 64.9/70.7 against 64.8/70.5; 1970-72 66.5/73.6 against 66.8/73.8;
@@ -377,11 +377,13 @@ Life expectancy (men, women): 1952-53 60.1/65.7 against 58.6/64.2;
 The German land and Danzig: 8.89 M in 1939 (8.86 M), 4.59 M in 1946
 (5.02 M), 5.51 M in 1950 (5.94 M).
 
-The 2002 census (thousands; model / census): Silesian identity 131 / 173,
-German 101 / 153, Belarusian 140 / 49, Ukrainian 283 / 31, Lemko 36 / 6,
-Lithuanian 5.8 / 6, Kashubian 4.7 / 5, Jewish 10 / 1; German at home 163 /
-205, Belarusian 223 / 40, Ukrainian 337 / 23, Lemko 75 / 6, Kashubian 167 /
-53, Lithuanian 9 / 6.
+The 2002 census (thousands; model / census): Silesian identity 133 / 173,
+German 97 / 153, Belarusian 64 / 49, Ukrainian 101 / 31, Lemko 15 / 6,
+Lithuanian 5.8 / 6, Kashubian 4.1 / 5, Jewish 10 / 1; German at home 74 /
+205, Belarusian 51 / 40, Ukrainian 39 / 23, Lemko 7 / 6, Kashubian 111 /
+53, Lithuanian 6.5 / 6. The 2011 census (home language, up to two
+answers): German 49 / 96, Belarusian 39 / 26, Ukrainian 23 / 25, Lemko
+4 / 6, Kashubian 93 / 108, Lithuanian 5.4 / 5.3.
 
 What this says about the model:
 
@@ -395,7 +397,7 @@ What this says about the model:
 * **Mortality** follows within about 1.5 years once the post-war shift of
   the income-mortality curve is in the defaults (§4.1) and People's
   Poland's own regime (fast gains, then stagnation) is in the scenario.
-* **Population** is 1.1 M (5 %) short in 1946 and 1.3-2.0 M after, and
+* **Population** is 1.1 M (5 %) short in 1946 and 1.2-1.8 M by 2002, and
   the gap opens before 1946: interwar Poland is about 0.35 M short in 1939,
   and the old territory loses more in the war than it did. The scenario now
   carries forced labour in the Reich (2.1 M taken, most back in 1945, the
@@ -405,21 +407,34 @@ What this says about the model:
   occupation, and the 1944-46 transfer of Ukrainians from the south-east
   alone. After 1950 growth follows the record (fertility and mortality
   match).
+* **Minority languages** of People's Poland come out about right in 2002
+  and 2011, from three changes made against this scenario:
+  * marriage across languages, history-matched with the dispersed
+    Ukrainians as a case (METHODOLOGY §6.3-6.4);
+  * the dispersal of Operation Vistula (the deportees lose their village
+    clustering);
+  * migration units that follow the 1945 border. Before this fix, rural
+    Soviet Galicia "urbanised" into Przemyśl and Rzeszów.
+
+  Before these changes the model kept 431 k Ukrainian speakers in 2002
+  against 23 k. German at home is low (74 k against 205 k; 49 k against
+  96 k in 2011): the Upper Silesian natives married among themselves
+  across the German and Silesian-Polish line, which the model counts as
+  marrying out.
 * **National identity** is calibrated here: the pull of the state nation
-  (METHODOLOGY §6.7) is fitted on the 2002 census, on the Lithuanians and
-  Kashubians, whose home language the model gets about right, and is used
-  by every scenario. A stigmatised, unschooled language anchors its
-  speakers' identity less. Germans and Silesians come out 25-35 % low (the
-  events of 1989-91 that brought them back are given, not modelled).
-  Ukrainians, Belarusians and Lemkos stay several times too many because
-  their home language does: after Operation Vistula the scattered
-  Ukrainians' children are raised in Polish at 70-80 % per birth, but
-  adults learn Polish and switch slowly, and the model has no term for the
-  mixed marriages that carried most of the real shift. The counterfactual
-  scenarios share this behaviour, so minority home languages there are, if
-  anything, too persistent where a minority is scattered; where it is
-  compact, as in the eastern voivodeships, the model's shift rates come
-  from the history-matched cases (METHODOLOGY §6.4).
+  (METHODOLOGY §6.7) is fitted on the 2002 census and used by every
+  scenario. It fits the Lithuanians and Kashubians. A faster pull would fit
+  the Belarusians (64 k against 49 k) but erase the Kashubians. Germans and
+  Silesians come out 25-45 % low (the events of 1989-91 that brought them
+  back are given, not modelled). Ukrainian and Lemko identity outlasts the
+  language more than the census shows (101 k against 31 k, though 51 k in
+  2011); half the mixed households take the partner's religion, and with
+  it a Catholic's pull.
+* **The counterfactual scenarios** share these mechanisms. Where a minority
+  is scattered (migrants in cities, settlers), it now marries out and
+  shifts within two or three generations. Where it is compact, as in the
+  eastern voivodeships, marrying out is rare and the shift rates come from
+  the history-matched cases (METHODOLOGY §6.4).
 
 ## The equal-exchange Curzon line
 

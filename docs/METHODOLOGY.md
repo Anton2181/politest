@@ -560,7 +560,16 @@ face the full regional majority and vanish unrealistically fast.
   ones (Ukrainians and Lemkos after Operation Vistula, Belarusian and
   Lithuanian migrants in cities) lose most of their speakers within two
   generations, as the 1950-2002 Ukrainian decline shows. Jews married out
-  very rarely (x0.1 for acculturating, x0 for Haredi Jews).
+  very rarely (x0.1 for acculturating, x0 for Haredi Jews), and so did the
+  Roma (x0.1) and the small faiths, Karaites and Muslim Tatars (x0.2);
+  without this the baseline's Romani speakers fell to 1 thousand by 2032
+  (40 thousand with it, 62 thousand before the marriage term). Half the mixed
+  households (`exogamy_rite`) are counted in the partner's community, the
+  community of most speakers of the contact language: in Galicia sons
+  followed the father's rite and daughters the mother's, and in the west
+  of People's Poland, without Greek Catholic parishes, the children of
+  mixed marriages were mostly raised Roman Catholic. This moves identity,
+  not language (§6.7).
 * **Haredi defection** at birth: 20 % per birth in 1931, falling to 12 %.
   There is a small reverse flow.
 
@@ -815,24 +824,31 @@ data (1921, 1923, 1926).
 
 **Calibration of the pull on the 2002 census.** The rate of the pull is
 fitted on the historical scenario (§12.10), against the national identities
-of the 2002 census, and used in every scenario. It is fitted on the
-minorities whose home language the model gets about right in 2002, so that
-the identity mechanism is tested alone: the Lithuanians (home language 9
-thousand, census 6) and the Kashubians. At `assimilation` 0.008, the earlier
-judgement, the model had 12 thousand Lithuanians and 37 thousand Kashubians
-by identity in 2002 (census 6 and 5); at 0.035, 0.05 and 0.07 it has 7, 5.8
-and 5 thousand Lithuanians, and at 0.05 4.7 thousand Kashubians. With 0.05
-the Germans are 101 thousand (census 153) and the Silesians 131 thousand
-(173). The Belarusians (140 thousand, census 49), Ukrainians (283, census 31)
-and Lemkos (36, census 6) stay too many, and that is their home language:
-the model has 223, 337 and 75 thousand speakers in 2002 against the census's
-40, 23 and 6. Raising the pull further to match them (0.12-0.25) would take
-the Lithuanians to 1-3 thousand and leave Ukrainian identity well below
-Ukrainian speech, the opposite of the census. The language side is the open
-problem: once dispersed (Operation Vistula) the children of Ukrainian
-mothers are raised in Polish at 70-80 % per birth in the model, but adults
-learn Polish and switch home language slowly, and there is no term for
-mixed marriages, which carried most of the real shift (§13).
+of the 2002 census, and used in every scenario. Now that the model gets the
+2002 home languages about right (Ukrainian 39 thousand speakers against the
+census's 23, Belarusian 51 against 40, Lemko 7 against 6, Lithuanian 6.5
+against 6; §6.3, §12.10), the identity mechanism can be tested on its own:
+
+| `assimilation` | Lithuanian | Kashubian | Belarusian | Ukrainian | Lemko | German | Silesian |
+|---|---|---|---|---|---|---|---|
+| census 2002 | 6 | 5 | 49 | 31 | 6 | 153 | 173 |
+| 0.035 | 7.0 | 8.4 | 75 | 120 | 18 | 118 | 154 |
+| **0.05** | 5.8 | 4.1 | 64 | 101 | 15 | 97 | 133 |
+| 0.08 | 4.4 | 1.0 | 49 | 73 | 11 | 71 | 105 |
+
+(thousands, 2002). 0.05 fits the Lithuanians and Kashubians and is kept; a
+faster pull would fit the Belarusians but erase the Kashubians, and no
+single rate fits the Ukrainians and Lemkos, who keep their identity after
+losing the language more than the census shows (identity three times the
+home language, against 1.35 in the census). Part of that is the census:
+the 2011 census, which allowed two identities, counted 51 thousand
+Ukrainians and 11 thousand Lemkos (model 88 and 13). Part is the model:
+religion is inherited from the mother, so the descendants of mixed
+marriages stay Greek Catholic or Orthodox and their identity is pulled at a
+quarter of the Catholic rate. Counting half the mixed households in the
+partner's community (`exogamy_rite` 0.5, the Galician rule that sons follow
+the father's rite and daughters the mother's) took Ukrainian identity from
+119 to 101 thousand; counting all of them would give 83.
 
 ## 7. Transport networks
 
@@ -1450,6 +1466,17 @@ and mortality, fertility and migration push would all be wrong.
     (2.5 → 1), Belarusians in wileńskie 1.9× (1.4 → 1), Ukrainians in
     lwowskie 1.6× (1.25 → 1).
   * **Floor.** k never falls below 1.
+  * **Measured inside a county** (`concentration_regions`). Where the
+    rescaling understates a minority's village clustering, a measured value
+    replaces it: the Lithuanians of Suwałki county live in Puńsk (75 %
+    Lithuanian in 2002) and the villages round Sejny, a local share of
+    about 0.55 against 4.5 % of the county, so k = 10 there (the rescaling
+    gave 1, and the model then married them out as if scattered).
+  * **Dispersal.** A transfer marked `disperse: true` (Operation Vistula,
+    which settled the deportees a few families to a village, at most 10 %
+    of one) sets k = 1 for the moved groups where they were placed and
+    where they were taken from. Without it the Lemkos kept their
+    Carpathian clustering (20) in Masuria and Pomerania.
 * **Travel times.** Regions without a modelled town reach the network
   through the nearest town, at a speed that rises from 22 km/h (1931) to
   70 km/h (2030), with a detour factor of 1.3
@@ -1475,6 +1502,12 @@ and mortality, fertility and migration push would all be wrong.
   within 0.4 % of the unsplit one by 1945; without nesting it is up to
   1.5 % off). The nesting also applies to named splits that stay inside one
   member, e.g. both halves of lwowskie in the Ukrainian autonomy.
+  Units follow border changes: when the 1945 border cut lwowskie and
+  białostockie, each part became a unit of its own state. (Until this was
+  fixed the units were those of 1931, and the rural people of Soviet
+  Galicia "urbanised" into Przemyśl, Rzeszów and Jarosław: Ukrainian
+  speakers there grew from 24 to 106 thousand between 1948 and 1970, in a
+  land the transfers had emptied.)
 
 * **Random numbers.** Regional noise (life expectancy, phase-III
   fertility) is drawn per 1931 voivodeship and shared by its counties. A
@@ -1810,8 +1843,10 @@ Poland (2.5 M in 1945-50) into the vacated homes; the transfer of the
 Greek Catholic and Orthodox Ukrainian and Lemko speakers of the Lublin,
 Rzeszów and Kraków voivodeships to the Soviet Union (482,880 in 1944-46) and
 Operation Vistula (140,660 in 1947) (selected by faith, as the authorities did,
-not by declared nationality); the Jewish emigration waves; and, after
-1989, the German minority and a Silesian identity declared again.
+not by declared nationality; scattered over the German land a few families
+to a village, so the transferred groups lose their clustering, §12.6); the
+Jewish emigration waves; and, after 1989, the German minority and a
+Silesian identity declared again.
 
 **People's Poland.** Income per head follows Maddison's series (1990 GK$)
 from 1939 to 2019, then converges as elsewhere; a fertility period effect
@@ -1866,12 +1901,16 @@ fertility and mortality settings of §4.1-4.2 come from this comparison.
 * **Language.** Language use is binary per person (home vernacular plus
   competence in the dominant language). Diglossia, dialect levelling and
   literacy in a third language are not represented.
-* **Mixed marriages.** Children take their mother's language or shift by a
-  rate that depends on the local share of the languages, not on the
-  father's language. Where a minority is scattered, most of its children
-  have a parent of the majority, and the real shift is faster than the
-  model's: Ukrainian, Lemko and Belarusian home language in People's Poland
-  last several times longer in the model than in the censuses (§6.7).
+* **Mixed marriages** are a yearly hazard on young bilingual adults (§6.3),
+  not a marriage market: the partner's language and religion are not
+  tracked, and religion is otherwise inherited from the mother. The
+  historical scenario gets the 2002 and 2011 home languages of the eastern
+  minorities about right, but keeps Ukrainian and Lemko identity two to
+  three times the census's (§6.7). German is the opposite: the model has
+  74 thousand German speakers in 2002 and 49 in 2011, against census
+  counts of 205 and 96 thousand that include second home languages; the
+  Upper Silesian natives married among themselves across the German and
+  Silesian-Polish line, which the model counts as marrying out.
 
 ## 14. References
 

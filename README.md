@@ -451,29 +451,31 @@ transition. It reproduces (model / observed):
 
 | | 1946 | 1950 | 1970 | 2002 | 2021 |
 |---|---|---|---|---|---|
-| Population (M) | 22.8 / 23.9 | 23.7 / 25.0 | 30.9 / 32.6 | 36.3 / 38.2 | 35.2 / 38.0 |
-| Urban % | | 38.0 / 36.9 | 51.0 / 52.3 | 59.0 / 61.8 | 62.4 / 60.2 |
+| Population (M) | 22.8 / 23.9 | 23.8 / 25.0 | 31.0 / 32.6 | 36.4 / 38.2 | 35.3 / 38.0 |
+| Urban % | | 37.9 / 36.9 | 50.9 / 52.3 | 59.1 / 61.8 | 62.6 / 60.2 |
 | TFR | | 3.76 / 3.71 | 2.19 / 2.20 | 1.41 / 1.37 (2000) | 1.41 / 1.39 (2020) |
 
 * The Recovered Territories hold 4.6 M in 1946 (5.0 M) and 5.5 M in 1950
   (5.9 M); e0 stays within 1.5 years of the life tables (2 in 2019).
-* The population is 1.1 M short in 1946 and 1.3 M in 1950, and 1.9 M by
+* The population is 1.1 M short in 1946 and 1.2 M in 1950, and 1.8 M by
   2002. Fertility and mortality after the war follow the record, so the gap
   was opened before 1946: interwar Poland is already 0.35 M short in 1939,
   and the old territory lost more in the war than it did. The 1946 census
   did not count the forced labourers still in the West; the model brings
   them back in 1946-48, as UNRRA did.
+* Home languages of the minorities in 2002 (model / census): Ukrainian
+  39 k / 23 k, Belarusian 51 k / 40 k, Lemko 7 k / 6 k, Lithuanian
+  6.5 k / 6 k, Kashubian 111 k / 53 k (108 k in 2011). This needs the
+  marriage term (METHODOLOGY §6.3): scattered after Operation Vistula, the
+  Ukrainians and Lemkos married Poles, and their households went Polish.
+  Without it the model kept 431 k Ukrainian speakers. German is low (74 k
+  against 205 k in 2002 and 96 k in 2011).
 * National identity is calibrated on the 2002 census (the pull of the state
-  nation, METHODOLOGY §6.7). Lithuanians and Kashubians, whose home
-  language the model gets about right, match (5.8 k and 4.7 k against 6 k
-  and 5 k); Germans and Silesians come out 25-35 % low (101 k and 131 k,
-  against 153 k and 173 k). Ukrainians (283 k against 31 k), Belarusians
-  (140 k against 49 k) and Lemkos (36 k against 6 k) stay too many because
-  their home language does: the model keeps 337 k Ukrainian, 223 k
-  Belarusian and 75 k Lemko speakers in 2002, against 23 k, 40 k and 6 k.
-  Once scattered, their children are raised in Polish at 70-80 % per birth,
-  but adults learn Polish and switch slowly, and mixed marriages, which
-  carried most of the real shift, are not modelled.
+  nation, METHODOLOGY §6.7): Lithuanians 5.8 k and Kashubians 4.1 k
+  (6 k and 5 k), Belarusians 64 k (49 k), Germans and Silesians 25-45 %
+  low (97 k and 133 k, against 153 k and 173 k). Ukrainian (101 k against
+  31 k; 51 k in 2011) and Lemko identity (15 k against 6 k) outlast the
+  language more than in the census.
 * `outputs/history/` holds the comparison table and chart; METHODOLOGY
   §12.10 the events and their sources.
 
