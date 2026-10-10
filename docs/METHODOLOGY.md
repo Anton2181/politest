@@ -542,11 +542,25 @@ face the full regional majority and vanish unrealistically fast.
 * **Schooling** (ages 7-14): acquisition of the dominant language at rate
   0.36 x enrolment x (1 - 0.7 x own-language schooling share) (history
   matched, §6.4; formerly 0.22).
-* **Adult contact** (15-64): 0.012 x local dominant-language share x
-  (1.8 in towns).
+* **Adult contact** (15-64): 0.022 x local dominant-language share x
+  (1.8 in towns) (history matched; formerly 0.012).
 * **Conscription** (men 20-21): 0.35 while conscription lasts.
-* **Adult re-identification** of bilinguals: 0.21 %/yr scaled like the
-  vertical term (history matched; formerly 0.3 %).
+* **Adult re-identification** of bilinguals: 0.25 %/yr scaled like the
+  vertical term (history matched; formerly 0.3 %, then 0.21 %).
+* **Marriage across languages** (bilinguals aged 20-34): a yearly rate of
+  0.20 x P(partner from outside the group) x the pull of the other language,
+  after which the couple's home language is the partner's. The chance of an
+  outside partner follows a homogamy model of assortative mating (Kalmijn
+  1998): with local own share s and homogamy odds H = 38,
+
+      P(out) = (1 - s) / ((1 - s) + s x H)
+
+  so a group that is half the neighbourhood marries out 2.6 % of the time and
+  one that is 5 % of it 33 %. Compact minorities hardly feel it; scattered
+  ones (Ukrainians and Lemkos after Operation Vistula, Belarusian and
+  Lithuanian migrants in cities) lose most of their speakers within two
+  generations, as the 1950-2002 Ukrainian decline shows. Jews married out
+  very rarely (x0.1 for acculturating, x0 for Haredi Jews).
 * **Haredi defection** at birth: 20 % per birth in 1931, falling to 12 %.
   There is a small reverse flow.
 
@@ -579,6 +593,7 @@ same way at both ends (`plsim/calibration.py`):
 | Wales 1921 -> 1951 (aged 3+) | Welsh speakers 37.1 -> 28.9 % (ratio 0.78; home language falls faster, target 0.74); monolinguals 17 % -> 6 % of Welsh speakers | the same class; acquisition rates |
 | Province of Posen 1871 -> 1910 | Polish share stable or rising despite Germanisation: shift net of migration about nil | different-faith nation with strong institutions: `GC:uk`, `OR:uk`, `PR:de` ... |
 | Second generation of immigrants (Alba et al. 2002; Portes & Rumbaut 2001) | 40 % (Indian) to 76 % (Filipino) of children of immigrants spoke only English at home in 1990 | the diaspora floor `sigma_diaspora` |
+| Ukrainians and Lemkos scattered over People's Poland, 1950 -> 2002 | about 170 k home-language speakers of 25.0 M after Operation Vistula; 29 k of 38.2 M at the 2002 census (share ratio about 0.11) | a different-faith group with no institutions, dispersed: the marriage term |
 
 **Harness.** Each case is run through the model's own `LanguageModel`: vertical
 transmission, acquisition and re-identification. The population is a stylised
@@ -590,32 +605,43 @@ diaspora case is an immigrant cohort.
 **Method.** History matching (Craig et al. 1997; Vernon, Goldstein & Bower
 2010):
 
-* Ten parameters are drawn by Latin hypercube: the three class propensities,
-  a, m_mono, h0, completeness_share, sigma_diaspora and the two acquisition
-  rates.
+* Twelve parameters are drawn by Latin hypercube: the three class
+  propensities, a, m_mono, h0, completeness_share, sigma_diaspora, the two
+  acquisition rates and the two marriage terms (exogamy, homophily).
 * A draw is ruled out when any target's implausibility
   `I = |model - observed| / sqrt(sd_obs² + sd_discrepancy²)` exceeds 3. The
   discrepancy term covers migration in the cases, census definitions and the
   stylised settings.
-* A second wave samples the box around the first wave's survivors. 279 of
+* A second wave samples the box around the first wave's survivors. 295 of
   4,000 draws are not ruled out.
 
 **Adopted values.** For each constrained parameter, the median of the
-not-ruled-out set; this vector is itself not ruled out (worst I = 2.5).
-Unconstrained parameters keep their values.
+not-ruled-out set; this vector is itself not ruled out (worst I = 2.2,
+Welsh monolinguals). Unconstrained parameters keep their values. Each class
+propensity moves every group of its class by the same factor.
 
 | Parameter | Before | Not ruled out (5-95 %) | Adopted |
 |---|---|---|---|
-| sigma0, same-faith vernacular (`RC:be`) | 0.55 | 0.23-0.75 | 0.44 |
-| sigma0, same-faith national (`RC:lt`) | 0.12 | 0.17-0.49 | 0.37 (class x3.08) |
-| sigma0, different-faith national (`GC:uk`) | 0.06 | 0.01-0.19 | 0.06 (not constrained) |
-| sigma_diaspora (new) | - | 0.28-0.77 | 0.53 |
-| h0 (adult re-identification) | 0.003 | 0.0002-0.008 | 0.0021 |
-| acq_school | 0.22 | 0.27-0.40 | 0.36 |
-| a, m_mono, completeness_share, acq_adult | | not constrained | kept |
+| Parameter | First calibration | Not ruled out (5-95 %) | Adopted |
+|---|---|---|---|
+| sigma0, same-faith vernacular (`RC:be`) | 0.44 | 0.19-0.71 | 0.38 (class x0.86) |
+| sigma0, same-faith national (`RC:lt`) | 0.37 | 0.22-0.49 | 0.37 |
+| sigma0, different-faith national (`GC:uk`) | 0.06 | 0.005-0.084 | 0.036 (class x0.6) |
+| sigma_diaspora | 0.53 | 0.24-0.77 | 0.54 |
+| h0 (adult re-identification) | 0.0021 | 0.0004-0.008 | 0.0025 |
+| acq_school | 0.36 | 0.28-0.40 | 0.36 |
+| acq_adult | 0.012 | 0.011-0.029 | 0.022 |
+| exogamy (new) | - | 0.06-0.37 | 0.20 |
+| exogamy_homophily H (new) | - | 18-57 | 38 |
+| a, m_mono, completeness_share | | not constrained | kept |
 
-Implausibility of the previous defaults: Carinthia 3.1, Wales monolinguals
-5.2, diaspora 4.8; now at most 2.5.
+The first calibration (before the marriage term and the dispersed case) had
+moved sigma0 of `RC:be` from 0.55 to 0.44 and of `RC:lt` from 0.12 to 0.37
+and added sigma_diaspora. Its values leave the scattered Ukrainians at a
+share ratio of 0.37 (I = 4.5). Without the marriage term, the decline can be
+had only with shift propensities that miss the other cases: none of the 100
+draws with exogamy below 0.02 is within I = 3 on every target. The adopted values give 0.098
+(I = 0.2) and at most I = 2.2 elsewhere.
 
 **What the history match does not do:**
 

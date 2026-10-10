@@ -200,19 +200,19 @@ DEFAULTS: dict[str, Any] = {
         "max_shift": 0.90,
         "sigma_ref": 0.2,
         # history-matched classes (plsim/calibration.py, outputs/calibration):
-        # same-faith vernaculars (RC:be, RC:pls, RC:csb) x0.8 and same-faith
-        # national minorities (RC:lt, RC:uk, RC:de, RC:cs, RC:lv) x3.08 of
-        # their earlier values; different-faith ones (GC:uk, OR:uk ...) kept
+        # same-faith vernaculars (RC:be, RC:pls, RC:csb), same-faith national
+        # minorities (RC:lt, RC:uk, RC:de, RC:cs, RC:lv) and different-faith
+        # ones (GC:uk, OR:uk, GC:rue, PR:de ...) each move by one factor
         "sigma0": {"default": 0.20,
-                   "RC:pl": 0.05, "RC:be": 0.44, "RC:lt": 0.37, "RC:de": 0.46, "RC:csb": 0.16, "RC:cs": 0.77,
-                   "RC:uk": 0.62, "RC:wym": 0.80, "RC:rom": 0.04, "RC:pls": 0.24, "RC:ru": 0.30, "RC:lv": 0.62,
+                   "RC:pl": 0.05, "RC:be": 0.38, "RC:lt": 0.37, "RC:de": 0.46, "RC:csb": 0.138, "RC:cs": 0.77,
+                   "RC:uk": 0.62, "RC:wym": 0.80, "RC:rom": 0.04, "RC:pls": 0.207, "RC:ru": 0.30, "RC:lv": 0.62,
                    "RC:oth": 0.30,
-                   "GC:uk": 0.06, "GC:rue": 0.10, "GC:pl": 0.03,
-                   "OR:uk": 0.06, "OR:be": 0.22, "OR:pls": 0.45, "OR:ru": 0.12, "OR:pl": 0.03, "OR:rue": 0.08,
+                   "GC:uk": 0.036, "GC:rue": 0.06, "GC:pl": 0.03,
+                   "OR:uk": 0.036, "OR:be": 0.22, "OR:pls": 0.45, "OR:ru": 0.12, "OR:pl": 0.03, "OR:rue": 0.048,
                    "OR:cs": 0.15,
                    "JW:yi": 0.50, "JW:de": 0.30, "JW:ru": 0.30, "JW:lt": 0.20,
                    "JH:yi": 0.02,
-                   "PR:de": 0.12, "PR:pl": 0.02, "PR:lt": 0.10, "PR:lv": 0.15, "PR:cs": 0.20,
+                   "PR:de": 0.072, "PR:pl": 0.02, "PR:lt": 0.06, "PR:lv": 0.09, "PR:cs": 0.12,
                    "OT:kdr": 0.14, "OT:ru": 0.20, "OT:be": 0.30, "OT:oth": 0.30},
         "institutional": {"uk": 0.25, "GC:uk": 0.30, "be": 0.05, "JW:yi": 0.08, "JH:yi": 0.50, "de": 0.20,
                           "lt": 0.30, "csb": 0.05, "rue": 0.10, "pls": 0.0, "cs": 0.10, "ru": 0.10,
@@ -222,13 +222,17 @@ DEFAULTS: dict[str, Any] = {
         "concentration": {"wym": 300.0, "kdr": 60.0, "rue": 20.0, "cs": 15.0, "de": 5.0, "RC:de": 1.5,
                           "csb": 2.5, "lt": 4.0, "lv": 5.0, "rom": 4.0, "yi": 1.3, "pls": 1.1, "be": 1.4,
                           "uk": 1.25, "ru": 2.5, "pl": 3.0, "oth": 3.0},
+        # clustering measured inside a county (replaces the factor above there): the Lithuanians of
+        # Suwałki county live in Puńsk (75 % Lithuanian in 2002) and the villages round Sejny, a local
+        # share of about 0.55 against 4.5 % of the county
+        "concentration_regions": {"BIA.suwalki": {"lt": 10.0}},
         "official_status": 1.0,         # status floor of an official language (number or schedule)
         "official_schooling": 0.9,      # own-language schooling for speakers of an official language (number or schedule)
         "school_weight": 0.5,
         "completeness_share": 0.25,     # local own-language share at which institutions are complete
         # shift propensity approached by an institutionally incomplete group
         # (diaspora, migrants' children); groups listed keep their own sigma0
-        "sigma_diaspora": 0.53,
+        "sigma_diaspora": 0.54,
         "diaspora_exempt": ["JH:yi", "RC:rom", "OT:kdr", "RC:wym"],
         "own_school_blocks": 0.7,
         "status": {"default": 0.1, "pl": 1.0, "lt": 0.35, "uk": 0.35, "be": 0.15, "pls": 0.05,
@@ -244,12 +248,14 @@ DEFAULTS: dict[str, Any] = {
         "own_schooling_regions": {"LT_*": {"pl": 0.30, "RC:pl": 0.30, "de": 0.50, "ru": 0.20}},
         "pressure": {"default": [[1931, 1.0], [1950, 0.9], [1990, 0.8]], "LT_*": 0.8},
         "urban_mult": 0.6, "mod_base": 0.5, "mod_slope": 1.0, "access_mult": 0.15,
-        "h0": 0.0021,
+        "h0": 0.0025,
         # marriage across languages (language.horizontal): yearly rate for bilingual adults of 20-34, times
         # the chance of a partner from outside the group (homogamy odds H against the local own share) and
-        # the pull of the other language; Jews hardly married out
-        "exogamy": 0.0, "exogamy_homophily": 20.0, "exogamy_mult": {"JW": 0.1, "JH": 0.0},
-        "acq_school": 0.36, "acq_adult": 0.012, "acq_urban_bonus": 0.8, "acq_military": 0.35,
+        # the pull of the other language; Jews hardly married out. Half the mixed households raise their
+        # children in the partner's religion (the Galician rule: sons the father's rite, daughters the mother's)
+        "exogamy": 0.20, "exogamy_homophily": 38.0, "exogamy_mult": {"JW": 0.1, "JH": 0.0},
+        "exogamy_rite": 0.5,            # mixed households raising their children in the partner's religion
+        "acq_school": 0.36, "acq_adult": 0.022, "acq_urban_bonus": 0.8, "acq_military": 0.35,
         "conscription": [[1931, 1.0], [1990, 0.8], [2008, 0.0]],
         "haredi_exit": [[1931, 0.20], [1970, 0.15], [2000, 0.12]],
         "haredi_entry": 0.01,

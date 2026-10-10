@@ -1,10 +1,11 @@
 case,label,measure,observed,sd,previous,I_previous,adopted,I_adopted,source
-mas_joh,"Masuria, Johannisburg district 1890-1910",share,0.68,0.042,0.597,1.96,0.642,0.90,"Prussian censuses 1890, 1910 (district language statistics)"
-mas_lyc,"Masuria, Lyck district 1890-1910",share,0.51,0.042,0.501,0.22,0.539,0.69,"Prussian censuses 1890, 1910 (district language statistics)"
-mas_nei,"Masuria, Neidenburg district 1890-1910",share,0.666,0.042,0.571,2.23,0.615,1.21,"Prussian censuses 1890, 1910 (district language statistics)"
-mas_ole,"Masuria, Oletzko district 1890-1910",share,0.296,0.042,0.355,1.40,0.383,2.06,"Prussian censuses 1890, 1910 (district language statistics)"
-carinthia,Carinthian Slovenes 1880-1910,ratio,0.75,0.064,0.951,3.14,0.853,1.60,Austrian censuses 1880-1910 (Umgangssprache)
-wales,Wales 1921-1951,ratio,0.74,0.064,0.921,2.82,0.781,0.64,"Censuses of England and Wales 1921, 1951"
-wales,Wales 1921-1951,mono,0.06,0.025,0.191,5.24,0.124,2.54,"Censuses of England and Wales 1921, 1951"
-posen,Poles in the province of Posen 1871-1910,ratio,0.99,0.021,0.977,0.64,0.975,0.69,"Prussian censuses (Polish share 1871-1910, net of migration)"
-diaspora,Immigrants in a modern city (second generation),births_shifted,0.6,0.112,0.067,4.77,0.431,1.51,Alba et al. 2002; Portes & Rumbaut 2001
+mas_joh,"Masuria, Johannisburg district 1890-1910",share,0.68,0.042,0.642,0.90,0.652,0.66,"Prussian censuses 1890, 1910 (district language statistics)"
+mas_lyc,"Masuria, Lyck district 1890-1910",share,0.51,0.042,0.539,0.69,0.545,0.82,"Prussian censuses 1890, 1910 (district language statistics)"
+mas_nei,"Masuria, Neidenburg district 1890-1910",share,0.666,0.042,0.615,1.21,0.624,1.00,"Prussian censuses 1890, 1910 (district language statistics)"
+mas_ole,"Masuria, Oletzko district 1890-1910",share,0.296,0.042,0.383,2.06,0.381,2.01,"Prussian censuses 1890, 1910 (district language statistics)"
+carinthia,Carinthian Slovenes 1880-1910,ratio,0.75,0.064,0.853,1.60,0.825,1.18,Austrian censuses 1880-1910 (Umgangssprache)
+wales,Wales 1921-1951,ratio,0.74,0.064,0.781,0.64,0.740,0.00,"Censuses of England and Wales 1921, 1951"
+wales,Wales 1921-1951,mono,0.06,0.025,0.124,2.54,0.116,2.24,"Censuses of England and Wales 1921, 1951"
+posen,Poles in the province of Posen 1871-1910,ratio,0.99,0.021,0.960,1.43,0.961,1.37,"Prussian censuses (Polish share 1871-1910, net of migration)"
+diaspora,Immigrants in a modern city (second generation),births_shifted,0.6,0.112,0.456,1.28,0.502,0.87,Alba et al. 2002; Portes & Rumbaut 2001
+dispersed,Ukrainians scattered in People's Poland 1950-2002,ratio,0.11,0.058,0.370,4.45,0.098,0.20,"Ukrainian and Lemko home language: ~170 k of 25.0 M in 1950 (after Operation Vistula), 29 k of 38.2 M at the 2002 census"

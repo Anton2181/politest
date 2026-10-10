@@ -18,7 +18,10 @@ applied in the year it names:
 * ``transfer``: they move to other regions (``to``: weights by region
   pattern, or ``"@vacated"``: in proportion to the people earlier events
   removed from each region and stratum by events marked ``vacate: true``:
-  settlers taking the homes of the expelled).
+  settlers taking the homes of the expelled). With ``disperse: true`` the
+  moved groups lose their clustering (language ``concentration``) in the
+  regions of origin and destination: deportees scattered a few families to
+  a village, as in Operation Vistula.
 * ``immigrate``: ``number`` people of group ``group`` (and identity
   ``identity``) arrive from outside (repatriation from the Soviet interior,
   return from the West).
@@ -230,6 +233,8 @@ class History:
                     self._place(moved, id_moved, w, acc)
                     if e.get("vacate", False):
                         self.vacated += u_rem
+                    if e.get("disperse", False):
+                        self._disperse(moved, src, w)
                 self.log.append({"year": year, "kind": kind, "label": e.get("label", ""), "people": float(n)})
             elif kind == "immigrate":
                 self._immigrate(e, acc)
@@ -238,6 +243,16 @@ class History:
         for a in self.away:
             if year in a["back"]:
                 self._return(a, year, acc)
+
+    def _disperse(self, moved, src: np.ndarray, w: np.ndarray) -> None:
+        """The moved groups lose their clustering (``concentration``) where
+        they were placed and where they were taken from: the transferees are
+        scattered among other villages, those left behind live among the new
+        settlers."""
+        g = moved.sum(axis=(0, 1, 3, 4, 5)) > 0
+        r = src | (w.sum(axis=1) > 0)
+        lm = self.sim.lang
+        lm.conc[np.ix_(r, g)] = np.minimum(lm.conc[np.ix_(r, g)], 1.0)
 
     def _place(self, moved, id_moved, w: np.ndarray, acc: dict) -> None:
         """Put movers (by origin) into destinations with weights w (R,2)."""

@@ -242,6 +242,9 @@ def simulate(theta: dict, cases: list[Case] = CASES, lang: dict | None = None) -
     {(case key, target index): simulated value}."""
     lang = lang or DEFAULTS["language"]
     lp = apply_theta(lang, theta, scale_classes=False)
+    # the religion of mixed households moves identity, not language; the cases count the children of
+    # mixed marriages with the minority's (second generation: at least one immigrant parent)
+    lp["exogamy_rite"] = 0.0
     R = len(cases)
     codes = [f"CAL{i}" for i in range(R)]
     lp["status_regions"] = {}

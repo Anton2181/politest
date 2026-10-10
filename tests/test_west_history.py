@@ -115,3 +115,25 @@ def test_plebiscite_lands():
     names = sim.net.names
     assert sim.net.region[names.index("Wrocław")] < 0 and sim.net.dormant[names.index("Breslau")]
     assert sim.net.region[names.index("Gdańsk")] >= 0 and sim.net.dormant[names.index("Gdańsk (Free City)")]
+
+
+def test_border_change_splits_migration_units():
+    """A voivodeship cut by a border change becomes two units: the rural
+    movers of the ceded part no longer go to the towns of the part kept."""
+    from types import SimpleNamespace
+    from plsim.data.languages import NG
+    from plsim.migration import MigrationModel
+    from plsim.params import DEFAULTS
+    regs = [SimpleNamespace(code=f"LWO.{c}", country="PL") for c in "abc"]
+    m = MigrationModel(DEFAULTS["migration"], regs, ["pl"] * 3)
+    P = np.zeros((3, 2, NG, 2, 2, 101))
+    P[:, 0, 0, 0, :, 20:40] = 1000.0
+    P[0, 1, 0, 0, :, 20:40] = 5000.0           # only the first county has a town
+    Q = P.copy()
+    m.urbanisation(Q, np.full(3, 0.5), 1931)
+    assert len(set(m.units())) == 1 and Q[0].sum() > P[0].sum()
+    m.member = np.array(["PL", "SU", "SU"])
+    Q = P.copy()
+    m.urbanisation(Q, np.full(3, 0.5), 1946)
+    assert len(set(m.units())) == 2
+    assert np.isclose(Q[0].sum(), P[0].sum()) and np.isclose(Q[1:].sum(), P[1:].sum())

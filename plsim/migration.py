@@ -108,14 +108,19 @@ class MigrationModel:
         self.parent = np.array([c.split(".")[0] for c in self.codes])    # 1931 voivodeship
         self.logit_fe = None
         self._unit = None
+        self._unit_key = None
 
     def units(self) -> np.ndarray:
         """Unit of each region: its 1931 voivodeship within one federal member.
-        Without a county split every region is its own unit."""
-        if self._unit is None:
+        Without a county split every region is its own unit. Recomputed when a
+        border change moves regions to another member, so a voivodeship cut
+        by the new border becomes two units."""
+        key = tuple(self.member)
+        if self._unit is None or self._unit_key != key:
             keys = list(zip(self.parent, self.member))
             order = list(dict.fromkeys(keys))
             self._unit = np.array([order.index(k) for k in keys])
+            self._unit_key = key
         return self._unit
 
     def _route_dom(self, out_fg: np.ndarray, prob: np.ndarray, dom: np.ndarray | None = None) -> np.ndarray:
@@ -155,14 +160,20 @@ class MigrationModel:
         else:
             tot_k = tot
         U = tot_k[:, 1] / tot_k.sum(axis=1)
-        # regional fixed effects (industrial Silesia, agrarian Polesie) decay slowly
+        # regional fixed effects (industrial Silesia, agrarian Polesie) decay slowly;
+        # kept by region so that units split by a border change inherit theirs
         if self.logit_fe is None:
             lu = np.log(np.clip(U, 1e-3, 0.999) / (1 - np.clip(U, 1e-3, 0.999)))
             lt = np.log(u_target / (1 - u_target))
-            self.logit_fe = lu - lt
+            self.logit_fe = (lu - lt)[unit] if K < self.R else lu - lt
             self.fe_year0 = year
+        if K < self.R:
+            n = tot.sum(axis=1)
+            fe = np.bincount(unit, self.logit_fe * n, K) / np.clip(np.bincount(unit, n, K), 1e-9, None)
+        else:
+            fe = self.logit_fe
         decay = np.exp(-(year - self.fe_year0) / p["urban_fe_decay_years"])
-        lt = np.log(u_target / (1 - u_target)) + self.logit_fe * decay
+        lt = np.log(u_target / (1 - u_target)) + fe * decay
         target = 1 / (1 + np.exp(-lt))
         gap = np.clip(target - U, 0, None) / np.clip(1 - U, 1e-6, None)
         rate = p["urban_kappa"] * gap + p["urban_min"]

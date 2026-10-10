@@ -258,7 +258,7 @@ history:
   - {year: 1945, kind: transfer, from: [LWO, KRA, LUB], within: "@member:PL", who: {community: [GC, OR], language: [uk]}, number: 320000, to: {"@member:SU": 1.0}, label: "Ukrainians to the Soviet Union", vacate: true}
   - {year: 1946, kind: transfer, from: [LWO, KRA, LUB], within: "@member:PL", who: {community: [GC, OR], language: [uk, rue]}, number: 163000, to: {"@member:SU": 1.0}, label: "Ukrainians to the Soviet Union", vacate: true}
   - {year: 1946, kind: transfer, from: BIA, within: "@member:PL", who: {identity: [be]}, number: 36000, to: {"@member:SU": 1.0}, label: "Belarusians to the BSSR", vacate: true}
-  - {year: 1947, kind: transfer, from: [LWO, KRA, LUB], within: "@member:PL", who: {community: [GC, OR], language: [uk, rue]}, number: 140660, to: {DE_MAZ: 0.3, DE_WAR: 0.15, DE_OBL: 0.1, DE_KOS: 0.15, DE_SZC: 0.1, DE_LEG: 0.1, DE_WRO: 0.1}, label: "Operation Vistula", vacate: true}
+  - {year: 1947, kind: transfer, from: [LWO, KRA, LUB], within: "@member:PL", who: {community: [GC, OR], language: [uk, rue]}, number: 140660, to: {DE_MAZ: 0.3, DE_WAR: 0.15, DE_OBL: 0.1, DE_KOS: 0.15, DE_SZC: 0.1, DE_LEG: 0.1, DE_WRO: 0.1}, label: "Operation Vistula", vacate: true, disperse: true}
   # second repatriation, 1955-59
   - {year: 1956, kind: transfer, from: "@member:SU", who: {identity: [pl]}, number: 80000, to: {"@member:PL": 1.0}, label: "second repatriation"}
   - {year: 1957, kind: transfer, from: "@member:SU", who: {identity: [pl]}, number: 100000, to: {"@member:PL": 1.0}, label: "second repatriation"}

@@ -20,7 +20,12 @@ borders (the regions of state PL at 1 January of the year) with:
 * national identity in the 2002 census (single answer; thousands):
   Silesian 173, German 153, Belarusian 49, Ukrainian 31, Lemko 6,
   Lithuanian 6, Kashubian 5, Jewish 1; and home language: German 205,
-  Belarusian 40, Ukrainian 23, Kashubian 53, Lemko 6, Lithuanian 6.
+  Belarusian 40, Ukrainian 23, Kashubian 53, Lemko 6, Lithuanian 6;
+* home language in the 2011 census (up to two answers; thousands; table 33
+  of "Struktura narodowo-etniczna, językowa i wyznaniowa"): German 96.5,
+  Belarusian 26.4, Ukrainian 24.5, Kashubian 108.1, Lemko 6.3,
+  Lithuanian 5.3. The two censuses asked differently: German halves and
+  Kashubian doubles between them, a measure of how loose these counts are.
 
 Sources: GUS (Rocznik Demograficzny; the census reports of 1946-2021);
 GUS life tables; the 2002 census report "Ludność według narodowości i
@@ -45,6 +50,7 @@ E0 = {1953: (58.6, 64.2), 1961: (64.8, 70.5), 1971: (66.8, 73.8), 1990: (66.2, 7
 RT = {1939: 8.86, 1946: 5.02, 1950: 5.94}
 IDENT_2002 = {"sil": 173, "de": 153, "be": 49, "uk": 31, "rue": 6, "lt": 6, "csb": 5, "jw": 1}
 LANG_2002 = {"de": 205, "be": 40, "uk": 23, "csb": 53, "rue": 6, "lt": 6}
+LANG_2011 = {"de": 96.5, "be": 26.4, "uk": 24.5, "csb": 108.1, "rue": 6.3, "lt": 5.3}
 
 
 def _year_index(res, year: int) -> int | None:
@@ -132,6 +138,10 @@ def checks(res) -> list[tuple]:
             rows.append((f"identity {k} (k)", 2002, d["identity"][k], v))
         for k, v in LANG_2002.items():
             rows.append((f"home language {k} (k)", 2002, d["language"][k], v))
+    if 2011 in at:
+        d = identity_2002(res, 2011)
+        for k, v in LANG_2011.items():
+            rows.append((f"home language {k} (k)", 2011, d["language"][k], v))
     return rows
 
 

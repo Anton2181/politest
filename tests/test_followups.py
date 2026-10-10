@@ -54,6 +54,65 @@ def test_scattered_minorities_marry_out_compact_ones_hardly():
     assert 0 <= d_posen < 0.05
 
 
+def test_mixed_households_take_the_partners_religion():
+    """``exogamy_rite``: part of the households formed across languages are
+    counted in the partner's community (here Roman Catholic Polish), the
+    rest stay Greek Catholic; nobody is lost."""
+    from plsim.calibration import _Region
+    from plsim.language import LanguageModel
+    gc_uk, gc_pl, rc_pl = (GROUP_INDEX[g] for g in (("GC", "uk"), ("GC", "pl"), ("RC", "pl")))
+    P = np.zeros((1, 2, NG, 2, 2, 101))
+    P[0, :, rc_pl, 0, :, 0:70] = 1000.0
+    P[0, :, gc_uk, 1, :, 0:70] = 30.0             # a scattered, bilingual minority
+    out = {}
+    for rite in (0.0, 0.5):
+        lm = LanguageModel(dict(DEFAULTS["language"], exogamy_rite=rite), [_Region("X")], ["pl"])
+        Q = P.copy()
+        hz = lm.horizontal(1960, Q, np.array([0.9]), np.array([[0.5, 0.8]]), np.zeros(1))
+        assert np.isclose(Q.sum(), P.sum())
+        out[rite] = (Q[0, :, rc_pl].sum() - P[0, :, rc_pl].sum(), Q[0, :, gc_pl].sum(), hz["flows"][0, :, gc_uk, rc_pl].sum())
+    assert out[0.0][0] == 0 and out[0.0][2] == 0
+    assert out[0.5][0] > 0 and np.isclose(out[0.5][0], out[0.5][2])
+    assert out[0.5][1] < out[0.0][1]
+
+
+def test_region_concentration_survives_county_nesting():
+    """``concentration_regions`` sets a language's clustering inside a
+    county; the nesting that divides the voivodeship factors leaves it."""
+    from types import SimpleNamespace
+    from plsim.language import LanguageModel
+    regs = [SimpleNamespace(code=c) for c in ("BIA.suwalki", "BIA.augustow")]
+    p = dict(DEFAULTS["language"], concentration_regions={"BIA.suwalki": {"lt": 10.0}})
+    lm = LanguageModel(p, regs, ["pl", "pl"])
+    P = np.zeros((2, 2, NG, 2, 2, 101))
+    P[:, :, GROUP_INDEX[("RC", "pl")], 0, :, 30] = 1000.0
+    P[0, :, GROUP_INDEX[("RC", "lt")], 0, :, 30] = 50.0           # all Lithuanians in one county
+    lm.nest_concentration(P, [r.code for r in regs])
+    lt = [g for g, (_, l) in enumerate(GROUPS) if l == "lt"]
+    assert np.allclose(lm.conc[0, lt], 10.0)
+    k = DEFAULTS["language"]["concentration"]["lt"]
+    assert np.allclose(lm.conc[1, lt], k / lm.clustering[1, lm.group_lang[lt[0]]])
+
+
+def test_dispersed_transfer_drops_clustering():
+    """``disperse: true``: the groups moved lose their clustering where they
+    were taken from and where they were placed, and only there."""
+    from types import SimpleNamespace
+    from plsim.history import History
+    R = 4
+    lang = SimpleNamespace(conc=np.full((R, NG), 20.0))
+    h = History(SimpleNamespace(R=R, lang=lang), [])
+    moved = np.zeros((R, 2, NG, 2, 2, 101))
+    rue = GROUP_INDEX[("GC", "rue")]
+    moved[0, 0, rue, 0, 0, 30] = 100.0
+    w = np.zeros((R, 2))
+    w[2, 0] = 1.0
+    h._disperse(moved, np.array([True, False, False, False]), w)
+    assert lang.conc[0, rue] == 1.0 and lang.conc[2, rue] == 1.0
+    assert lang.conc[1, rue] == 20.0 and lang.conc[3, rue] == 20.0
+    assert (np.delete(lang.conc, rue, axis=1) == 20.0).all()
+
+
 # ---------------------------------------------------------------- identity
 def test_identity_totals_track_population(short_run):
     I = np.asarray(short_run.identity[-1]).sum(axis=1)

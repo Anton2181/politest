@@ -1,26 +1,29 @@
-History matching: 4000 draws in two waves, 279 not ruled out (every target within 3 standard deviations)
+History matching: 4000 draws in two waves, 295 not ruled out (every target within 3 standard deviations)
 
 parameter               previous   NROY 5%    median       95%   adopted
-sigma_vern                  0.55    0.2253     0.444    0.7473      0.44
-sigma_nat                   0.12     0.172    0.3681    0.4921      0.37
-sigma_nat_distinct          0.06   0.01206   0.09352    0.1885      0.06  (not constrained; kept)
-a                           1.31     1.044     1.257     1.562      1.31  (not constrained; kept)
-m_mono                      0.15   0.06692    0.2274    0.3896      0.15  (not constrained; kept)
-h0                         0.003 0.0001611  0.002055  0.007849    0.0021
-completeness_share          0.25     0.136    0.3111    0.4752      0.25  (not constrained; kept)
-sigma_diaspora                 0    0.2811    0.5346    0.7701      0.53
-acq_adult                  0.012  0.008587   0.02071   0.02907     0.012  (not constrained; kept)
-acq_school                  0.22    0.2743    0.3567    0.3962      0.36
+sigma_vern                  0.44    0.1942    0.3841     0.708      0.38
+sigma_nat                   0.37    0.2173     0.374    0.4914      0.37
+sigma_nat_distinct          0.06  0.004854   0.03625   0.08402     0.036
+a                           1.31     1.031     1.251     1.541      1.31  (not constrained; kept)
+m_mono                      0.15    0.0682    0.2285    0.3898      0.15  (not constrained; kept)
+h0                        0.0021 0.0004101    0.0025  0.007766    0.0025
+completeness_share          0.25    0.1272    0.2922    0.4261      0.25  (not constrained; kept)
+sigma_diaspora              0.53    0.2355    0.5392      0.77      0.54
+acq_adult                  0.012   0.01134   0.02183   0.02929     0.022
+acq_school                  0.36    0.2831    0.3556    0.3956      0.36
+exogamy                        0   0.05651    0.2017     0.366       0.2
+exogamy_homophily             20     17.86     38.08     57.29        38
 
 adopted: median of the NROY draws; I = implausibility
 
 target                          observed  previous      I   adopted      I
-mas_joh share                      0.680     0.597   1.96     0.642   0.90
-mas_lyc share                      0.510     0.501   0.22     0.539   0.69
-mas_nei share                      0.666     0.571   2.23     0.615   1.21
-mas_ole share                      0.296     0.355   1.40     0.383   2.06
-carinthia ratio                    0.750     0.951   3.14     0.853   1.60
-wales ratio                        0.740     0.921   2.82     0.781   0.64
-wales mono                         0.060     0.191   5.24     0.124   2.54
-posen ratio                        0.990     0.977   0.64     0.975   0.69
-diaspora births_shifted            0.600     0.067   4.77     0.431   1.51
+mas_joh share                      0.680     0.642   0.90     0.652   0.66
+mas_lyc share                      0.510     0.539   0.69     0.545   0.82
+mas_nei share                      0.666     0.615   1.21     0.624   1.00
+mas_ole share                      0.296     0.383   2.06     0.381   2.01
+carinthia ratio                    0.750     0.853   1.60     0.825   1.18
+wales ratio                        0.740     0.781   0.64     0.740   0.00
+wales mono                         0.060     0.124   2.54     0.116   2.24
+posen ratio                        0.990     0.960   1.43     0.961   1.37
+diaspora births_shifted            0.600     0.456   1.28     0.502   0.87
+dispersed ratio                    0.110     0.370   4.45     0.098   0.20

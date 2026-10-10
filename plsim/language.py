@@ -102,6 +102,19 @@ class LanguageModel:
         conc = params.get("concentration", {})
         k = np.array([conc.get(f"{c}:{l}", conc.get(l, 1.0)) for c, l in GROUPS], dtype=float)
         self.conc = np.tile(k, (self.R, 1))                                  # (R, G)
+        self._region_concentration()
+
+    def _region_concentration(self) -> None:
+        """``concentration_regions``: clustering of a language within given
+        regions, measured there (village shares inside a county); it replaces
+        the general factor, after the county nesting."""
+        spec = self.p.get("concentration_regions", {})
+        for r, code in enumerate(self.codes):
+            for pat in matching_patterns(spec, code):
+                for key, v in spec[pat].items():
+                    for g, (c, l) in enumerate(GROUPS):
+                        if key in (l, f"{c}:{l}"):
+                            self.conc[r, g] = float(v)
 
     def set_regime(self, dominant: list[str], official: list[list[str]] | None = None) -> None:
         """Contact and official languages of every region (at the start, and
@@ -151,6 +164,7 @@ class LanguageModel:
         k = self.conc
         self.conc = np.maximum(k / ratio[:, self.group_lang], np.minimum(k, 1.0))
         self.clustering = ratio
+        self._region_concentration()
 
     # ---------------------------------------------------------------- policy
     def status(self, year: float) -> np.ndarray:
@@ -340,9 +354,21 @@ class LanguageModel:
             ex_rate = exo * out * frac * self.exo_mult[None, None, :] * not_dom[:, None, :]
             hx = 1 - np.exp(-np.clip(ex_rate, 0, 0.5))                   # (R,2,G)
             married = P[:, :, :, 1, :, 20:35] * hx[..., None, None]
+            # the household's religion: a share ``exogamy_rite`` of mixed households raise their children in
+            # the partner's (Galicia: sons the father's rite, daughters the mother's), here the community of
+            # most speakers of the contact language; the household is counted there
+            to = dist
+            rite = p.get("exogamy_rite", 0.0)
+            if rite > 0:
+                pop_g = P.sum(axis=(1, 3, 4, 5))                                       # (R,G)
+                cand = np.where(self.group_lang[None, :] == self.dom[:, None], pop_g, -1.0)
+                conv = np.zeros((self.R, NG, NG))
+                conv[np.arange(self.R)[:, None], np.arange(NG)[None, :], cand.argmax(axis=1)[:, None]] = 1.0
+                has = (cand.max(axis=1) > 0)[:, None, None, None]
+                to = np.where(has, (1 - rite) * dist + rite * conv[:, None], dist)
             P[:, :, :, 1, :, 20:35] -= married
-            P[:, :, :, 1, :, 20:35] += np.einsum("rugk,rugsa->ruksa", dist, married)
-            flows = flows + dist * married.sum(axis=(3, 4))[..., None]
+            P[:, :, :, 1, :, 20:35] += np.einsum("rugk,rugsa->ruksa", to, married)
+            flows = flows + to * married.sum(axis=(3, 4))[..., None]
             switch_total = switch.sum() + married.sum()
         else:
             switch_total = switch.sum()
