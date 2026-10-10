@@ -247,8 +247,8 @@ Baseline, area where each language leads (thousand km²):
 
 | | Polish | Ukrainian | Lithuanian | Belarusian | West Polesian | Kashubian/Lemko |
 |---|---|---|---|---|---|---|
-| 1932 | 226 | 81 | 55 | 40 | 36 | 4 |
-| 2032 | 308 | 76 | 56 | 3 | 0 | 0 |
+| 1932 | 222 | 85 | 56 | 40 | 35 | 4 |
+| 2032 | 303 | 81 | 56 | 3 | 0 | 0 |
 
 * **Ukrainian** holds its Volhynian and Pokuttya core. It retreats from the
   San and the Lwów hinterland.
@@ -257,10 +257,10 @@ Baseline, area where each language leads (thousand km²):
   West Polesian nowhere. They hold on where the state schools them or keeps
   out of language policy: `ukraine_autonomy_tricantonal`,
   `autonomy_grand_duchy_coofficial`, `wakar_poland` and
-  `no_official_language` (where Belarusian leads 49 and West Polesian 24
+  `no_official_language` (where Belarusian leads 46 and West Polesian 24
   thousand km² in 2032).
-* **Population.** About 65 % of the land area has fewer people in 2032
-  than in 1932, and a tenth has less than half. Growth concentrates
+* **Population.** About 66 % of the land area has fewer people in 2032
+  than in 1932, and 8 % has less than half. Growth concentrates
   in the cities, their suburban rings, and high-fertility Polesie and
   Volhynia.
 
