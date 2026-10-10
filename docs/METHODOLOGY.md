@@ -1078,7 +1078,7 @@ these maps show model-parameter uncertainty under one downscaling.
 
 ## 12. Maps: spatial downscaling and local language shift
 
-The projection works with 270 counties (or 23 voivodeships) x rural/urban.
+The projection works with 271 counties (or 23 voivodeships) x rural/urban.
 To draw maps, `plsim/spatial.py` places each region on a grid of 37,532
 cells of 0.03125° x 0.05° (about 3.5 x 3.4 km) and carries the cells
 forward year by year. The model itself uses a coarser grid of 9,383 cells
@@ -1476,20 +1476,20 @@ and mortality, fertility and migration push would all be wrong.
   measured to each county (Gdynia included) rather than to Toruń, and the
   Kashubian counties draw fewer Polish speakers. Klaipėda is 12 % larger.
 * **What the county level adds is *where*.** The plurality language
-  changes in 34 of 270 counties:
+  changes in 34 of 271 counties:
   * twelve Belarusian counties turn Polish-plurality: Grodno, Wołkowysk
     and Bielsk; Głębokie, Mołodeczno, Postawy and Wilejka; and Nowogródek
     voivodeship apart from Lida, Szczuczyn and Wołożyn;
   * all nine Polesie counties move from West Polesian to Polish;
   * Kartuzy, Kościerzyna and Wejherowo lose their Kashubian plurality;
-  * eight Lwów counties and Kamionka Strumiłowa turn from Ukrainian to
-    Polish plurality;
+  * seven Lwów counties, Kamionka Strumiłowa and Tomaszów Lubelski turn
+    from Ukrainian to Polish plurality;
   * Klaipėda turns from German to Lithuanian.
 
-  Volhynia and the core of Stanisławów stay Ukrainian (Łuck 59 % in 1933 and 2032).
+  Volhynia and the core of Stanisławów stay Ukrainian (Łuck 59 % in 1933, 58 % in 2032).
   The cities draw the rural surplus of their voivodeship: Lwów county
-  grows from 460 k to 973 k, Wilno from 415 k to 871 k, and Brześć from
-  227 k to 670 k.
+  grows from 460 k to 949 k, Wilno from 415 k to 872 k, and Brześć from
+  227 k to 636 k.
 * **Cost.** A run takes about 3 minutes, against 20 s for the voivodeship
   model.
 

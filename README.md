@@ -96,21 +96,21 @@ spoke at home* separate from *what a census printed*.
 ## Headline results (baseline, 32-member ensemble)
 
 Medians, with 5-95 % ranges in brackets. The whole union is the 17 Polish
-first-order units plus 6 Lithuanian units (270 counties). The language rates
+first-order units plus 6 Lithuanian units (271 counties). The language rates
 are history-matched (METHODOLOGY §6.4), and the ensemble draws them jointly
 from the set the matching did not rule out.
 
 | Year | Population (M) | TFR | e0 m / f | Urban % | GDP/head (1990 GK$) |
 |---|---|---|---|---|---|
-| 1939 | 37.1 (Poland 34.5) | 3.22 | 50.7 / 54.3 | 29 | 2,070 |
+| 1939 | 37.1 (Poland 34.5) | 3.22 | 50.7 / 54.3 | 28 | 2,070 |
 | 1960 | 43.9 [42.6-45.9] | 2.80 | 61.3 / 66.2 | 40 | 3,930 |
 | 1990 | 50.9 [47.2-56.0] | 1.91 | 69.7 / 76.1 | 57 | 9,700 |
-| 2032 | 50.9 [44.4-59.0] | 1.60 | 80.8 / 85.7 | 67 | 18,470 |
+| 2032 | 50.9 [44.5-59.0] | 1.60 | 80.8 / 85.7 | 67 | 18,470 |
 
 **Demography**
 
 * The population peaks at ~52.4 M around 2010 and is 50.9 M in 2032.
-* The Polish voivodeships alone reach ~49 M (48.1 M in 2032; the Second
+* The Polish voivodeships alone reach ~49 M (48.2 M in 2032; the Second
   Republic alone: 47.6 M in its seeded run).
 * Net emigration of ~115-135 k/yr in the guest-worker era falls to ~35-65
   k/yr after 2000; net immigration appears only in the high-convergence
@@ -128,23 +128,23 @@ start of 1931)
 
 | Language | 1933 | 2032 |
 |---|---|---|
-| Polish | 61.3 % | 71.7 % |
-| Ukrainian | 14.1 % | 13.6 % (6.8 M speakers [5.4-7.9]) |
+| Polish | 61.0 % | 70.1 % |
+| Ukrainian | 14.4 % | 13.8 % (7.0 M speakers [5.5-8.1]) |
 | Yiddish | 8.3 % | 4.2 % |
-| Belarusian | 3.9 % | 2.4 % (1.2 M [0.6-1.6]) |
+| Belarusian | 3.8 % | 2.3 % (1.2 M [0.6-1.6]) |
 | Lithuanian | 5.7 % | 5.2 % |
 | West Polesian | 2.1 % | 1.1 % |
 
-* **Ukrainian** grows almost as fast as the population (4.9 → 6.8 M):
+* **Ukrainian** grows almost as fast as the population (5.0 → 7.0 M):
   high Galician and Volhynian fertility and robust Greek Catholic
   institutions, against the shift to Polish in lwowskie west of Lwów.
   Migrants' children assimilate (the diaspora term): Warsaw city ends 6 %
   Ukrainian-speaking in the seeded run.
 * **Yiddish** declines among acculturating Jews and survives through a
-  growing Haredi population (very uncertain). Jewish *identity* (7.1 % of
+  growing Haredi population (very uncertain). Jewish *identity* (6.4 % of
   the union in 2032) outlasts Yiddish (4.2 %).
-* **Kashubian**: 202 k -> 108 k [69-158 k]. **Lemko**: 132 k -> 84 k
-  [60-121 k].
+* **Kashubian**: 202 k -> 107 k [68-157 k]. **Lemko**: 132 k -> 84 k
+  [62-122 k].
 * **West Polesian**: persists in villages (0.56 M [0.25-1.0]) as a
   declining share.
 * **Wymysorys**: 1,500 -> ~80 speakers [17-128], moribund even without the
@@ -152,20 +152,24 @@ start of 1931)
 * **Karaim**: ~680 -> ~270 speakers.
 
 **Identity** (separate from home language; the starting mix is fitted to
-the 1921 nationality census, METHODOLOGY §6.7): Polish 63.5 -> 66 %,
-Ukrainian 13 -> 14.5 %, Belarusian 3.2 -> 3.3 %, "local" 2.8 -> 1.2 %,
-Jewish 7.6 -> 7.1 %. Polish identity trails Polish speech (66 % against
-72 % in 2032), because many who switch to Polish keep a Ukrainian,
-Belarusian or Jewish identity.
+the 1921 nationality census, METHODOLOGY §6.7; the pull of the state
+nation is calibrated on the 2002 census): Polish 63.3 -> 71.4 %, Ukrainian
+13.2 -> 12.9 %, Belarusian 3.1 -> 1.8 %, Lithuanian 5.8 -> 5.2 %, "local"
+2.8 -> 0.9 %, Jewish 7.6 -> 6.4 %. Polish identity now keeps pace with
+Polish speech (71 % against 70 % in 2032): those who switch to Polish
+first keep a Ukrainian, Belarusian or Jewish identity, but a minority
+language without status or schools anchors its speakers' identity less,
+and Belarusian speakers above all take a Polish one (the Belarusian
+identity falls faster than the language, 1.8 % against 2.3 %).
 
 **Infrastructure**
 
 * Almost all inter-town roads are paved by ~1960.
-* By 2032: ~2,000 km of motorway [1,300-2,800] and ~6,700 km of
-  expressway [4,200-10,000], about 20 km per 1000 km², like Czechia and
+* By 2032: ~2,100 km of motorway [1,600-3,000] and ~6,400 km of
+  expressway [4,300-9,800], about 19 km per 1000 km², like Czechia and
   Hungary (23,800 km before the road appraisal counted running costs and
-  only part of the local traffic). Also ~10,900 km of electrified main
-  line and ~1,700 km of high-speed line.
+  only part of the local traffic). Also ~10,700 km of electrified main
+  line and ~1,800 km of high-speed line.
 * The 1939 plans are completed in the early 1940s: the Wilno-Gdynia shortcut
   Łapy-Ostrołęka-Przasnysz-Mława, Dębica-Jasło, and the COP Łódź-Dębica
   trunk.
@@ -302,9 +306,9 @@ than 4 minutes). Details are in `docs/METHODOLOGY.md` §12.6.
 
   | 2032 | Voivodeship run | County run |
   |---|---|---|
-  | Population | 50.77 M | 50.62 M |
-  | Ukrainian speakers | 7.00 M | 7.00 M |
-  | Belarusian speakers | 1.31 M | 1.26 M |
+  | Population | 50.79 M | 50.64 M |
+  | Ukrainian speakers | 7.11 M | 7.16 M |
+  | Belarusian speakers | 1.27 M | 1.22 M |
 
 * **What it adds is where.** In the baseline, 34 counties change their
   plurality language by 2032, all of them towards Polish except Klaipėda
@@ -313,8 +317,9 @@ than 4 minutes). Details are in `docs/METHODOLOGY.md` §12.6.
     Nieśwież–Słonim (12 counties);
   * all nine Polesie counties;
   * three Kashubian counties;
-  * nine Ukrainian counties: eight of lwowskie (Sambor, Drohobycz, Sokal,
-    Rudki, Lesko ...) and Kamionka Strumiłowa.
+  * nine Ukrainian counties: seven of lwowskie (Sambor, Drohobycz,
+    Przemyśl, Mościska, Rudki ...), Kamionka Strumiłowa and Tomaszów
+    Lubelski.
 
   Lwów county grows from 460 k to 973 k people, Wilno from 415 k to 871 k.
 
@@ -324,21 +329,21 @@ than 4 minutes). Details are in `docs/METHODOLOGY.md` §12.6.
 
 | Scenario | Population outside Lithuania (M) | Polish % | Ukrainian % | Yiddish % | Belarusian % | Lithuanian % | W. Polesian (k) |
 |---|---|---|---|---|---|---|---|
-| baseline | 47.9 | 71.9 | 13.8 | 3.8 | 2.5 | 5.1 | 590 |
-| ii_rp_only | 47.6 | 75.7 | 14.7 | 4.1 | 2.7 | 0.1 | 596 |
-| federal_autonomy | 47.9 | 66.0 | 16.1 | 4.6 | 3.9 | 5.2 | 996 |
-| integral_nationalism | 47.1 | 75.7 | 12.5 | 3.2 | 1.7 | 5.1 | 333 |
-| polonizing_union | 47.9 | 72.6 | 13.8 | 3.8 | 2.5 | 4.5 | 590 |
-| census_official | 47.9 | 74.0 | 12.4 | 3.9 | 1.7 | 5.3 | 590 |
-| census_vernacular | 48.0 | 70.9 | 14.4 | 3.8 | 3.0 | 5.1 | 590 |
-| ukraine_autonomy_tricantonal | 47.8 | 63.7 | 16.1 | 4.4 | 6.8 | 5.2 | 877 |
-| autonomy_grand_duchy_coofficial | 47.5 | 63.6 | 16.1 | 4.4 | 6.9 | 5.2 | 881 |
-| wakar_poland | 35.9 | 78.6 | 4.7 | 4.4 | 8.3 | 0.0 | 716 |
-| wakar_poland_belarus | 48.2 | 60.5 | 3.6 | 4.1 | 26.8 | 0.0 | 718 |
-| no_official_language | 47.8 | 61.6 | 16.6 | 5.3 | 6.6 | 5.3 | 999 |
-| plebiscite_poland | 50.3 | 71.6 | 13.0 | 3.7 | 2.4 | 4.9 | 592 |
-| nw_krai (Poland and the krai together) | 62.5 | 51.8 | 10.8 | 3.9 | 23.7 | 3.9 | 814 |
-| lit_bel (Poland and Lit-Bel together) | 53.1 | 59.5 | 12.5 | 4.1 | 15.1 | 4.8 | 820 |
+| baseline | 47.9 | 71.6 | 14.1 | 3.9 | 2.4 | 5.2 | 590 |
+| ii_rp_only | 47.6 | 75.4 | 15.0 | 4.1 | 2.6 | 0.1 | 596 |
+| federal_autonomy | 47.9 | 65.7 | 16.4 | 4.7 | 3.8 | 5.3 | 994 |
+| integral_nationalism | 47.1 | 75.2 | 12.9 | 3.2 | 1.7 | 5.2 | 333 |
+| polonizing_union | 47.9 | 72.2 | 14.1 | 3.9 | 2.4 | 4.6 | 589 |
+| census_official | 47.9 | 73.8 | 12.4 | 3.9 | 1.7 | 5.4 | 590 |
+| census_vernacular | 48.0 | 70.5 | 14.6 | 3.9 | 3.0 | 5.2 | 590 |
+| ukraine_autonomy_tricantonal | 47.8 | 63.5 | 16.4 | 4.5 | 6.7 | 5.3 | 877 |
+| autonomy_grand_duchy_coofficial | 47.6 | 63.4 | 16.4 | 4.5 | 6.7 | 5.2 | 880 |
+| wakar_poland | 35.8 | 78.3 | 5.0 | 4.5 | 8.2 | 0.0 | 718 |
+| wakar_poland_belarus | 48.1 | 60.3 | 3.9 | 4.1 | 26.7 | 0.0 | 719 |
+| no_official_language | 47.8 | 61.3 | 16.9 | 5.4 | 6.4 | 5.4 | 998 |
+| plebiscite_poland | 50.3 | 71.3 | 13.3 | 3.8 | 2.3 | 4.9 | 591 |
+| nw_krai (Poland and the krai together) | 62.6 | 51.6 | 11.1 | 4.0 | 23.5 | 4.0 | 825 |
+| lit_bel (Poland and Lit-Bel together) | 53.2 | 59.3 | 12.8 | 4.2 | 14.9 | 4.8 | 831 |
 
 Polish-speakers in the Lithuanian units (Polish is co-official in Lithuania
 in every scenario with the union, except the unitary `polonizing_union`),
@@ -346,13 +351,13 @@ and those of them with a Polish identity:
 
 | Scenario | 1933 | 2032 | of whom Lauda, 1933 → 2032 | Polish identity, 1933 → 2032 |
 |---|---|---|---|---|
-| baseline (federal) | 150 k | 154 k | 53 k → 53 k | 78 k → 85 k |
-| polonizing_union (Polish the only official language) | 150 k | 496 k | 53 k → 112 k | 78 k → 476 k |
-| census_official (the 1923 census as printed) | 77 k | 73 k | 23 k → 19 k | 48 k → 52 k |
-| ukraine_autonomy_tricantonal (Lithuanian canton) | 150 k | 216 k | 53 k → 65 k | 78 k → 128 k |
-| autonomy_grand_duchy_coofficial (one Grand Duchy) | 150 k | 414 k | 53 k → 102 k | 78 k → 289 k |
-| nw_krai (the krai's Lithuanian lands, without Suvalkija) | 141 k | 425 k | 53 k → 124 k | 69 k → 296 k |
-| lit_bel (the Lithuanian lands of Lit-Bel) | 150 k | 567 k | 53 k → 142 k | 76 k → 414 k |
+| baseline (federal) | 148 k | 142 k | 57 k → 52 k | 75 k → 55 k |
+| polonizing_union (Polish the only official language) | 150 k | 476 k | 57 k → 111 k | 84 k → 1,196 k |
+| census_official (the 1923 census as printed) | 74 k | 69 k | 26 k → 21 k | 44 k → 33 k |
+| ukraine_autonomy_tricantonal (Lithuanian canton) | 149 k | 204 k | 57 k → 65 k | 75 k → 94 k |
+| autonomy_grand_duchy_coofficial (one Grand Duchy) | 150 k | 402 k | 57 k → 103 k | 76 k → 232 k |
+| nw_krai (the krai's Lithuanian lands, without Suvalkija) | 137 k | 419 k | 57 k → 127 k | 67 k → 266 k |
+| lit_bel (the Lithuanian lands of Lit-Bel) | 151 k | 554 k | 57 k → 145 k | 75 k → 332 k |
 
 **Ukrainian autonomy + tri-cantonal Lithuania** (`ukraine_autonomy_tricantonal`).
 Lwów, Tarnopol and Stanisławów voivodeships plus Volhynia form a Ukrainian
@@ -362,40 +367,39 @@ Lithuanian, Polish (Wilno–Lida–Grodno) and Belarusian (eastern Wilno lands,
 Nowogródek, Polesie) cantons, made of whole counties. Polish is co-official
 in the autonomy and in every canton. By 2032:
 
-* Belarusian speakers number 3.45 M (1.26 M in the baseline). Belarusian
-  rises from 36 to 55 % of its canton and leads 19 of its 20 counties.
-* Ukrainian rises from 55 to 64 % of the autonomy. Seven counties turn
-  Ukrainian-plurality: Lwów, Przemyśl and Mościska, and Tarnopol,
-  Trembowla, Skałat and Przemyślany. The ten counties west of the San stay
-  Polish.
+* Belarusian speakers number 3.38 M (1.22 M in the baseline). Belarusian
+  rises from 35 to 54 % of its canton and leads 19 of its 20 counties.
+* Ukrainian rises from 56 to 65 % of the autonomy. Five counties turn
+  Ukrainian-plurality: Lwów, Tarnopol, Trembowla, Skałat and Przemyślany.
+  The ten counties west of the San stay Polish.
 * Polish falls to 64 % of the union (72 % in the baseline).
 
 **Ten more political settlements** (details in `docs/SCENARIOS.md`):
 
 * `autonomy_grand_duchy_coofficial`: the same autonomy, and an undivided
   Grand Duchy with **Lithuanian, Polish and Belarusian co-official**.
-  * Belarusian becomes the Duchy's largest language (19 → 33 %), and Polish
+  * Belarusian becomes the Duchy's largest language (19 → 32 %), and Polish
     holds its share (24 → 26 %).
   * Polish and Belarusian spread into the Lithuanian lands: Kaunas and the
-    north-east fall from 71 to 64 % Lithuanian, Samogitia from 88 to 81 %,
-    and Lithuania's Polish-speakers almost treble (150 k → 414 k).
+    north-east fall from 74 to 66 % Lithuanian, Samogitia from 87 to 82 %,
+    and Lithuania's Polish-speakers almost treble (150 k → 402 k).
 * `wakar_poland` (**Wakar's Poland**): Poland without Volhynia, Stanisławów,
   Tarnopol and the Vilnius region, with Polish and Belarusian co-official.
-  * 25.7 M people in 1933, 35.9 M in 2032.
-  * Belarusian grows from 1.1 M to 3.0 M speakers (8 %) and leads 18
+  * 25.7 M people in 1933, 35.8 M in 2032.
+  * Belarusian grows from 1.05 M to 2.9 M speakers (8 %) and leads 18
     counties, Polesie included.
 * `wakar_poland_belarus` (**Wakar's Poland-Belarus**): Wakar's Poland
   together with **all of Soviet Belarus** (the BSSR of 1926, from the 1926
   Soviet census), Polish and Belarusian co-official.
   * 31.1 M people in 1933 (5.4 M in Soviet Belarus), 48.2 M in 2032.
-  * Polish holds at 61 %, Belarusian rises from 17 to 27 % (12.9 M
-    speakers). Soviet Belarus grows to 9.5 M, 84 % Belarusian.
+  * Polish holds at 60 %, Belarusian rises from 17 to 27 % (12.9 M
+    speakers). Soviet Belarus grows to 9.5 M, 83 % Belarusian.
 * `no_official_language`: no language is privileged, every written
   standard is official, and each county works in its largest language.
-  * Polish ends at 62 % of the union (72 % in the baseline): about 5 M
+  * Polish ends at 61 % of the union (72 % in the baseline): about 5 M
     more people keep a minority language.
-  * Only 19 counties change their plurality language (34 in the baseline),
-    and West Polesian still leads two.
+  * Only 18 counties change their plurality language (34 in the baseline),
+    and West Polesian still leads three.
 * `nw_krai` (**Poland and the Northwestern Krai**) and `lit_bel` (**Poland
   and Lit-Bel**): Poland without the lands of the old north-western
   governorates, which form a separate state with **its own economy**,
@@ -409,12 +413,12 @@ in the autonomy and in every canton. By 2032:
   goes to Poland. Lit-Bel (Vilna, Kovno, Grodno, Minsk, Suwałki, the
   republic of 1919) keeps Suvalkija, Suwałki and Augustów and only the
   Minsk-governorate part of Soviet Belarus.
-  * Poland: 28.3 M in 1933, 40.4 M in 2032, 76 % Polish.
-  * The krai: 12.9 M to 25.7 M, Belarusian 48 → 61 %, Polish 15 → 14 %
+  * Poland: 28.4 M in 1933, 40.4 M in 2032, 75 % Polish.
+  * The krai: 12.8 M to 25.7 M, Belarusian 48 → 60 %, Polish 15 → 14 %
     (1.9 → 3.6 M speakers), Lithuanian 12 → 9 %. Lit-Bel: 9.3 M to 17.4 M,
-    Belarusian 35 → 49 %, Polish 22 → 21 %.
+    Belarusian 35 → 49 %, Polish 22 → 22 %.
   * Polesie turns Belarusian, and so does Daugavpils in Latgale. Wilno
-    county stays Polish-plurality (50-53 %), with about 30 % of it
+    county stays Polish-plurality (52-55 %), with about 30 % of it
     Belarusian (82 % Polish in the baseline).
 * `plebiscite_poland` (**Poland with the plebiscite lands and Danzig**):
   the baseline union, plus the Free City of Danzig and every area that voted
@@ -425,9 +429,9 @@ in the autonomy and in every canton. By 2032:
   left out. Polish is official everywhere, with German co-official in
   Danzig.
   * 50.3 M people outside Lithuania in 2032 (47.9 M in the baseline).
-  * German speakers in the new lands fall from 1.92 M to 0.71 M: Danzig
-    grows from 410 k to 730 k and goes from 5 to 71 % Polish-speaking;
-    Opole Silesia from 66 to 12 % German. 26 German-plurality counties turn
+  * German speakers in the new lands fall from 1.91 M to 0.71 M: Danzig
+    grows from 410 k to 740 k and goes from 6 to 71 % Polish-speaking;
+    Opole Silesia from 65 to 12 % German. 26 German-plurality counties turn
     Polish.
 * `historical`: the counterfactual's control. Poland with the real
   1939-50 history (below), used to calibrate the model on what actually
@@ -486,7 +490,7 @@ Poles on its other side (to within one county), with the most Poles on the
 Polish side. Kashubians, Wymysorys speakers, Germans and Jews are not
 counted.
 
-* In the baseline it moves 1.83 M people each way in 1932 and 4.0 M in
+* In the baseline it moves 1.8 M people each way in 1932 and 4.0 M in
   2032.
 * In 1932 the Polish side keeps the western Wilno lands with Wilno (joined
   through Grodno and Lida), Lwów with most of lwowskie, and Tarnopol;
@@ -494,11 +498,11 @@ counted.
   Nowogródek lands are on the other side.
 * By 2032 the Polish side has spread east over a Polonised Polesie.
 * **Against the historical line** of 1919-20 (line A in Galicia; dashed in
-  the atlas): in 1932 it leaves 0.96 M non-Poles west and 3.26 M Poles east,
-  against 1.83 M each way for the computed line. The diplomats' line was
+  the atlas): in 1932 it leaves 1.0 M non-Poles west and 3.19 M Poles east,
+  against 1.8 M each way for the computed line. The diplomats' line was
   drawn on the ethnographic maps of 1919 and leaves the Poles of the Wilno
   lands, Lwów and the eastern towns on the other side. As the east Polonises
-  in the baseline, the gap widens: 2.2 M non-Poles west and 8.1 M Poles east
+  in the baseline, the gap widens: 2.3 M non-Poles west and 8.1 M Poles east
   by 2032.
 * The real transfers of 1944-47 are replayed in `historical` (below).
 
