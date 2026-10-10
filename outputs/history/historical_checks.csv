@@ -1,0 +1,55 @@
+measure,year,model,observed
+population (M),1946,22.834,23.93
+population (M),1950,23.744,25.01
+population (M),1960,28.325,29.8
+population (M),1970,30.902,32.64
+population (M),1978,33.195,35.06
+population (M),1988,36.046,37.88
+population (M),2002,36.339,38.23
+population (M),2011,35.784,38.51
+population (M),2021,35.235,38.04
+Recovered Territories (M),1939,8.885,8.86
+Recovered Territories (M),1946,4.593,5.02
+Recovered Territories (M),1950,5.514,5.94
+urban (%),1950,37.991,36.9
+urban (%),1960,45.444,48.3
+urban (%),1970,50.984,52.3
+urban (%),1988,57.019,61.0
+urban (%),2002,58.990,61.8
+urban (%),2021,62.424,60.2
+TFR,1950,3.760,3.71
+TFR,1960,2.973,2.98
+TFR,1970,2.188,2.2
+TFR,1980,2.291,2.28
+TFR,1990,1.992,2.04
+TFR,2000,1.409,1.37
+TFR,2010,1.372,1.38
+TFR,2020,1.409,1.39
+e0 men,1953,60.078,58.6
+e0 women,1953,65.691,64.2
+e0 men,1961,64.898,64.8
+e0 women,1961,70.728,70.5
+e0 men,1971,66.517,66.8
+e0 women,1971,73.647,73.8
+e0 men,1990,67.261,66.2
+e0 women,1990,76.379,75.2
+e0 men,2000,70.551,69.6
+e0 women,2000,78.751,78.0
+e0 men,2010,72.225,72.1
+e0 women,2010,80.725,80.6
+e0 men,2019,75.978,74.1
+e0 women,2019,83.678,81.8
+identity sil (k),2002,130.782,173
+identity de (k),2002,101.138,153
+identity be (k),2002,139.602,49
+identity uk (k),2002,282.518,31
+identity rue (k),2002,36.119,6
+identity lt (k),2002,5.797,6
+identity csb (k),2002,4.723,5
+identity jw (k),2002,9.765,1
+home language de (k),2002,163.212,205
+home language be (k),2002,223.280,40
+home language uk (k),2002,337.252,23
+home language csb (k),2002,167.167,53
+home language rue (k),2002,74.534,6
+home language lt (k),2002,9.082,6
