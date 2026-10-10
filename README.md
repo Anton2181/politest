@@ -90,8 +90,9 @@ spoke at home* separate from *what a census printed*.
   Polish-speaking population.
 * **Lauda** (Kėdainiai-Panevėžys-Ukmergė-Raseiniai) is its own unit. The
   Polish-speaking petty gentry there are followed through every scenario:
-  in the federal baseline Polish is co-official in Lithuania, and under a
-  `polonizing_union` it is the only official language.
+  in the federal baseline Polish is co-official in Lithuania, and in the
+  `unitary_union`, where Lithuania is simply part of Poland, it is the only
+  official language.
 
 ## Headline results (baseline, 32-member ensemble)
 
@@ -275,7 +276,9 @@ Belarus and the krai's eastern uezds where a scenario holds them, and the
 groups of German Kreise in `plebiscite_poland` and `historical`. County
 land is fitted to the area of each powiat in the 1931 census (an additively
 weighted Voronoi diagram of the seats, which keeps every seat in its county;
-nearly every county within 4 % of its census area).
+nearly every county within 4 % of its census area). The maps measure those
+distances along the ground inside each voivodeship, so that every county is
+drawn in one piece and canton and member borders follow whole counties.
 `partition: []` runs the original 23-voivodeship model instead (20 s rather
 than 4 minutes). Details are in `docs/METHODOLOGY.md` §12.6.
 
@@ -333,7 +336,7 @@ than 4 minutes). Details are in `docs/METHODOLOGY.md` §12.6.
 | ii_rp_only | 47.6 | 75.4 | 15.0 | 4.1 | 2.6 | 0.1 | 596 |
 | federal_autonomy | 47.9 | 65.7 | 16.4 | 4.7 | 3.8 | 5.3 | 994 |
 | integral_nationalism | 47.1 | 75.2 | 12.9 | 3.2 | 1.7 | 5.2 | 333 |
-| polonizing_union | 47.9 | 72.2 | 14.1 | 3.9 | 2.4 | 4.6 | 589 |
+| unitary_union | 47.9 | 72.2 | 14.1 | 3.9 | 2.4 | 4.6 | 589 |
 | census_official | 47.9 | 73.8 | 12.4 | 3.9 | 1.7 | 5.4 | 590 |
 | census_vernacular | 48.0 | 70.5 | 14.6 | 3.9 | 3.0 | 5.2 | 590 |
 | ukraine_autonomy_tricantonal | 47.8 | 63.5 | 16.4 | 4.5 | 6.7 | 5.3 | 877 |
@@ -346,13 +349,13 @@ than 4 minutes). Details are in `docs/METHODOLOGY.md` §12.6.
 | lit_bel (Poland and Lit-Bel together) | 53.2 | 59.3 | 12.8 | 4.2 | 14.9 | 4.8 | 831 |
 
 Polish-speakers in the Lithuanian units (Polish is co-official in Lithuania
-in every scenario with the union, except the unitary `polonizing_union`),
+in every scenario with the union, except the `unitary_union`),
 and those of them with a Polish identity:
 
 | Scenario | 1933 | 2032 | of whom Lauda, 1933 → 2032 | Polish identity, 1933 → 2032 |
 |---|---|---|---|---|
 | baseline (federal) | 148 k | 142 k | 57 k → 52 k | 75 k → 55 k |
-| polonizing_union (Polish the only official language) | 150 k | 476 k | 57 k → 111 k | 84 k → 1,196 k |
+| unitary_union (Lithuania part of Poland, Polish the only official language) | 150 k | 476 k | 57 k → 111 k | 84 k → 1,196 k |
 | census_official (the 1923 census as printed) | 74 k | 69 k | 26 k → 21 k | 44 k → 33 k |
 | ukraine_autonomy_tricantonal (Lithuanian canton) | 149 k | 204 k | 57 k → 65 k | 75 k → 94 k |
 | autonomy_grand_duchy_coofficial (one Grand Duchy) | 150 k | 402 k | 57 k → 103 k | 76 k → 232 k |

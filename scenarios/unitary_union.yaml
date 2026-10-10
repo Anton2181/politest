@@ -1,0 +1,18 @@
+# A unitary Rzeczpospolita: the Lithuanian lands are part of Poland like any
+# other province. One state with one economy and no internal border; the
+# Lithuanian lands have the contact language, official language, language
+# status, schooling and language policy of the rest of Poland. Polish is the
+# only official language. Lithuanian is a minority language there as it is in
+# the Wilno voivodeship (status 0.35, Lithuanian schools at the minority level
+# of 1931), and German in Klaipėda is a minority language as elsewhere.
+extends: baseline
+meta:
+  name: unitary_union
+  description: "Unitary union: Lithuania a part of Poland, Polish the official language everywhere"
+members: {_replace: true, default: PL}
+dominant_language: {_replace: true, default: pl}
+official_languages: {_replace: true}     # Polish alone, everywhere
+language:
+  status_regions: {_replace: true, WIL: {lt: 0.40}}
+  own_schooling_regions: {_replace: true}
+  pressure: {_replace: true, default: [[1931, 1.0], [1950, 0.9], [1990, 0.8]]}

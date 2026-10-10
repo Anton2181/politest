@@ -300,3 +300,31 @@ def test_cut_pieces_cover_their_county(krai_sim):
         assert m.any(), c
         lets = split_code(c)[1]
         assert np.isin(letter(g.lat[m], g.lon[m]), list(lets)).all(), c
+
+
+def test_map_counties_are_in_one_piece():
+    """The maps' county grid (``build_grid(connected=True)``): distances along
+    the ground inside the voivodeship keep every county in one piece, up to
+    stray cells and land the voivodeship's own outline cuts off; the model's
+    grid is unchanged."""
+    from scipy import ndimage
+    from plsim.data.geography import build_grid
+    from plsim.data.regions import select_regions
+    from plsim.params import load_scenario
+    from plsim.model import Simulation
+    from plsim import webmap
+    codes = Simulation(load_scenario("baseline")).codes
+
+    def second_pieces(g):
+        row, col = webmap._rc(g)
+        img = np.full((row.max() + 1, col.max() + 1), -1)
+        img[row, col] = g.region
+        out = {}
+        for k in range(len(codes)):
+            lab, n = ndimage.label(img == k)
+            if n > 1:
+                out[codes[k]] = int(sorted(np.bincount(lab.ravel())[1:])[-2])
+        return out
+    plain, joined = second_pieces(build_grid(codes)), second_pieces(build_grid(codes, connected=True))
+    assert max(plain.values()) >= 30                 # the plain rule leaves large stray pieces
+    assert len(joined) < len(plain) / 3 and max(joined.values()) < 20

@@ -23,7 +23,7 @@ censuses and from the upper bound (see `docs/DATA_SOURCES.md`).
 | `ii_rp_only` | The Second Republic alone, in its 1938 borders. Lithuania is a foreign state; the Vilnius-Kaunas links stay cut. | The literal "surviving interwar Poland". |
 | `federal_autonomy` | Ukrainian territorial autonomy with Ukrainian as the regional state and school language in Stanisławów, Tarnopol and Volhynia, Polish co-official. Belarusian schooling. Equal Lithuanian status. Lower pressure. | The 1938 Ukrainian autonomy proposals, the Volhynian experiment of H. Józewski and the federalist tradition. |
 | `integral_nationalism` | Endecja/OZON policies harden after 1937: minority schools closed, status of minority languages cut, emigrationist policy towards Jews (up to 1.2 %/yr), pressure on Germans, 25 k/yr settlers in the Kresy. | The trajectory of 1937-39 politics (the OZON programme, the 1938 destruction of Orthodox churches in Chełm, emigrationist diplomacy). |
-| `polonizing_union` | Unitary union: Polish is the dominant language in the Lithuanian lands too; Lithuanian schooling declines. | The nineteenth-century pattern in which Lithuanian-speaking gentry and townspeople drifted to Polish; a weakened national revival. |
+| `unitary_union` | Unitary union: the Lithuanian lands are part of Poland like any other province: one state, one economy, no internal border, Polish the only official language and the contact language everywhere. Lithuanian is a minority language with the status and schools it has in the Wilno voivodeship; the language policy is Poland's. | The incorporationist programme (Lithuania as a province of a unitary Rzeczpospolita), and the nineteenth-century pattern in which Lithuanian-speaking gentry and townspeople drifted to Polish. |
 | `census_official` | Baseline dynamics started from the 1931 Polish and 1923 Lithuanian censuses as printed. | Shows what the printed census, taken at face value, implies. |
 | `census_vernacular` | Baseline dynamics from the upper bound for minority speech: Kubijovyč's (1983) Latin-rite Ukrainians and Catholic Belarusian speech at 1897 proportions, plus the 1897-based share of Polish speakers in Lithuania. | Ukrainian-side estimates and imperial Russian native-language data. |
 | `ukraine_autonomy_tricantonal` | From 1938: (1) a **Ukrainian autonomy** of the lwowskie, tarnopolskie and stanisławowskie voivodeships plus Volhynia, with Ukrainian schools and a Ukrainian university; the official language follows the district majority (Ukrainian east of the San, Polish in western lwowskie). (2) A **tri-cantonal Lithuania** (a Grand Duchy) holding everything east of the later Curzon line and north of Volhynia, in Lithuanian, Polish (Wilno–Lida–Grodno) and Belarusian (eastern Wilno lands, eastern Nowogródek, Polesie) cantons, each schooling its minorities. Polish is co-official in the autonomy and in every canton. No forced Lithuanisation of the Lauda Poles; Polish settlement in the east stops. | The voivodeship self-government statute of 26 Sep 1922 for Lwów, Tarnopol and Stanisławów (passed, never implemented); the Hymans plan of 1921 for a two-canton Lithuania (Kaunas and Vilnius) in union with Poland; Belarusian national claims of 1918-20; the Moravian (1905) and Bukovinian (1910) compromises, which gave language rights by district majority. |
@@ -455,7 +455,7 @@ states.
 | ii_rp_only | 1.85 / 1.83 M | 3.75 / 3.72 M | 0.99 / 3.04 M | 2.21 / 7.86 M | 91 / 89 % |
 | federal_autonomy | 1.79 / 1.84 M | 4.34 / 4.36 M | 1.00 / 3.19 M | 3.35 / 6.35 M | 91 / 86 % |
 | integral_nationalism | 1.79 / 1.84 M | 3.78 / 3.79 M | 1.00 / 3.19 M | 1.82 / 9.45 M | 91 / 89 % |
-| polonizing_union | 1.79 / 1.84 M | 4.14 / 4.02 M | 1.00 / 3.19 M | 2.29 / 8.36 M | 91 / 88 % |
+| unitary_union | 1.79 / 1.84 M | 4.14 / 4.02 M | 1.00 / 3.19 M | 2.29 / 8.36 M | 91 / 88 % |
 | census_official | 1.81 / 1.75 M | 3.59 / 3.61 M | 0.72 / 3.77 M | 1.82 / 8.69 M | 92 / 90 % |
 | census_vernacular | 1.70 / 1.72 M | 4.15 / 4.13 M | 1.19 / 2.36 M | 2.53 / 7.79 M | 91 / 88 % |
 | ukraine_autonomy_tricantonal | 1.79 / 1.84 M | 3.17 / 3.27 M | 1.00 / 3.19 M | 2.88 / 4.23 M | 91 / 90 % |
@@ -469,7 +469,7 @@ states.
 
 The two numbers of the computed line differ by the residual of whole
 counties: under 70 k in most frames, up to 0.13 M (`wakar_poland` and
-`polonizing_union`, 2032), where a large county lies on the line. In
+`unitary_union`, 2032), where a large county lies on the line. In
 `plebiscite_poland` the new lands lie on the Polish side, and the exchange
 starts slightly larger (1.92 M). The historical columns count the same
 people on either side of the Curzon line of 1919-20 (line A in Galicia), which is not balanced: it leaves

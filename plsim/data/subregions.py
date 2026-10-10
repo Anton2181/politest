@@ -54,17 +54,97 @@ POWIAT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "powiaty_
 WEIGHT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "county_weights.json")
 _POLYS: dict | None = None
 _WEIGHTS: dict | None = None
+_LATTICE: dict = {}
 
 
-def county_weights() -> dict:
-    """{county code: additive weight, km} fitted to the census areas (0 if absent)."""
+def county_weights(kind: str = "model") -> dict:
+    """{county code: additive weight, km} fitted to the census areas (0 if
+    absent). ``kind="map"``: the weights the maps use, fitted with every
+    county joined into one piece (``geography.build_grid(connected=True)``);
+    the model's when none are stored."""
     global _WEIGHTS
     if _WEIGHTS is None:
-        _WEIGHTS = {}
+        _WEIGHTS = {"model": {}, "map": {}}
         if os.path.exists(WEIGHT_FILE):
             with open(WEIGHT_FILE, encoding="utf-8") as fh:
-                _WEIGHTS = json.load(fh).get("weights", {})
-    return _WEIGHTS
+                d = json.load(fh)
+            _WEIGHTS = {"model": d.get("weights", {}), "map": d.get("map_weights") or d.get("weights", {})}
+    return _WEIGHTS[kind]
+
+
+def assign_connected(parent: str, lat, lon, child_codes, dlat: float, dlon: float,
+                     weights: dict | None = None, gov_cut: bool = False) -> np.ndarray:
+    """County of each place for the maps: an additively weighted Voronoi
+    diagram like ``assign``, but with distances measured along the ground
+    inside the voivodeship (over the grid of places, 8 neighbours), and, where
+    the 1931 powiaty kept the uezd borders of 1897, inside the governorate.
+    Every county is then in one piece: a place on the shortest path from a
+    seat to a place of its county is nearer that seat still. The weights are
+    ``county_weights("map")``, fitted to the census areas on these distances.
+    Places no seat reaches (pieces of the voivodeship cut off by the state
+    border) take the plain rule."""
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import dijkstra
+    anc = seat_table(parent, child_codes)
+    lat, lon = np.asarray(lat, float), np.asarray(lon, float)
+    n, K = len(lat), len(anc)
+    wt = county_weights("map") if weights is None else weights
+    w = np.array([wt.get(a[2], 0.0) for a in anc])
+    key = (parent, n, round(float(lat.sum()), 6), round(float(lon.sum()), 6), dlat, dlon, tuple(a[2] for a in anc),
+           gov_cut)
+    if key not in _LATTICE:
+        r = np.round((lat - lat.min()) / dlat).astype(int)
+        c = np.round((lon - lon.min()) / dlon).astype(int)
+        at = {(i, j): k for k, (i, j) in enumerate(zip(r, c))}
+        gov = seat_gov = None
+        if (gov_cut and len(GOV_ALLOWED.get(parent, "x")) > 1 and n
+                and not parent.startswith(("LT", "BY_", "LV_", "RU_"))):
+            from .governorates import letter
+            gov = np.asarray(letter(lat, lon))
+            seat_gov = np.asarray(letter([a[0] for a in anc], [a[1] for a in anc]))
+        km_lat = 111.32 * dlat
+        src, dst, ln = [], [], []
+        for di, dj in ((0, 1), (1, 0), (1, 1), (1, -1)):
+            for k in range(n):
+                m = at.get((r[k] + di, c[k] + dj))
+                if m is None or (gov is not None and gov[k] != gov[m]):
+                    continue
+                km_lon = 111.32 * dlon * np.cos(np.radians((lat[k] + lat[m]) / 2))
+                d = float(np.hypot(di * km_lat, dj * km_lon))
+                src += [k, m]; dst += [m, k]; ln += [d, d]
+        # each seat joins the grid at its nearest place (of its governorate)
+        D0 = haversine_matrix(np.array([a[0] for a in anc]), np.array([a[1] for a in anc]), lat, lon)   # (K, n)
+        entry = []
+        for q in range(K):
+            d = D0[q] if gov is None else np.where(gov == seat_gov[q], D0[q], np.inf)
+            if not np.isfinite(d).any():
+                d = D0[q]
+            k = int(np.argmin(d))
+            entry.append((k, float(d[k])))
+        _LATTICE[key] = (src, dst, ln, entry)
+    src, dst, ln, entry = _LATTICE[key]
+    # node n: the source; n+1 ... n+K: the seats, at a start of (largest weight - weight)
+    top = w.max() if K else 0.0
+    s2, d2, l2 = list(src), list(dst), list(ln)
+    for q, (k, dk) in enumerate(entry):
+        s2 += [n, n + 1 + q]; d2 += [n + 1 + q, k]; l2 += [top - w[q] + 1e-9, dk + 1e-6]
+    G = coo_matrix((l2, (s2, d2)), shape=(n + 1 + K, n + 1 + K)).tocsr()
+    dist, pred = dijkstra(G, indices=n, return_predecessors=True)
+    lab = np.full(n + 1 + K, -1)
+    lab[n + 1:] = np.arange(K)
+    for v in np.argsort(dist[:n], kind="stable"):
+        if np.isfinite(dist[v]):
+            u, chain = v, []
+            while lab[u] < 0 and pred[u] >= 0:
+                chain.append(u)
+                u = pred[u]
+            for x in chain:
+                lab[x] = lab[u]
+    out = np.array([anc[k][2] if k >= 0 else "" for k in lab[:n]], dtype=object)
+    lost = lab[:n] < 0
+    if lost.any():
+        out[lost] = assign(parent, lat[lost], lon[lost], child_codes, weights=wt)
+    return out.astype(str)
 
 
 def county_polygons() -> dict:

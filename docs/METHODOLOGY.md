@@ -224,8 +224,8 @@ bilingual in German. The Polish-speaking population has three variants
 The **Lauda** country (Kėdainiai-Panevėžys-Ukmergė-Raseiniai), home of the
 Polish-speaking petty gentry, is a separate unit (`LT_LAU`). Lithuanisation
 there was not inevitable: the scenarios switch between a federal bilingual
-regime (baseline), the historical forced Lithuanisation, and a Polonising
-unitary union (§6.6).
+regime (baseline), the historical forced Lithuanisation, and a unitary
+union in which Lithuania is part of Poland (§6.6).
 
 ### 3.6 Urban/rural split, ages, bilingualism
 
@@ -708,7 +708,8 @@ each region's languages are all scenario inputs. Examples:
 
 * Ukrainian autonomy makes Ukrainian the regional state language in
   Stanisławów, Tarnopol and Volhynia (`federal_autonomy`).
-* Polish becomes dominant in the Lithuanian lands too (`polonizing_union`).
+* Lithuania is part of a unitary Poland, with Polish dominant and the only
+  official language there too (`unitary_union`).
 * Polish and Belarusian are co-official across a smaller or larger Poland
   (`wakar_poland`, `wakar_poland_belarus`), or no language is privileged
   (`no_official_language`).
@@ -1389,6 +1390,25 @@ uezd borders; Baranowicze, carved from two uezds, is the main exception,
 hence Słonim's surplus). Where a voivodeship of the approximate map has a
 detached piece (Tarnobrzeg's corner of Lwów, Działdowo's of Pomorze), the
 county there is in two pieces.
+
+**Counties on the maps.** Straight-line distances cut by a voivodeship's
+edge and by the governorate rule leave many counties of the model in
+several pieces (56 of 271: Brasław in four, Grójec, Opoczno and Nowogródek
+with a third of their land apart), and the canton and member borders drawn
+along them came out as rings and fingers. The maps therefore measure the
+distance from each seat along the ground, over the cells of the voivodeship
+(8 neighbours), with their own weights fitted to the same census areas
+(`map_weights`, `tools/build_county_weights.py --map`,
+`subregions.assign_connected`). A place on the shortest path from a seat to
+a place of its county is nearer that seat still, so every county is in one
+piece, except where the voivodeship itself is (Tarnobrzeg, whose seat lies
+in Lwów's detached corner, has 516 km² of its 935; Kaišiadorys, whose seat
+lies outside the land of its parent unit, 89). Most counties are within 1 %
+of their census areas; Silesia's small town counties, Częstochowa,
+Włoszczowa, Maków, Działdowo and Brody are 15-30 % off. The governorate rule
+is left out here (the krai's pieces are still cut along the governorates).
+The model keeps the plain rule and its weights, so the maps change only
+where cells are drawn.
 
 **Initial state.** Every Polish county is at grade A: its population and
 mother tongue from the census volumes (tabl. 12 of the voivodeship volumes,

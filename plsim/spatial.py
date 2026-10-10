@@ -155,7 +155,7 @@ class Downscaler:
             self.p.update(sp)
         self.codes = list(res.region_codes)
         self.R = len(self.codes)
-        self.grid = grid or build_grid(self.codes)
+        self.grid = grid or build_grid(self.codes, connected=True)    # counties in one piece on the maps
         g = self.grid
         self.Nc = len(g.lat)
         node_region = np.array(res.node_region)

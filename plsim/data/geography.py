@@ -362,7 +362,8 @@ def _terrain_factor_by(lat, lon) -> np.ndarray:
     return 1 - 0.40 * _soft_box(lat, lon, 51.3, 52.5, 27.0, 30.4, 0.25)
 
 
-def build_grid(region_codes: list[str], dlat: float = CELL_DLAT, dlon: float = CELL_DLON) -> Grid:
+def build_grid(region_codes: list[str], dlat: float = CELL_DLAT, dlon: float = CELL_DLON,
+               connected: bool = False) -> Grid:
     """Grid of the regions in ``region_codes``.
 
     The voivodeship-level grid of the whole state (Poland, plus Lithuania when
@@ -370,7 +371,12 @@ def build_grid(region_codes: list[str], dlat: float = CELL_DLAT, dlon: float = C
     out (scenarios with ``exclude``) removes their land rather than handing it
     to their neighbours.  Sub-regions (``PARENT.CHILD``: counties or named
     splits) then take the cells nearest their seats, among all the children
-    of their parent."""
+    of their parent.
+
+    ``connected``: every county in one piece (``_connect``). The weighted
+    Voronoi rule, cut by the voivodeship's edge and the 1897 governorates, can
+    leave a county in several pieces; the maps join the stray pieces to the
+    neighbour they share most border with. The model keeps the plain rule."""
     from dataclasses import replace
 
     codes = list(region_codes)
@@ -397,11 +403,56 @@ def build_grid(region_codes: list[str], dlat: float = CELL_DLAT, dlon: float = C
         else:
             mode = "county" if any(split_code(k)[0] in COUNTY_CODES for k in kids) else "named"
             every = [k for k in children(pc, mode)]
-            unit = assign(pc, base.lat[m], base.lon[m], every).astype(object)
+            if connected and mode == "county":
+                from .subregions import assign_connected, seat_table
+                unit = assign_connected(pc, base.lat[m], base.lon[m], every, dlat, dlon).astype(object)
+                unit = _connect(unit, base.lat[m], base.lon[m], dlat, dlon,
+                                {c: (la, lo) for la, lo, c in seat_table(pc, every)})
+            else:
+                unit = assign(pc, base.lat[m], base.lon[m], every).astype(object)
         region[m] = _pieces(unit, base.lat[m], base.lon[m], idx)
     keep = region >= 0
     return replace(base, lat=base.lat[keep], lon=base.lon[keep], region=region[keep], terrain=base.terrain[keep],
                    cell_km2=base.cell_km2[keep], region_codes=codes)
+
+
+def _connect(unit, lat, lon, dlat: float, dlon: float, seats: dict) -> np.ndarray:
+    """Each county of a voivodeship in one piece: a piece cut off from the one
+    holding the county's seat goes to the neighbouring county it shares most
+    border with (4-neighbours on the grid); repeated until nothing moves."""
+    from scipy import ndimage
+    r = np.round((lat - lat.min()) / dlat).astype(int)
+    c = np.round((lon - lon.min()) / dlon).astype(int)
+    codes = list(dict.fromkeys(unit))
+    img = np.full((r.max() + 1, c.max() + 1), -1)
+    img[r, c] = [codes.index(u) for u in unit]
+    for _ in range(20):
+        moved = False
+        for k, code in enumerate(codes):
+            lab, n = ndimage.label(img == k)
+            if n < 2:
+                continue
+            size = np.bincount(lab.ravel())
+            main = size[1:].argmax() + 1
+            if code in seats:                 # the seat's piece, unless it is much the smaller
+                la, lo = seats[code]
+                own = np.where(img[r, c] == k)[0]
+                j = own[np.argmin((lat[own] - la) ** 2 + ((lon[own] - lo) * 0.63) ** 2)]
+                if size[lab[r[j], c[j]]] >= 0.5 * size[main]:
+                    main = lab[r[j], c[j]]
+            for piece_id in range(1, n + 1):
+                if piece_id == main:
+                    continue
+                piece = lab == piece_id
+                ring = ndimage.binary_dilation(piece) & ~piece
+                nb = img[ring]
+                nb = nb[(nb >= 0) & (nb != k)]
+                if len(nb):
+                    img[piece] = np.bincount(nb).argmax()
+                    moved = True
+        if not moved:
+            break
+    return np.array([codes[v] for v in img[r, c]], dtype=object)
 
 
 def _pieces(unit, lat, lon, idx: dict) -> np.ndarray:

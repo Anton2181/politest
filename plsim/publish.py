@@ -18,7 +18,7 @@ SCENARIO_NOTES = {
     "ii_rp_only": "The Second Republic alone in its 1938 borders",
     "federal_autonomy": "Ukrainian autonomy in Stanisławów, Tarnopol and Volhynia; Belarusian schools",
     "integral_nationalism": "Coercive Polonisation, emigrationist policy towards Jews, heavy eastern settlement",
-    "polonizing_union": "Unitary union with Polish dominant in the Lithuanian lands too",
+    "unitary_union": "Unitary union: Lithuania a part of Poland, Polish the only official language",
     "census_official": "Baseline from the 1931 and 1923 censuses as printed",
     "census_vernacular": "Baseline from an upper-bound start (Kubijovyč; Catholic Belarusian speech as in 1897)",
     "ukraine_autonomy_tricantonal": "Ukrainian autonomy (Lwów, Tarnopol, Stanisławów, Volhynia) and a Grand Duchy of "

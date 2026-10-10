@@ -11,6 +11,11 @@ unweighted diagram does. With additive weights (distance less weight) every
 county keeps its seat and is star-shaped around it (``data.subregions``). Run
 from the repository root:  python tools/build_county_weights.py [PARENT ...]
 (with parents named, only theirs are refitted; the other weights are kept).
+
+``--map`` fits the weights the maps use (``map_weights``) for
+``subregions.assign_connected``: distances measured along the ground inside
+the voivodeship (and governorate), so that every county is in one piece. The
+model keeps ``weights`` and the plain rule.
 """
 from __future__ import annotations
 
@@ -24,7 +29,7 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from plsim.data import subregions  # noqa: E402
-from plsim.data.geography import build_grid  # noqa: E402
+from plsim.data.geography import _connect, build_grid  # noqa: E402
 from plsim.data.regions import select_regions  # noqa: E402
 
 HERE = os.path.join(os.path.dirname(__file__), "..", "plsim", "data")
@@ -42,7 +47,7 @@ def targets() -> dict:
     return out
 
 
-def fit(n_iter: int = 700, only=None):
+def fit(n_iter: int = 700, only=None, connected: bool = False):
     codes = [r.code for r in select_regions(True)]
     g = build_grid(codes)
     tg = targets()
@@ -69,15 +74,27 @@ def fit(n_iter: int = 700, only=None):
         units = list(goal)
         w = {k: 0.0 for k in kids}
         step = 0.5 * np.sqrt(total / len(units))     # km of weight per unit of relative error
+        seats = {c: (la, lo) for la, lo, c in subregions.seat_table(par, kids)}
+
+        def place(w):
+            if connected and kids:
+                child = subregions.assign_connected(par, g.lat[cells], g.lon[cells], kids, g.dlat, g.dlon, weights=w)
+                return _connect(child.astype(object), g.lat[cells], g.lon[cells], g.dlat, g.dlon, seats).astype(str)
+            return subregions.assign(par, g.lat[cells], g.lon[cells], kids, weights=w)
+        best = (np.inf, dict(w))
         for it in range(n_iter):
-            child = subregions.assign(par, g.lat[cells], g.lon[cells], kids, weights=w)
+            child = place(w)
+            score = np.mean([abs(km2[np.isin(child, u)].sum() / goal[u] - 1) for u in units])
+            if score < best[0]:
+                best = (score, dict(w))
             for u in units:
                 a = km2[np.isin(child, u)].sum()
                 d = float(np.clip(1.0 - a / goal[u], -1.0, 1.0)) * step * (0.99 ** it + 0.02)
                 for m in u:
                     if m in w:
                         w[m] += d
-        child = subregions.assign(par, g.lat[cells], g.lon[cells], kids, weights=w)
+        w = best[1]                                  # joining pieces can make the fit oscillate
+        child = place(w)
         err = {"+".join(u): round(km2[np.isin(child, u)].sum() / goal[u] - 1, 3) for u in units}
         report[par] = (max(abs(v) for v in err.values()), err)
         weights.update({k: round(v, 1) for k, v in w.items()})
@@ -85,16 +102,22 @@ def fit(n_iter: int = 700, only=None):
 
 
 if __name__ == "__main__":
-    only = sys.argv[1:]
-    weights, report = fit(only=only)
+    args = sys.argv[1:]
+    connected = "--map" in args
+    only = [a for a in args if a != "--map"]
+    key = "map_weights" if connected else "weights"
+    weights, report = fit(only=only, connected=connected)
+    path = os.path.join(HERE, "county_weights.json")
+    with open(path, encoding="utf-8") as fh:
+        doc = json.load(fh)
     if only:
-        with open(os.path.join(HERE, "county_weights.json"), encoding="utf-8") as fh:
-            old = json.load(fh)["weights"]
+        old = doc.get(key) or doc["weights"]
         weights = {**{k: v for k, v in old.items() if k.split(".")[0] not in only}, **weights}
-    with open(os.path.join(HERE, "county_weights.json"), "w", encoding="utf-8") as fh:
-        json.dump({"source": "tools/build_county_weights.py from county_areas_1931.csv and census1923_apskritys.csv",
-                   "weights": weights}, fh,
-                  indent=1, sort_keys=True, ensure_ascii=False)
+    doc[key] = weights
+    doc["source"] = ("tools/build_county_weights.py from county_areas_1931.csv and census1923_apskritys.csv "
+                     "(map_weights: with --map, every county in one piece)")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, indent=1, sort_keys=True, ensure_ascii=False)
     for par, (worst, err) in report.items():
         bad = {k: v for k, v in err.items() if abs(v) > 0.05}
         print(f"{par}: worst {worst:+.1%}  {bad if bad else ''}")

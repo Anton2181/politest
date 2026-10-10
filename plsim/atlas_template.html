@@ -738,6 +738,71 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
       const [a, b] = pair.split("|");
       if (on.includes(a) && on.includes(b)) inter(lines);
     });
+    // one polyline per stretch of border, with the cell staircase rounded off
+    segInner = smoothLines(chainSegs(segInner));
+    segCounty = smoothLines(chainSegs(segCounty));
+    segMember = smoothLines(chainSegs(segMember));
+    segOuter = smoothLines(chainSegs(segOuter));
+  }
+  // Join border segments [x0, y0, x1, y1] that share end points into polylines, breaking where
+  // three or more meet, so that a dashed line runs on along a border instead of restarting at
+  // every cell edge. Returns [{pts, closed}].
+  function chainSegs(segs) {
+    const key = (x, y) => Math.round(x * 1e5) + "," + Math.round(y * 1e5);
+    const ends = segs.map((s) => [key(s[0], s[1]), key(s[2], s[3])]);
+    const adj = new Map();
+    ends.forEach((e, i) => e.forEach((k) => { if (!adj.has(k)) adj.set(k, []); adj.get(k).push(i); }));
+    const used = new Uint8Array(segs.length), lines = [];
+    const walk = (i, from) => {
+      const s = segs[i], pts = [];
+      let cur = from, seg = i;
+      pts.push(ends[i][0] === cur ? [s[0], s[1]] : [s[2], s[3]]);
+      for (;;) {
+        used[seg] = 1;
+        const t = segs[seg], fwd = ends[seg][0] === cur;
+        pts.push(fwd ? [t[2], t[3]] : [t[0], t[1]]);
+        cur = fwd ? ends[seg][1] : ends[seg][0];
+        const nb = adj.get(cur);
+        if (nb.length !== 2) break;
+        const nxt = nb[0] === seg ? nb[1] : nb[0];
+        if (used[nxt]) break;
+        seg = nxt;
+      }
+      return pts;
+    };
+    adj.forEach((nb, k) => {
+      if (nb.length === 2) return;
+      nb.forEach((i) => { if (!used[i]) lines.push({ pts: walk(i, k), closed: false }); });
+    });
+    for (let i = 0; i < segs.length; i++) {
+      if (!used[i]) {
+        const pts = walk(i, ends[i][0]);
+        lines.push({ pts, closed: ends[i][0] === key(...pts[pts.length - 1]) });
+      }
+    }
+    return lines;
+  }
+  // Corner cutting: each inner vertex is replaced by the midpoints of its two edges, which turns
+  // a staircase of cell edges into a line along it; end points (junctions) stay where they are.
+  function smoothLines(lines) {
+    const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    return lines.map(({ pts, closed }) => {
+      if (pts.length < 3) return pts;
+      if (closed) {
+        const q = pts.slice(0, -1), out = q.map((p, j) => mid(p, q[(j + 1) % q.length]));
+        out.push(out[0]);
+        return out;
+      }
+      const out = [pts[0]];
+      for (let j = 0; j + 1 < pts.length; j++) out.push(mid(pts[j], pts[j + 1]));
+      out.push(pts[pts.length - 1]);
+      return out;
+    });
+  }
+  function strokeBorder(x, lines) {
+    x.beginPath();
+    lines.forEach((ln) => ln.forEach((p, k) => (k ? x.lineTo(px(p[0]), py(p[1])) : x.moveTo(px(p[0]), py(p[1])))));
+    x.stroke();
   }
   function layer() {
     const c = document.createElement("canvas");
@@ -767,17 +832,15 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
     META.geo.rivers.forEach((p) => { polyPath(x, p, false); x.stroke(); });
     x.globalAlpha = 1; x.fillStyle = T.water;
     META.geo.lakes.forEach((p) => { polyPath(x, p, true); x.fill(); });
-    x.strokeStyle = T.rline; x.globalAlpha = 0.45; x.lineWidth = 0.4; x.beginPath();
-    segCounty.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
-    x.stroke(); x.globalAlpha = 1;
-    x.strokeStyle = T.rline; x.lineWidth = 0.6; x.beginPath();
-    segInner.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
-    x.stroke();
+    x.strokeStyle = T.rline; x.globalAlpha = 0.45; x.lineWidth = 0.4;
+    strokeBorder(x, segCounty);
+    x.globalAlpha = 1;
+    x.strokeStyle = T.rline; x.lineWidth = 0.6;
+    strokeBorder(x, segInner);
     // state border: 1 January 1932 (CShapes 2.0), and the edge of land left out of the state
     const st = META.geo.states, sc0 = scen();
-    x.strokeStyle = T.line; x.lineWidth = 1.1; x.lineJoin = "round"; x.beginPath();
-    segOuter.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
-    x.stroke();
+    x.strokeStyle = T.line; x.lineWidth = 1.1; x.lineJoin = "round";
+    strokeBorder(x, segOuter);
     clipPath = new Path2D();
     const onKeys = ST_KEYS.filter((_, k) => (sc0._stOn || [true])[k]);
     [].concat(...onKeys.map((k) => st[k] || [])).forEach((p) => {
@@ -789,12 +852,11 @@ figcaption { font-size: var(--step--1); color: var(--ink2); }
       p.forEach((q, k) => (k ? clipPL.lineTo(px(q[0]), py(q[1])) : clipPL.moveTo(px(q[0]), py(q[1]))));
       clipPL.closePath();
     });
-    x.strokeStyle = T.halo; x.lineWidth = 3.2; x.beginPath();
-    segMember.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
-    x.stroke();
-    x.strokeStyle = T.member; x.lineWidth = 1.5; x.setLineDash([5, 3]); x.lineCap = "butt"; x.beginPath();
-    segMember.forEach((s) => { x.moveTo(px(s[0]), py(s[1])); x.lineTo(px(s[2]), py(s[3])); });
-    x.stroke(); x.setLineDash([]);
+    x.strokeStyle = T.halo; x.lineWidth = 3.2;
+    strokeBorder(x, segMember);
+    x.strokeStyle = T.member; x.lineWidth = 1.5; x.setLineDash([5, 3]); x.lineCap = "butt";
+    strokeBorder(x, segMember);
+    x.setLineDash([]);
   }
 
   // transport network: rail classes 1-5 (narrow, secondary, main, electrified, high-speed),

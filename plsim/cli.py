@@ -125,7 +125,7 @@ SCENARIO_TITLES = {
     "baseline": "Baseline federation",
     "federal_autonomy": "Ukrainian autonomy",
     "integral_nationalism": "Integral nationalism",
-    "polonizing_union": "Polonising unitary union",
+    "unitary_union": "Unitary union",
     "census_official": "1931 census as printed",
     "census_vernacular": "Upper-bound minority speech in 1931",
     "ii_rp_only": "Poland alone, no union",
@@ -293,7 +293,7 @@ def build_report(outroot: str, n_ens: int, scenarios: list[str] | None = None, w
         np.savez_compressed(os.path.join(outroot, "ensemble_baseline_cells.npz"), years=np.array(sorted(prob)),
                             n=n_ens, **{f"prob_{y}": p.astype(np.float16) for y, p in prob.items()})
         from .data.geography import build_grid
-        mp.fig_uncertainty(build_grid(base.region_codes), prob, os.path.join(outroot, "maps", "map_uncertainty.png"),
+        mp.fig_uncertainty(build_grid(base.region_codes, connected=True), prob, os.path.join(outroot, "maps", "map_uncertainty.png"),
                            n_ens, title="How certain is the map? The baseline across the ensemble")
         del cells
     export_ensemble(ens, os.path.join(outroot, "ensemble_baseline"))
@@ -336,7 +336,7 @@ def build_report(outroot: str, n_ens: int, scenarios: list[str] | None = None, w
     rp.fig_towns(base, F("towns.png"))
     rp.fig_scenario_population(results, F("scenario_population.png"))
     rp.fig_language_scenarios(results, F("scenario_languages.png"), base.years[-1])
-    lt_sc = {k: results[k] for k in ["baseline", "polonizing_union", "census_official", "census_vernacular",
+    lt_sc = {k: results[k] for k in ["baseline", "unitary_union", "census_official", "census_vernacular",
                                       "ukraine_autonomy_tricantonal", "autonomy_grand_duchy_coofficial"] if k in results}
     rp.fig_lithuania_poles(lt_sc, F("lithuania_poles.png"))
     for k in ["federal_autonomy", "integral_nationalism"]:
