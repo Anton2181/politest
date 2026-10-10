@@ -1,7 +1,7 @@
 Result,Type,Check,Model,Accepted range
 PASS,historical,Poland population 1 Jan 1939 (M),34.55,34.3 - 35.3
 PASS,historical,Poland CBR 1932 (per 1000),29.74,27.3 - 30.3
-PASS,historical,Poland CBR 1938 (per 1000),25.03,22.8 - 25.8
+PASS,historical,Poland CBR 1938 (per 1000),25.04,22.8 - 25.8
 PASS,historical,Poland CDR 1932 (per 1000; registered 15.0),15.73,14.0 - 17.0
 PASS,historical,Poland CDR 1938 (per 1000; registered 13.8),14.72,12.8 - 15.3
 PASS,historical,Poland e0 males 1932 (1931-32 table: 48.2),49.41,46.7 - 50.2
@@ -9,12 +9,12 @@ PASS,historical,Poland e0 females 1932 (1931-32 table: 51.4),52.67,49.9 - 53.4
 PASS,historical,"Motor vehicles per 1000, 1 Jan 1938",1.18,0.8 - 1.8
 PASS,historical,Poland urban share 1939,0.29,0.27 - 0.33
 PASS,historical,Lithuania population 1938 (M),2.57,2.45 - 2.65
-PASS,historical,Lithuania CBR 1938 (22.6),22.64,20.6 - 24.6
+PASS,historical,Lithuania CBR 1938 (22.6),22.65,20.6 - 24.6
 PASS,historical,Lithuania CDR 1938 (12.6),12.54,11.1 - 14.1
 PASS,plausibility,TFR 1960 (S. Europe 2.3-3.8),2.74,2.3 - 3.8
 PASS,plausibility,e0 both sexes 1960 (58-72),64.69,58 - 72
 PASS,plausibility,TFR 2000 (1.2-2.2),1.77,1.2 - 2.2
 PASS,plausibility,e0 both sexes 2000 (70-81),76.58,70 - 81
 PASS,plausibility,Urban share 2000 (0.50-0.80),0.59,0.5 - 0.8
-PASS,plausibility,Polish-unit population 2000 (M),49.31,40 - 65
-PASS,plausibility,"Expressways + motorways, last year (km per 1000 km2)",20.16,15 - 35
+PASS,plausibility,Polish-unit population 2000 (M),49.27,40 - 65
+PASS,plausibility,"Expressways + motorways, last year (km per 1000 km2)",20.41,15 - 35
