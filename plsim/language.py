@@ -96,6 +96,9 @@ class LanguageModel:
                                    max(params.get("sigma_diaspora", 0.0) - s, 0.0)
                                    for (c, l), s in zip(GROUPS, self.sigma0)])
         self.last_sigma = None
+        # marriage across languages: how readily each group partners outside it (Jews hardly did)
+        em = params.get("exogamy_mult", {})
+        self.exo_mult = np.array([em.get(f"{c}:{l}", em.get(c, 1.0)) for c, l in GROUPS], dtype=float)
         conc = params.get("concentration", {})
         k = np.array([conc.get(f"{c}:{l}", conc.get(l, 1.0)) for c, l in GROUPS], dtype=float)
         self.conc = np.tile(k, (self.R, 1))                                  # (R, G)
@@ -324,7 +327,26 @@ class LanguageModel:
         # language they keep D competence too (they were bilingual)
         P[:, :, :, 1, :, 15:65] += inflow
         flows = dist * switch.sum(axis=(3, 4))[..., None]                 # (R,2,G_from,G_to)
-        return {"acquired": moved.sum(), "switched": switch.sum(), "flows": flows}
+        # --- marriage across languages: a bilingual adult of 20-34 who sets up a household with a speaker of
+        # another language mostly runs it in the more attractive one. The chance that the partner is from
+        # outside the group follows the homogamy model of assortative mating (Kalmijn 1998): with local own
+        # share s and in-group preference odds H, (1 - s) / ((1 - s) + s H). A scattered minority marries
+        # out; a compact one hardly does.
+        exo = p.get("exogamy", 0.0)
+        if exo > 0:
+            sL, _ = self.local_environment(P)
+            H = p.get("exogamy_homophily", 20.0)
+            out = (1 - sL) / np.maximum((1 - sL) + sL * H, 1e-12)
+            ex_rate = exo * out * frac * self.exo_mult[None, None, :] * not_dom[:, None, :]
+            hx = 1 - np.exp(-np.clip(ex_rate, 0, 0.5))                   # (R,2,G)
+            married = P[:, :, :, 1, :, 20:35] * hx[..., None, None]
+            P[:, :, :, 1, :, 20:35] -= married
+            P[:, :, :, 1, :, 20:35] += np.einsum("rugk,rugsa->ruksa", dist, married)
+            flows = flows + dist * married.sum(axis=(3, 4))[..., None]
+            switch_total = switch.sum() + married.sum()
+        else:
+            switch_total = switch.sum()
+        return {"acquired": moved.sum(), "switched": switch_total, "flows": flows}
 
     # ---------------------------------------------------------------- community flows
     def haredi_exit(self, year: float) -> tuple[float, float]:

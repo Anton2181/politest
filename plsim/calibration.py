@@ -158,6 +158,11 @@ CASES = [
          1.0, 0.20, 0.05, 0.10, 1.0, 2.0, 2.0, 75.0,
          [Target("births_shifted", 0.60, 0.10, 0.05)], immigrant=True,
          source="Alba et al. 2002; Portes & Rumbaut 2001"),
+    Case("dispersed", "Ukrainians scattered in People's Poland 1950-2002", "GC:uk", 52, 0.05, 0.25, 0.25, (0.45, 0.80),
+         0.95, 0.10, 0.03, 0.05, 1.3, 1.0, 2.6, 66.0,
+         [Target("ratio", 0.11, 0.03, 0.05)],
+         source="Ukrainian and Lemko home language: ~170 k of 25.0 M in 1950 (after Operation Vistula), 29 k of "
+                "38.2 M at the 2002 census"),
 ]
 
 # Calibrated parameters: name -> (where in the language parameters, low, high)
@@ -172,6 +177,8 @@ PARAMS = {
     "sigma_diaspora": ("sigma_diaspora", 0.0, 0.80),
     "acq_adult": ("acq_adult", 0.004, 0.030),
     "acq_school": ("acq_school", 0.10, 0.40),
+    "exogamy": ("exogamy", 0.0, 0.40),
+    "exogamy_homophily": ("exogamy_homophily", 2.0, 60.0),
 }
 # Groups whose sigma0 moves with each calibrated class (by the same factor).
 CLASS_GROUPS = {
@@ -251,6 +258,11 @@ def simulate(theta: dict, cases: list[Case] = CASES, lang: dict | None = None) -
     lm = LanguageModel(lp, [_Region(c) for c in codes], ["pl"] * R)
     gi = np.array([GROUP_INDEX[tuple(c.group.split(":"))] for c in cases])
     di = np.array([GROUP_INDEX[(c.group.split(":")[0], "pl")] for c in cases])
+    # natives: the carrier's community speaking the state language, except for an immigrant group, whose
+    # natives are another community, so that the carrier's state-language group holds only the immigrants'
+    # descendants and switchers and their children count as raised in the state language
+    ni = np.array([GROUP_INDEX[("RC" if c.group.split(":")[0] != "RC" else "PR", "pl")] if c.immigrant else di[r]
+                   for r, c in enumerate(cases)])
     for r, c in enumerate(cases):
         lm.conc[r, gi[r]] = c.conc
 
@@ -283,7 +295,7 @@ def simulate(theta: dict, cases: list[Case] = CASES, lang: dict | None = None) -
             for s in (0, 1):
                 P[r, uu, gi[r], 1, s] = 0.5 * u[uu] * c.x0 * minority * bil
                 P[r, uu, gi[r], 0, s] = 0.5 * u[uu] * c.x0 * minority * (1 - bil)
-                P[r, uu, di[r], 0, s] = 0.5 * u[uu] * (1 - c.x0) * age_w[r]
+                P[r, uu, ni[r], 0, s] = 0.5 * u[uu] * (1 - c.x0) * age_w[r]
     x_start = P[np.arange(R), :, gi].sum(axis=(1, 2, 3, 4)) / P.sum(axis=(1, 2, 3, 4, 5))
     M = np.array([c.M for c in cases], dtype=float)
     enrol = np.array([c.enrol for c in cases])
@@ -302,6 +314,11 @@ def simulate(theta: dict, cases: list[Case] = CASES, lang: dict | None = None) -
         newborns = (births - shifted).sum(axis=3) + np.einsum("rugk,rug->ruk", dist, shifted.sum(axis=3))
         born += births[np.arange(R), :, gi].sum(axis=(1, 2))
         born_shift += shifted[np.arange(R), :, gi].sum(axis=(1, 2))
+        # immigrant cases: births to the descendants and switchers in the state language count as shifted
+        imm = np.array([c.immigrant for c in cases])
+        b_desc = births[np.arange(R), :, di].sum(axis=(1, 2)) * imm
+        born += b_desc
+        born_shift += b_desc
         surv = np.stack([s_m, s_f], axis=1)                                  # (R,2,101)
         Pn = np.zeros_like(P)
         Pn[..., 1:100] = P[..., 0:99] * surv[:, None, None, None, :, 0:99]

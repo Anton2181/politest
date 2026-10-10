@@ -245,6 +245,10 @@ DEFAULTS: dict[str, Any] = {
         "pressure": {"default": [[1931, 1.0], [1950, 0.9], [1990, 0.8]], "LT_*": 0.8},
         "urban_mult": 0.6, "mod_base": 0.5, "mod_slope": 1.0, "access_mult": 0.15,
         "h0": 0.0021,
+        # marriage across languages (language.horizontal): yearly rate for bilingual adults of 20-34, times
+        # the chance of a partner from outside the group (homogamy odds H against the local own share) and
+        # the pull of the other language; Jews hardly married out
+        "exogamy": 0.0, "exogamy_homophily": 20.0, "exogamy_mult": {"JW": 0.1, "JH": 0.0},
         "acq_school": 0.36, "acq_adult": 0.012, "acq_urban_bonus": 0.8, "acq_military": 0.35,
         "conscription": [[1931, 1.0], [1990, 0.8], [2008, 0.0]],
         "haredi_exit": [[1931, 0.20], [1970, 0.15], [2000, 0.12]],

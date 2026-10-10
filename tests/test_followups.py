@@ -40,6 +40,20 @@ def test_diaspora_floor_raises_shift_where_institutions_are_missing():
     assert hi > lo + 0.1
 
 
+def test_scattered_minorities_marry_out_compact_ones_hardly():
+    """Marriage across languages: the homogamy term moves a scattered
+    minority (5 % of its surroundings) far more than a compact one (the
+    Poles of Posen, 72 % locally)."""
+    from plsim import calibration as cb
+    th = cb.default_theta()
+    off = cb.simulate(dict(th, exogamy=0.0))
+    on = cb.simulate(dict(th, exogamy=0.2, exogamy_homophily=20.0))
+    d_dispersed = off[("dispersed", 0)] - on[("dispersed", 0)]
+    d_posen = off[("posen", 0)] - on[("posen", 0)]
+    assert d_dispersed > 0.15
+    assert 0 <= d_posen < 0.05
+
+
 # ---------------------------------------------------------------- identity
 def test_identity_totals_track_population(short_run):
     I = np.asarray(short_run.identity[-1]).sum(axis=1)
