@@ -686,12 +686,12 @@ numbers.
 
 | Anchor | Evidence | Model (baseline) |
 |---|---|---|
-| Yiddish among acculturating Jews | Soviet Jews 70.4 % Yiddish (1926) -> ~41 % (1939) under coercion; interwar Polish-Jewish youth rapidly Polonising in state schools; Hungarian and Czech Jewry shifted in ~2 generations | 79 % (1935) -> 53 % (1960) -> 28 % (1990) -> 10 % (2030) |
-| Wymysorys | 92 % of Wilamowice (1,525/1,662) spoke it in 1880, 72 % in 1890 | ~1,450 -> ~420 (1990) -> ~60 (2032): moribund even without the post-war ban |
-| Catholic Belarusian vernacular | rapid Polonisation of Catholic Belarusian-speakers; the 1897 -> 1931 recording gap | 86 k (1935) -> 82 k (1960) -> 58 k (1990) -> 25 k (2030) in Wilno/Nowogródek/Białystok |
-| Greek Catholic Ukrainian | strong institutions (church, Prosvita, cooperatives) | 96 % of Greek Catholics Ukrainian-speaking (1935) -> 88 % (1990) -> 79 % (2030) |
+| Yiddish among acculturating Jews | Soviet Jews 70.4 % Yiddish (1926) -> ~41 % (1939) under coercion; interwar Polish-Jewish youth rapidly Polonising in state schools; Hungarian and Czech Jewry shifted in ~2 generations | 79 % (1935) -> 50 % (1960) -> 25 % (1990) -> 8 % (2030) |
+| Wymysorys | 92 % of Wilamowice (1,525/1,662) spoke it in 1880, 72 % in 1890 | ~1,450 -> ~200 (1990) -> ~15 (2032): moribund even without the post-war ban |
+| Catholic Belarusian vernacular | rapid Polonisation of Catholic Belarusian-speakers; the 1897 -> 1931 recording gap | 85 k (1935) -> 72 k (1960) -> 45 k (1990) -> 18 k (2030) in Wilno/Nowogródek/Białystok |
+| Greek Catholic Ukrainian | strong institutions (church, Prosvita, cooperatives) | 96 % of Greek Catholics Ukrainian-speaking (1935) -> 86 % (1990) -> 77 % (2030) |
 | Scottish Gaelic (Kandler et al.) | shift ~0.035/yr in an Anglophone state | Polesian and Kashubian rates of the same order once bilingual |
-| Karaim | community 800-900; language maintained in Trakai in the 1930s | ~680 -> ~230 speakers (2032) |
+| Karaim | community 800-900; language maintained in Trakai in the 1930s | ~630 -> ~140 speakers (2032) |
 
 ### 6.5 Extinction diagnostics
 
